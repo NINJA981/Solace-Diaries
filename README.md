@@ -2,75 +2,268 @@
 
 **Haven Journal** is a cozy, private, and mindful digital sanctuary designed for self-reflection and personal growth. By combining an intimate, warm user interface with modern retrieval-augmented generation (RAG) and vector similarity search, it allows you to chronicle your life, explore recurring emotional patterns, and hold gentle conversations with your past pages.
 
+This document provides a comprehensive overview of how Haven Journal is architected, its tech stack, database design, and the under-the-hood workflows that power its intelligence.
+
 ---
 
 ## 🛠️ The Tech Stack
 
-The application is built using a modern, decoupled client-server architecture:
+Haven Journal is built as a fully decoupled client-server web application.
 
-### 1. Frontend (Hosted on Vercel)
-* **Core**: [React 19](https://react.dev/) + [Vite](https://vite.dev/) + [TypeScript](https://www.typescriptlang.org/) for a lightweight, lightning-fast Single Page Application (SPA).
-* **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) for fluid responsive layout design, incorporating soft pastel warm-paper palettes, glassmorphism elements, and editorial serif typography.
-* **Icons**: [Lucide React](https://lucide.dev/) for a clean, consistent, and organic iconography set.
+```mermaid
+graph TD
+    subgraph Client [Frontend - Vercel]
+        UI[React 19 SPA + Vite]
+        LS[(Local Storage: User Gemini Key)]
+    end
 
-### 2. Backend API (Hosted on Render)
-* **Runtime**: [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) configured with TypeScript (`tsx`).
-* **ORM**: [Prisma Client](https://www.prisma.io/) to orchestrate relational database queries and PostgreSQL operations.
+    subgraph API [Backend - Render]
+        SVR[Express Server]
+        PRM[Prisma ORM]
+    end
+
+    subgraph Storage [Database - Supabase]
+        DB[(PostgreSQL)]
+        VEC[(pgvector Index)]
+    end
+
+    subgraph AI [AI Services - Google Gemini]
+        GEM[gemini-2.5-flash]
+        EMB[gemini-embedding-2-preview]
+    end
+
+    UI -->|API Request + x-gemini-api-key| SVR
+    LS -->|Header Injection| UI
+    SVR -->|Queries / Mutations| PRM
+    PRM -->|SQL| DB
+    PRM -->|Vector Cosine Distance Query| VEC
+    SVR -->|Embeddings Request| EMB
+    SVR -->|Contextual Prompting| GEM
+```
+
+### 1. Frontend Client
+* **Core Framework**: [React 19](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/) managed via [Vite](https://vite.dev/) as a lightning-fast Single Page Application (SPA).
+* **Styling & Theme**: [Tailwind CSS v4](https://tailwindcss.com/) for fluid responsive layout design, incorporating soft pastel warm-paper palettes, glassmorphism elements, custom micro-interactions, and editorial serif typography to convey a comforting, offline-journal aesthetic.
+* **Iconography**: [Lucide React](https://lucide.dev/) for a clean, consistent, and organic set of icons.
+
+### 2. Backend API
+* **Runtime**: [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) with TypeScript compilation via `tsx`.
+* **Database Access**: [Prisma Client v5.22.0](https://www.prisma.io/) to orchestrate relational database queries and PostgreSQL operations.
 * **Security & Auth**:
-  - Stateless **JSON Web Tokens (JWT)** for horizontal scaling and secure user sessions.
-  - **bcryptjs** for secure password salting and hashing.
-  - **CORS** middleware to restrict API traffic to authorized client domains.
+  - Stateless **JSON Web Tokens (JWT)** (`jsonwebtoken`) for secure, stateless sessions.
+  - **bcryptjs** for hashing and salting user passwords.
+  - **CORS** middleware to restrict API traffic to authorized client origins.
 
-### 3. Database & Vector Index (Hosted on Supabase)
-* **Relational Store**: [Supabase PostgreSQL](https://supabase.com/) hosting tables for `User` records and `JournalEntry` journals.
-* **Vector Index**: PostgreSQL `pgvector` extension for storing and performing high-performance similarity calculations on 768-dimensional embedding vectors.
+### 3. Database & Vector Index
+* **Relational Store**: [PostgreSQL (Supabase)](https://supabase.com/) hosting tables for user authentication and diary metadata.
+* **Vector Database**: PostgreSQL `pgvector` extension for storing and performing high-performance similarity calculations on 768-dimensional embedding vectors.
 
 ### 4. Intelligence & Embeddings
-* **Text Synthesis**: [Google Gemini 2.5 Flash](https://ai.google.dev/) via the official `@google/genai` SDK for mood mapping, summarizations, and chat synthesis.
+* **Text Synthesis**: [Google Gemini 2.5 Flash](https://ai.google.dev/) via the official `@google/genai` SDK for mood classification, tag extraction, chat responses, and weekly insights.
 * **Vector Embeddings**: `gemini-embedding-2-preview` to compile text content into multidimensional semantic coordinates.
+
+---
+
+## 🗄️ Database Schema Design
+
+The application's relational data model is defined in Prisma (`prisma/schema.prisma`) and runs on top of a PostgreSQL instance equipped with the `pgvector` extension.
+
+```mermaid
+erDiagram
+    USER ||--o{ JOURNAL-ENTRY : "writes"
+    JOURNAL-ENTRY ||--|| VECTOR-RECORD : "indexed in"
+
+    USER {
+        string id PK
+        string email UNIQUE
+        string passwordHash
+        DateTime createdAt
+    }
+
+    JOURNAL-ENTRY {
+        string id PK
+        string userId FK
+        string title
+        string content TEXT
+        string mood
+        string[] tags
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    VECTOR-RECORD {
+        string id PK
+        string entryId FK
+        string userId FK
+        vector_768 vector "pgvector (Unsupported)"
+        DateTime createdAt
+    }
+```
+
+### Prisma Schema Definition
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  entries      JournalEntry[]
+}
+
+model JournalEntry {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String        @db.Text
+  mood      String
+  tags      String[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  vectors   VectorRecord[]
+}
+
+model VectorRecord {
+  id        String       @id @default(uuid())
+  entryId   String
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  vector    Unsupported("vector(768)")?
+  createdAt DateTime     @default(now())
+}
+```
+
+> [!NOTE]
+> Since Prisma does not natively support the PostgreSQL `vector` data type, the `VectorRecord.vector` field is mapped as `Unsupported("vector(768)")`. Writing and querying vector data is performed bypass-style using raw SQL transactions (`prisma.$queryRaw` and `prisma.$executeRaw`).
 
 ---
 
 ## 🔍 How It Works: Under the Hood
 
-### 1. Reflect & Inscribe (Journal Entry Creation)
-When you submit a reflection, the system executes two parallel workflows:
-1. **Mood & Tag Extraction**: The raw content is sent to `gemini-2.5-flash` with a structured system instruction to categorize the primary emotion (e.g. *peaceful*, *joyful*, *anxious*) and generate 2-4 mindful tag metadata keywords in a strict JSON schema format.
-2. **Vector Indexing**: The title and content are joined and sent to the `gemini-embedding-2-preview` model. The resulting 768-dimension floating-point vector is saved directly in Supabase's `VectorRecord` table as a `vector` type.
+### 1. Inscribe & Reflect (Journal Entry Creation Flow)
+
+When you write a journal entry and click **Save**, the backend processes the entry through a multi-step pipeline:
+
+```mermaid
+sequenceDiagram
+    participant User as Client Browser
+    participant API as Express API Server
+    participant Gemini as Gemini SDK
+    participant DB as Supabase DB
+
+    User->>API: POST /api/entries { title, content }
+    rect rgb(240, 235, 225)
+        Note over API, Gemini: Step 1: Cognitive Analysis
+        API->>Gemini: gemini-2.5-flash: analyzeEntry(content)
+        Gemini-->>API: returns { mood, tags, summary }
+    end
+    rect rgb(230, 240, 230)
+        Note over API, Gemini: Step 2: Vector Embeddings
+        API->>Gemini: gemini-embedding-2-preview: generateEmbedding(text)
+        Gemini-->>API: returns number[768]
+    end
+    API->>DB: Write JournalEntry (Prisma client)
+    API->>DB: Write VectorRecord (raw SQL INSERT with ::vector cast)
+    DB-->>API: Confirmation
+    API-->>User: Returns created Entry with tags & mood
+```
+
+* **Cognitive Analysis**: The `gemini-2.5-flash` model parses the entry text. Using structured JSON Schema enforcement (`responseMimeType: 'application/json'`), it extracts the primary mood (e.g., *peaceful*, *joyful*, *anxious*) and generates 2-4 mindful tags.
+* **Vector Embedding**: The title and entry content are combined and converted into a 768-dimensional embedding vector representing the semantic "essence" of your day.
 
 ---
 
 ### 2. Echoes of the Heart (Semantic Memory Search)
-Rather than matching exact keywords, Haven Journal retrieves memories based on semantic intent and emotional meaning.
-* **Mechanism**: When you type a query (e.g., *"times when I felt lonely but found hope"*), the query is transformed into a query vector.
-* **Database Math**: The backend queries Supabase using pgvector's cosine distance operator (`<=>`). It calculates similarity directly inside the database index rather than pulling vectors into server memory:
-  ```sql
-  SELECT "entryId", (1 - (vector <=> $1::vector)) AS score
-  FROM "VectorRecord"
-  WHERE "userId" = $2
-  ORDER BY vector <=> $1::vector ASC
-  LIMIT 5;
-  ```
-  This returns matching journal pages with high affinity matches, sorting them by how closely they align to the feeling of your query.
+
+Instead of searching for raw keywords (which fail to capture emotional context), Haven Journal searches for entries based on semantic similarity.
+
+1. The search query (e.g., *"feeling lost but hoping for a new start"*) is sent to `gemini-embedding-2-preview` to generate a 768-dimensional query vector.
+2. The server executes a cosine similarity search against the `VectorRecord` table using pgvector's cosine distance operator (`<=>`).
+3. Cosine similarity score is calculated as `1 - CosineDistance`:
+
+```typescript
+async findTopSimilar(userId: string, targetVector: number[], topK = 5) {
+  const vectorString = `[${targetVector.join(',')}]`;
+
+  // Cosine distance <=> yields 0 for exact match, 2 for opposite.
+  // 1 - distance gives us a similarity score between 0 and 1.
+  const results = await prisma.$queryRaw<Array<{ entryId: string; score: number }>>`
+    SELECT "entryId", (1 - (vector <=> ${vectorString}::vector)) AS "score"
+    FROM "VectorRecord"
+    WHERE "userId" = ${userId}
+    ORDER BY vector <=> ${vectorString}::vector ASC
+    LIMIT ${topK}
+  `;
+
+  return results.map(r => ({
+    entryId: r.entryId,
+    score: Number(r.score)
+  }));
+}
+```
 
 ---
 
-### 3. Conversations with Past Pages (RAG Chat)
-The chat interface allows you to ask questions about your past days, goals, or small happy moments.
-* **Retrieval Phase**: Your prompt is vectorized and matches the top 4 most relevant historical segments from your diary.
-* **Augmentation Phase**: The content of those 4 entries is retrieved and injected into the system prompt of `gemini-2.5-flash` as a local knowledge context sheet.
-* **Generation Phase**: The model responds as a warm, intuitive Reflection Guide, answering your question using *only* facts retrieved from your diary, complete with gentle citations of the dates of the entries referenced.
+### 3. Conversations with Past Pages (Retrieval-Augmented Generation / RAG)
+
+The Reflection Guide allows you to speak directly with your history (e.g. *"What made me happy last month?"* or *"Have I been sticking to my sleep goals?"*).
+
+```mermaid
+graph TD
+    Question[User Question] --> VecQ[Generate Query Vector]
+    VecQ --> Search[pgvector Cosine Search]
+    Search -->|Top 4 Match IDs| Fetch[Fetch Entry Content]
+    Fetch --> Context[Format Entries as Context Sheet]
+    Context --> SystemPrompt[Inject into Reflection Guide Prompt]
+    SystemPrompt --> Gemini[gemini-2.5-flash]
+    Gemini --> Answer[Empathetic Response with Date Citations]
+```
+
+* **Context Constraints**: The system prompt strictly binds Gemini to the retrieved entries:
+  > *"You are a warm, highly intuitive, and loving Reflection Guide for 'Haven Journal'... Using ONLY the provided context entries from their past, answer their query with deep emotional alignment... Always cite the dates of the entries you are referencing. If the entries do not contain the answer, say so gently."*
+* **Security**: The LLM only sees the top 4 entries related to your question. It never exposes your complete journal database.
 
 ---
 
-### 4. Garden Insights (Weekly Reports)
-The Weekly Garden computes insights based on both structural metrics and contextual synthesis.
-* **Programmatic Metrics**: The backend calculates mood distribution cycles and tag frequencies using database aggregation.
-* **Contextual Synthesis**: The full text of your recent reflections is sent to the Gemini engine to outline emotional shifts, focus topics, work-life balance themes, and provide 3 encouraging, actionable growth guidelines.
+### 4. Garden Insights (Weekly Analytics & Summaries)
+
+The **Weekly Garden** compiles your emotional trajectory over the last 7 days.
+
+* **Quantitative Aggregations**: The backend calculates mood frequencies and tags using database aggregation.
+* **Qualitative Growth Synthesis**: The full text of the week's journal entries is sent to `gemini-2.5-flash`. The model reviews the week's trajectory, outlines recurring themes (e.g., sleep issues, gratitude, work pressure), and generates 3 customized, gentle personal growth guidelines.
 
 ---
 
-## 🔒 Sanctuary Settings (Privacy-First)
-To keep the application highly scalable and privacy-respecting, Haven Journal allows you to supply your own **Reflection Engine Key** (Gemini API Key).
-* If provided, the key is saved exclusively in your browser's local storage (`localStorage`) and sent to the server in the `x-gemini-api-key` header.
-* The Express server extracts this header per request and instantiates a localized, isolated `GoogleGenAI` client. This ensures your key is never stored on the backend database or shared with third parties.
+## 🔒 Sanctuary Settings & Key Architecture
+
+To preserve security and make the application completely free and open, Haven Journal supports localized API key authorization.
+
+```mermaid
+sequenceDiagram
+    participant LS as localStorage
+    participant UI as React UI
+    participant API as Backend Express Server
+    participant Gemini as Google Gemini API
+
+    Note over UI, LS: User enters Gemini API Key
+    UI->>LS: Save key locally
+    UI->>API: HTTP Request (headers['x-gemini-api-key'] = key)
+    Note over API: Extracts header
+    API->>Gemini: Instantiates GoogleGenAI(key)
+    Note over API: Destroys instance after response completes
+    API-->>UI: Response
+```
+
+* **Zero Backend Key Storage**: The database does not have an API key column.
+* **Browser Sandbox**: The user's key resides exclusively in their browser's secure `localStorage`.
+* **Isolated Instances**: On every incoming API request, the server extracts the `x-gemini-api-key` header and initializes an ephemeral `GoogleGenAI` instance. This instance is garbage-collected once the request finishes, leaving zero footprint.
