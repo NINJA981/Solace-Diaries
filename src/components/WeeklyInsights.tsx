@@ -8,9 +8,10 @@ interface WeeklyInsightsProps {
   token: string;
   userApiKey: string | null;
   entriesCount: number;
+  customPrompt: string | null;
 }
 
-export default function WeeklyInsights({ token, userApiKey, entriesCount }: WeeklyInsightsProps) {
+export default function WeeklyInsights({ token, userApiKey, entriesCount, customPrompt }: WeeklyInsightsProps) {
   const [data, setData] = useState<InsightsType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,9 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount }: Week
       };
       if (userApiKey) {
         headers['x-gemini-api-key'] = userApiKey;
+      }
+      if (customPrompt) {
+        headers['x-custom-prompt'] = customPrompt;
       }
 
       const response = await fetch(`${API_BASE}/api/insights`, {

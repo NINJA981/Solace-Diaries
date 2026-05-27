@@ -22,7 +22,7 @@ export class InsightService {
   private entryRepository = new EntryRepository();
   private aiService = new AIService();
 
-  public async generateInsights(userId: string, apiKey?: string): Promise<WeeklyInsightResult> {
+  public async generateInsights(userId: string, apiKey?: string, customPrompt?: string): Promise<WeeklyInsightResult> {
     const entries = await this.entryRepository.findAllByUserId(userId);
 
     // Compute stats programmatically for reliable analytics graphics!
@@ -65,7 +65,7 @@ export class InsightService {
       .map((e, index) => `Entry #${index + 1} | Date: ${e.createdAt} | Title: ${e.title}\nMood: ${e.mood}\nTags: ${e.tags.join(', ')}\nContent: ${e.content}`)
       .join('\n\n---\n\n');
 
-    const markdownSummary = await this.aiService.getWeeklySummary(contextualText, apiKey);
+    const markdownSummary = await this.aiService.getWeeklySummary(contextualText, apiKey, customPrompt);
 
     return {
       markdownSummary,

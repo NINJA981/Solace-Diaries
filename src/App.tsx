@@ -22,6 +22,59 @@ import WeeklyInsights from './components/WeeklyInsights';
 import { JournalEntry } from './types';
 import { API_BASE } from './api';
 
+const PRESETS = [
+  {
+    name: "🌿 Satori (Philosophical)",
+    desc: "IFS-informed parts work, self-compassion, Stoic and Taoist wisdom.",
+    prompt: "Adopt a warm, compassionate, and deeply philosophical tone. Draw on Internal Family Systems (IFS) to help identify protective and vulnerable parts of my emotions, and Compassion-Focused Therapy (CFT) to soothingly validate struggles. Integrate Stoic and Taoist perspectives on acceptance."
+  },
+  {
+    name: "🧠 CBT Coach",
+    desc: "Evidence-based reframing, logical restructuring, distortion alerts.",
+    prompt: "Adopt a practical, structured, and action-oriented tone of a Cognitive Behavioral Therapy (CBT) coach. Focus on helping me identify cognitive distortions (e.g., catastrophizing, black-and-white thinking, emotional reasoning) and guide me through realistic, evidence-based reframing exercises."
+  },
+  {
+    name: "🧘 Zen Witness",
+    desc: "Pure presence, breathing guidance, zero analysis or judgment.",
+    prompt: "Adopt a minimalist, deeply validating, and calm presence. Do not analyze, solve, or offer intellectual advice. Focus purely on echoing back core feelings with extreme empathy, encouraging mindful breathing, and anchoring me in the present moment."
+  },
+  {
+    name: "🌀 Jungian Analyst",
+    desc: "Unconscious shadow work, dream analysis, metaphor parsing.",
+    prompt: "Adopt the persona of a Jungian depth psychologist. Look for recurring symbols, metaphors, unconscious patterns, and potential 'shadow' aspects of my personality in my entries. Guide me toward integration and exploring my dreamlike state of mind."
+  },
+  {
+    name: "📣 Cheerleader",
+    desc: "Inspirational, high energy, unconditional positive regard.",
+    prompt: "Adopt a high-energy, warm, and enthusiastically supportive tone. Act as my biggest cheerleader, highlighting every tiny win, reinforcing positive aspects, and offering unconditional positive regard and warm encouragement to boost my confidence."
+  },
+  {
+    name: "🏛️ Stoic Philosopher",
+    desc: "Equanimity, self-discipline, dichotomy of control.",
+    prompt: "Adopt the calm, resilient, and objective voice of a Stoic philosopher. Help me separate what is in my control from what is not. Emphasize emotional equanimity, virtue, self-discipline, and finding strength or wisdom in life's challenges."
+  },
+  {
+    name: "❓ Socratic Guide",
+    desc: "Deep curious questions that lead to self-realization.",
+    prompt: "Do not give answers, solutions, or direct advice. Instead, ask deep, curious, and clarifying Socratic questions that prompt me to look deeper, challenge my own assumptions, and find my own inner wisdom."
+  },
+  {
+    name: "✨ Poetic Soul",
+    desc: "Artistic, literary, framing life through seasonal growth.",
+    prompt: "Adopt a poetic, literary, and evocative tone. Reflect my entries back to me using beautiful natural metaphors, seasonal themes, and artistic prose, treating my life story as a rich, evolving work of literature."
+  },
+  {
+    name: "🤝 Accountability",
+    desc: "Logical tracker check-in, tracking goals and values alignment.",
+    prompt: "Adopt a direct, logical, and highly structured tone. Focus on my progress, actions, consistency, and patterns of behavior. Help me clarify my goals and evaluate if my current choices align with my stated core values."
+  },
+  {
+    name: "👥 IFS Explorer",
+    desc: "Explore internal family systems, welcome internal parts.",
+    prompt: "Focus explicitly on Internal Family Systems (IFS) parts work. Help me identify, name, and get to know the different parts of my system (e.g., my inner critic, an anxious protector, an over-achieving part, or a hurt child part) and check if I can speak to them from a space of calm, curious Core Self."
+  }
+];
+
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState('');
@@ -31,6 +84,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [userApiKey, setUserApiKey] = useState<string | null>(null);
+  const [customPrompt, setCustomPrompt] = useState<string | null>(null);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
 
   // Restore authenticated session on mount
@@ -38,12 +92,16 @@ export default function App() {
     const savedToken = localStorage.getItem('journal_jwt_token');
     const savedEmail = localStorage.getItem('journal_user_email');
     const savedApiKey = localStorage.getItem('journal_gemini_api_key');
+    const savedCustomPrompt = localStorage.getItem('journal_custom_prompt');
     if (savedToken && savedEmail) {
       setToken(savedToken);
       setEmail(savedEmail);
     }
     if (savedApiKey) {
       setUserApiKey(savedApiKey);
+    }
+    if (savedCustomPrompt) {
+      setCustomPrompt(savedCustomPrompt);
     }
   }, []);
 
@@ -301,6 +359,7 @@ export default function App() {
           <ActiveJournal
             token={token}
             userApiKey={userApiKey}
+            customPrompt={customPrompt}
             activeEntry={activeEntry}
             onSaveSuccess={handleSaveSuccess}
             onCancel={() => {
@@ -320,9 +379,9 @@ export default function App() {
 
         {activeTab === 'search' && <SemanticSearch token={token} userApiKey={userApiKey} />}
 
-        {activeTab === 'chat' && <MemoryChat token={token} userApiKey={userApiKey} />}
+        {activeTab === 'chat' && <MemoryChat token={token} userApiKey={userApiKey} customPrompt={customPrompt} />}
 
-        {activeTab === 'insights' && <WeeklyInsights token={token} userApiKey={userApiKey} entriesCount={entries.length} />}
+        {activeTab === 'insights' && <WeeklyInsights token={token} userApiKey={userApiKey} entriesCount={entries.length} customPrompt={customPrompt} />}
 
         {activeTab === 'settings' && (
           <div className="max-w-xl mx-auto py-8 px-4 font-sans text-[#2C2621] space-y-6">
@@ -331,81 +390,145 @@ export default function App() {
                 <Settings className="w-5 h-5 text-[#AF5D45]" />
                 Settings
               </h2>
-              <p className="text-xs text-[#60554C]">Configure your API key for AI features</p>
+              <p className="text-xs text-[#60554C]">Configure your API key and custom reflection prompts</p>
             </div>
 
-            <div className="bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl p-6 shadow-sm space-y-5">
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-[#60554C] uppercase tracking-wider">
-                  Gemini API Key
-                </label>
-                <input
-                  type="password"
-                  placeholder="Paste your API key here..."
-                  value={userApiKey || ''}
+            <div className="bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl p-6 shadow-sm space-y-6">
+              {/* Custom Prompt Section */}
+              <div className="space-y-4 border-b border-[#E3DAC9]/60 pb-6">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-[#60554C] uppercase tracking-wider">
+                    Custom AI System Prompt
+                  </label>
+                  <p className="text-[11px] text-[#827468]">
+                    Personalize how the reflection guide writes, analyzes, and responds to your memories.
+                  </p>
+                </div>
+
+                <textarea
+                  placeholder="E.g., Adopt a warm, compassionate, Stoicism-focused voice..."
+                  value={customPrompt || ''}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setUserApiKey(val || null);
+                    setCustomPrompt(val || null);
                     if (val.trim()) {
-                      localStorage.setItem('journal_gemini_api_key', val.trim());
+                      localStorage.setItem('journal_custom_prompt', val);
                     } else {
-                      localStorage.removeItem('journal_gemini_api_key');
+                      localStorage.removeItem('journal_custom_prompt');
                     }
                   }}
-                  className="w-full bg-[#FAF6EE] border border-[#DFD5C4] focus:border-[#4A6447] focus:ring-1 focus:ring-[#4A6447] rounded-xl py-3 px-4 text-sm text-[#2C2621] placeholder-[#A09384] outline-none transition"
+                  className="w-full bg-[#FAF6EE] border border-[#DFD5C4] focus:border-[#4A6447] focus:ring-1 focus:ring-[#4A6447] rounded-xl py-3 px-4 text-xs text-[#2C2621] placeholder-[#A09384] outline-none transition min-h-[100px] leading-relaxed resize-y"
                 />
-              </div>
 
-              <p className="text-xs text-[#60554C] leading-relaxed">
-                By setting your own API key, all mood analysis, search, chat, and weekly insights will run using your personal key.
-              </p>
-
-              {/* How to get an API key tutorial */}
-              <div className="p-5 bg-[#FAF6EE] border border-[#E3DAC9] rounded-xl space-y-4">
-                <span className="block text-[10px] font-sans font-bold text-[#827468] uppercase tracking-wider">How to get your API key</span>
-                <ol className="text-xs text-[#60554C] leading-relaxed space-y-3 list-none">
-                  <li className="flex gap-3 items-start">
-                    <span className="shrink-0 w-5 h-5 bg-[#E5ECE4] border border-[#C1D2BD] rounded-md flex items-center justify-center text-[10px] font-bold text-[#4A6447]">1</span>
-                    <span>Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-[#4A6447] font-semibold underline underline-offset-2 hover:text-[#2C2621] transition">Google AI Studio</a> and sign in with your Google account.</span>
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="shrink-0 w-5 h-5 bg-[#E5ECE4] border border-[#C1D2BD] rounded-md flex items-center justify-center text-[10px] font-bold text-[#4A6447]">2</span>
-                    <span>Click <strong>"Create API Key"</strong> and select a Google Cloud project (or create a new one).</span>
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="shrink-0 w-5 h-5 bg-[#E5ECE4] border border-[#C1D2BD] rounded-md flex items-center justify-center text-[10px] font-bold text-[#4A6447]">3</span>
-                    <span>Copy the generated key (starts with <code className="bg-[#E5ECE4] text-[#4A6447] px-1.5 py-0.5 rounded text-[10px] font-mono">AIza...</code>) and paste it in the field above.</span>
-                  </li>
-                </ol>
-                <p className="text-[10px] text-[#827468] leading-relaxed">
-                  Your key is stored only in your browser and is never sent to our servers. The free tier includes generous usage limits for personal journaling.
-                </p>
-              </div>
-
-              <div className="p-4 bg-[#E5ECE4]/50 border border-[#C1D2BD]/60 rounded-xl text-[#4A6447] text-xs space-y-2 leading-relaxed">
-                <div className="flex items-center gap-2 font-semibold">
-                  <span className={`w-2 h-2 rounded-full ${userApiKey ? 'bg-[#4A6447]' : 'bg-[#827468]'}`} />
-                  <span>Status: {userApiKey ? 'Custom API Key Active' : 'Using Default Key'}</span>
+                {/* 10 click presets grid */}
+                <div className="space-y-2">
+                  <span className="block text-[10px] font-sans font-bold text-[#827468] uppercase tracking-wider">
+                    Quick Persona Presets
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PRESETS.map((p) => (
+                      <button
+                        key={p.name}
+                        onClick={() => {
+                          setCustomPrompt(p.prompt);
+                          localStorage.setItem('journal_custom_prompt', p.prompt);
+                        }}
+                        className="text-left bg-[#FAF6EE] hover:bg-[#EBE5D8] border border-[#DFD5C4] hover:border-[#C1D2BD] p-2.5 rounded-xl cursor-pointer transition text-xs space-y-1"
+                      >
+                        <span className="font-bold text-[#2C2621] block text-[11px]">{p.name}</span>
+                        <span className="text-[10px] text-[#827468] block leading-tight">{p.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p>
-                  {userApiKey
-                    ? "Your custom API key is active. It is stored securely in your browser's local storage and never exposed to third parties."
-                    : "No custom API key set. The app is using the default server key."
-                  }
-                </p>
+
+                {customPrompt && (
+                  <button
+                    onClick={() => {
+                      setCustomPrompt(null);
+                      localStorage.removeItem('journal_custom_prompt');
+                    }}
+                    className="text-[11px] font-semibold text-[#AF5D45] hover:underline transition"
+                  >
+                    Reset System Prompt to Default (Satori Wisdom)
+                  </button>
+                )}
               </div>
 
-              {userApiKey && (
-                <button
-                  onClick={() => {
-                    setUserApiKey(null);
-                    localStorage.removeItem('journal_gemini_api_key');
-                  }}
-                  className="text-xs font-semibold text-[#AF5D45] hover:text-white hover:bg-[#AF5D45] border border-[#AF5D45] px-4 py-2 rounded-xl transition cursor-pointer block text-center w-full"
-                >
-                  Clear Custom API Key
-                </button>
-              )}
+              {/* Gemini API Key Section */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-[#60554C] uppercase tracking-wider">
+                    Gemini API Key
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Paste your API key here..."
+                    value={userApiKey || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setUserApiKey(val || null);
+                      if (val.trim()) {
+                        localStorage.setItem('journal_gemini_api_key', val.trim());
+                      } else {
+                        localStorage.removeItem('journal_gemini_api_key');
+                      }
+                    }}
+                    className="w-full bg-[#FAF6EE] border border-[#DFD5C4] focus:border-[#4A6447] focus:ring-1 focus:ring-[#4A6447] rounded-xl py-3 px-4 text-sm text-[#2C2621] placeholder-[#A09384] outline-none transition"
+                  />
+                </div>
+
+                <p className="text-xs text-[#60554C] leading-relaxed">
+                  By setting your own API key, all mood analysis, search, chat, and weekly insights will run using your personal key.
+                </p>
+
+                {/* How to get an API key tutorial */}
+                <div className="p-5 bg-[#FAF6EE] border border-[#E3DAC9] rounded-xl space-y-4">
+                  <span className="block text-[10px] font-sans font-bold text-[#827468] uppercase tracking-wider">How to get your API key</span>
+                  <ol className="text-xs text-[#60554C] leading-relaxed space-y-3 list-none">
+                    <li className="flex gap-3 items-start">
+                      <span className="shrink-0 w-5 h-5 bg-[#E5ECE4] border border-[#C1D2BD] rounded-md flex items-center justify-center text-[10px] font-bold text-[#4A6447]">1</span>
+                      <span>Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-[#4A6447] font-semibold underline underline-offset-2 hover:text-[#2C2621] transition">Google AI Studio</a> and sign in with your Google account.</span>
+                    </li>
+                    <li className="flex gap-3 items-start">
+                      <span className="shrink-0 w-5 h-5 bg-[#E5ECE4] border border-[#C1D2BD] rounded-md flex items-center justify-center text-[10px] font-bold text-[#4A6447]">2</span>
+                      <span>Click <strong>"Create API Key"</strong> and select a Google Cloud project (or create a new one).</span>
+                    </li>
+                    <li className="flex gap-3 items-start">
+                      <span className="shrink-0 w-5 h-5 bg-[#E5ECE4] border border-[#C1D2BD] rounded-md flex items-center justify-center text-[10px] font-bold text-[#4A6447]">3</span>
+                      <span>Copy the generated key (starts with <code className="bg-[#E5ECE4] text-[#4A6447] px-1.5 py-0.5 rounded text-[10px] font-mono">AIza...</code>) and paste it in the field above.</span>
+                    </li>
+                  </ol>
+                  <p className="text-[10px] text-[#827468] leading-relaxed">
+                    Your key is stored only in your browser and is never sent to our servers. The free tier includes generous usage limits for personal journaling.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-[#E5ECE4]/50 border border-[#C1D2BD]/60 rounded-xl text-[#4A6447] text-xs space-y-2 leading-relaxed">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <span className={`w-2 h-2 rounded-full ${userApiKey ? 'bg-[#4A6447]' : 'bg-[#827468]'}`} />
+                    <span>Status: {userApiKey ? 'Custom API Key Active' : 'Using Default Key'}</span>
+                  </div>
+                  <p>
+                    {userApiKey
+                      ? "Your custom API key is active. It is stored securely in your browser's local storage and never exposed to third parties."
+                      : "No custom API key set. The app is using the default server key."
+                    }
+                  </p>
+                </div>
+
+                {userApiKey && (
+                  <button
+                    onClick={() => {
+                      setUserApiKey(null);
+                      localStorage.removeItem('journal_gemini_api_key');
+                    }}
+                    className="text-xs font-semibold text-[#AF5D45] hover:text-white hover:bg-[#AF5D45] border border-[#AF5D45] px-4 py-2 rounded-xl transition cursor-pointer block text-center w-full"
+                  >
+                    Clear Custom API Key
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
