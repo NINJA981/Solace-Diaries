@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, AlertCircle, Save, CheckCircle, Heart, Notebook } from 'lucide-react';
+import { BookOpen, AlertCircle, Save, CheckCircle, Heart, Notebook, Mic } from 'lucide-react';
 import { JournalEntry } from '../types';
 import { API_BASE } from '../api';
 
@@ -18,6 +18,84 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedData, setSavedData] = useState<JournalEntry | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+  const [speechSupported, setSpeechSupported] = useState(true);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    const rec = new SpeechRecognitionClass();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+
+    rec.onresult = (event: any) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        setContent((prev) => {
+          const suffix = prev.endsWith(' ') || prev.length === 0 ? '' : ' ';
+          return prev + suffix + finalTranscript;
+        });
+      }
+    };
+
+    rec.onerror = (err: any) => {
+      console.error('Speech recognition error:', err);
+      if (err.error === 'not-allowed') {
+        setError('Microphone access was denied. Please allow microphone access in your browser settings.');
+      } else if (err.error === 'network') {
+        setError('A network error occurred during voice transcription. Check your internet connection.');
+      } else {
+        setError(`Voice input error: ${err.error}`);
+      }
+      setIsRecording(false);
+    };
+
+    rec.onend = () => {
+      setIsRecording(false);
+    };
+
+    setRecognition(rec);
+
+    return () => {
+      try {
+        rec.stop();
+      } catch (e) {}
+    };
+  }, []);
+
+  const toggleRecording = () => {
+    if (!recognition) {
+      setError('Voice dictation is not supported in this browser. Please use Chrome, Safari, or Edge.');
+      return;
+    }
+
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+    } else {
+      setError(null);
+      try {
+        recognition.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Failed to start voice recognition:', err);
+        setError('Failed to start recording. Please try again.');
+      }
+    }
+  };
+
 
   // Load editing values if preset
   useEffect(() => {
@@ -122,6 +200,41 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
               onChange={(e) => setTitle(e.target.value)}
               className="w-full bg-transparent text-xl md:text-2xl font-serif font-bold text-[#2C2621] placeholder-[#A09384] border-b border-[#E3DAC9] py-2 outline-none transition focus:border-[#4A6447]"
             />
+          </div>
+
+          {/* Voice to Text Dictation Bar */}
+          <div className="flex items-center justify-between border-b border-[#E3DAC9]/60 pb-2 pt-1">
+            <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#827468]">
+              Journal Page
+            </span>
+            <button
+              type="button"
+              onClick={toggleRecording}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition border cursor-pointer select-none ${
+                isRecording
+                  ? 'bg-orange-50 border-[#AF5D45] text-[#AF5D45] animate-pulse ring-2 ring-[#AF5D45]/10'
+                  : speechSupported
+                  ? 'bg-[#FAF6EE] border-[#DFD5C4] hover:border-[#4A6447] text-[#60554C] hover:text-[#2C2621]'
+                  : 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+              }`}
+              title={speechSupported ? "Voice to Text (Dictate)" : "Voice dictation is unsupported in this browser"}
+              disabled={!speechSupported}
+            >
+              {isRecording ? (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#AF5D45] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#AF5D45]"></span>
+                  </span>
+                  <span>Listening (Tap to stop)...</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>{speechSupported ? 'Dictate Thoughts' : 'Voice Unsupported'}</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="min-h-[350px] flex flex-col">

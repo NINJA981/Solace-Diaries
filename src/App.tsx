@@ -620,7 +620,17 @@ export default function App() {
                     </div>
 
                     {/* Connection Test Result Feedback */}
-                    {keyTestingStatus !== 'idle' && (
+                    {keyTestingStatus === 'testing' && (
+                      <div className="p-3 rounded-xl text-xs flex gap-2.5 items-center border bg-[#FAF6EE] border-[#DFD5C4] text-[#827468] animate-pulse">
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#4A6447] shrink-0" />
+                        <div>
+                          <p className="font-bold text-[#2C2621]">Verifying connection...</p>
+                          <p className="text-[10px] opacity-90 mt-0.5">Attempting a secure handshake with the Google Gemini API.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {keyTestingStatus !== 'idle' && keyTestingStatus !== 'testing' && (
                       <div className={`p-3 rounded-xl text-xs flex gap-2.5 items-start border animate-fade-in ${
                         keyTestingStatus === 'valid'
                           ? 'bg-[#E5ECE4]/70 border-[#C1D2BD] text-[#4A6447]'
