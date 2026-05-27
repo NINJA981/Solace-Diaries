@@ -1,0 +1,6 @@
+{
+  "name": "Journal AI",
+  "description": "A beautifully crafted, modern AI journaling web application complete with secure login, automated mood tagging, weekly AI summaries, and memory chat driven by RAG vector search.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Solace Diaries",
+  "short_name": "Solace Diaries",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#FAF6EE",
+  "background_color": "#FAF6EE",
+  "display": "standalone"
+}
