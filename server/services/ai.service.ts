@@ -28,7 +28,10 @@ export class AIService {
       const ai = getAI(apiKey);
       const response = await ai.models.embedContent({
         model: 'gemini-embedding-2-preview',
-        contents: text
+        contents: text,
+        config: {
+          outputDimensionality: 768
+        }
       });
 
       const embeddingValues = response.embeddings?.[0]?.values;
