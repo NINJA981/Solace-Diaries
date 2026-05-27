@@ -1,0 +1,38 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  entries      JournalEntry[]
+}
+
+model JournalEntry {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String        @db.Text
+  mood      String
+  tags      String[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  vectors   VectorRecord[]
+}
+
+model VectorRecord {
+  id        String       @id @default(uuid())
+  entryId   String
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  vector    Unsupported("vector(768)")?
+  createdAt DateTime     @default(now())
+}

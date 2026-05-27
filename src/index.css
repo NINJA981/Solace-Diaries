@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Lora:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Cozy Custom Scrollbar designed for the warm paper palette */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF6EE;
+}
+::-webkit-scrollbar-thumb {
+  background: #DFD5C4;
+  border-radius: 9999px;
+  border: 2px solid #FAF6EE;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C7BBA5;
+}
+
+/* Custom fade-in and smooth transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Editorial line-heights and paper styling adjustments */
+.paper-textarea {
+  background-image: linear-gradient(rgba(223, 213, 196, 0.4) 1px, transparent 1px);
+  background-size: 100% 2rem;
+  line-height: 2rem;
+}
