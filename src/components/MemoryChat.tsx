@@ -7,6 +7,7 @@ import { API_BASE } from '../api';
 interface MemoryChatProps {
   token: string;
   userApiKey: string | null;
+  customPrompt: string | null;
 }
 
 const SUGGESTIONS = [
@@ -15,7 +16,7 @@ const SUGGESTIONS = [
   "What were the highlights of my last week?"
 ];
 
-export default function MemoryChat({ token, userApiKey }: MemoryChatProps) {
+export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -56,6 +57,9 @@ export default function MemoryChat({ token, userApiKey }: MemoryChatProps) {
       };
       if (userApiKey) {
         headers['x-gemini-api-key'] = userApiKey;
+      }
+      if (customPrompt) {
+        headers['x-custom-prompt'] = customPrompt;
       }
 
       const response = await fetch(`${API_BASE}/api/chat`, {

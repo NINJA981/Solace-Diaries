@@ -6,12 +6,13 @@ import { API_BASE } from '../api';
 interface ActiveJournalProps {
   token: string;
   userApiKey: string | null;
+  customPrompt: string | null;
   activeEntry: JournalEntry | null;
   onSaveSuccess: () => void;
   onCancel: () => void;
 }
 
-export default function ActiveJournal({ token, userApiKey, activeEntry, onSaveSuccess, onCancel }: ActiveJournalProps) {
+export default function ActiveJournal({ token, userApiKey, customPrompt, activeEntry, onSaveSuccess, onCancel }: ActiveJournalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,6 +56,9 @@ export default function ActiveJournal({ token, userApiKey, activeEntry, onSaveSu
       };
       if (userApiKey) {
         headers['x-gemini-api-key'] = userApiKey;
+      }
+      if (customPrompt) {
+        headers['x-custom-prompt'] = customPrompt;
       }
 
       const response = await fetch(`${API_BASE}${url}`, {

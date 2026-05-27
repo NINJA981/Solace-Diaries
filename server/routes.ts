@@ -112,7 +112,8 @@ router.post('/entries', requireAuth, async (req: AuthenticatedRequest, res) => {
     const userId = req.user!.userId;
     const { title, content } = req.body;
     const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
-    const entry = await entryService.createEntry(userId, title, content, apiKey);
+    const customPrompt = req.headers['x-custom-prompt'] as string | undefined;
+    const entry = await entryService.createEntry(userId, title, content, apiKey, customPrompt);
     res.status(201).json(entry);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Failed to create entry' });
@@ -124,7 +125,8 @@ router.put('/entries/:id', requireAuth, async (req: AuthenticatedRequest, res) =
     const userId = req.user!.userId;
     const { title, content } = req.body;
     const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
-    const entry = await entryService.updateEntry(req.params.id, userId, title, content, apiKey);
+    const customPrompt = req.headers['x-custom-prompt'] as string | undefined;
+    const entry = await entryService.updateEntry(req.params.id, userId, title, content, apiKey, customPrompt);
     if (!entry) {
       res.status(404).json({ error: 'Entry not found or unauthorized.' });
       return;
@@ -168,7 +170,8 @@ router.post('/chat', requireAuth, async (req: AuthenticatedRequest, res) => {
     const userId = req.user!.userId;
     const { question } = req.body;
     const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
-    const response = await chatService.askPastEntries(userId, question, apiKey);
+    const customPrompt = req.headers['x-custom-prompt'] as string | undefined;
+    const response = await chatService.askPastEntries(userId, question, apiKey, customPrompt);
     res.status(200).json(response);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Chat retrieval failed.' });
@@ -179,7 +182,8 @@ router.get('/insights', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
     const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
-    const insights = await insightService.generateInsights(userId, apiKey);
+    const customPrompt = req.headers['x-custom-prompt'] as string | undefined;
+    const insights = await insightService.generateInsights(userId, apiKey, customPrompt);
     res.status(200).json(insights);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to generate week insights.' });

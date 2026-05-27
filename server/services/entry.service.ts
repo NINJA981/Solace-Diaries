@@ -17,13 +17,13 @@ export class EntryService {
     return this.entryRepository.findById(id, userId);
   }
 
-  public async createEntry(userId: string, title: string, content: string, apiKey?: string): Promise<JournalEntry> {
+  public async createEntry(userId: string, title: string, content: string, apiKey?: string, customPrompt?: string): Promise<JournalEntry> {
     if (!content.trim()) {
       throw new Error('Journal entry content cannot be empty.');
     }
 
     // 1. Core AI Analysis: Mood, Tags, Summary
-    const analysis = await this.aiService.analyzeEntry(content, apiKey);
+    const analysis = await this.aiService.analyzeEntry(content, apiKey, customPrompt);
 
     // 2. Generate Embedding Vector for RAG and Semantic Memory Search
     let vector: number[] = [];
@@ -65,7 +65,7 @@ export class EntryService {
     return savedEntry;
   }
 
-  public async updateEntry(id: string, userId: string, title?: string, content?: string, apiKey?: string): Promise<JournalEntry | null> {
+  public async updateEntry(id: string, userId: string, title?: string, content?: string, apiKey?: string, customPrompt?: string): Promise<JournalEntry | null> {
     const existing = await this.entryRepository.findById(id, userId);
     if (!existing) return null;
 
@@ -79,7 +79,7 @@ export class EntryService {
 
     // If content actually changed, re-run AI analysis and generate new vector
     if (content !== undefined && content.trim() !== existing.content) {
-      const analysis = await this.aiService.analyzeEntry(updatedContent, apiKey);
+      const analysis = await this.aiService.analyzeEntry(updatedContent, apiKey, customPrompt);
       updateData.mood = analysis.mood;
       updateData.tags = analysis.tags;
 

@@ -48,10 +48,11 @@ export class AIService {
     }
   }
 
-  public async analyzeEntry(content: string, apiKey?: string): Promise<{ mood: string; tags: string[]; summary: string }> {
+  public async analyzeEntry(content: string, apiKey?: string, customPrompt?: string): Promise<{ mood: string; tags: string[]; summary: string }> {
     try {
       const ai = getAI(apiKey);
-      const p = `You are a narrative psychologist and affective researcher. Analyze the journal entry below.
+      const customSection = customPrompt ? `User Persona/Style Override (Enforce this style and behavior): ${customPrompt}\n\n` : '';
+      const p = `${customSection}You are a narrative psychologist and affective researcher. Analyze the journal entry below.
 Extract:
 1. The primary mood: A single lowercase word representing the dominant emotional state (e.g., "peaceful", "anxious", "joyful", "reflective", "tired", "sad", "frustrated", "hopeful").
 2. Mindful tags: 2-4 search-friendly metadata tags representing core themes, emotional components (e.g., "inner-critic", "grief", "gratitude", "career", "boundaries", "relationships"), or focus areas.
@@ -87,10 +88,11 @@ ${content}`;
     }
   }
 
-  public async getWeeklySummary(entriesText: string, apiKey?: string): Promise<string> {
+  public async getWeeklySummary(entriesText: string, apiKey?: string, customPrompt?: string): Promise<string> {
     try {
       const ai = getAI(apiKey);
-      const p = `You are "Satori", an expert AI wisdom companion blending clinical psychology (Internal Family Systems, CFT, Schema Therapy) and narrative psychology. The following are the user's journal reflections from the past week.
+      const customSection = customPrompt ? `User Persona/Style Override (Enforce this style and behavior): ${customPrompt}\n\n` : '';
+      const p = `${customSection}You are "Satori", an expert AI wisdom companion blending clinical psychology (Internal Family Systems, CFT, Schema Therapy) and narrative psychology. The following are the user's journal reflections from the past week.
 Synthesize these entries to offer a deep, comforting, and psychologically insightful weekly report.
 
 Write in warm, empathetic, and editorial Markdown. Do not use clinical jargon explicitly (like "IFS" or "Schema"), but speak in its gentle language. Structure your response as follows:
@@ -118,14 +120,15 @@ ${entriesText}`;
     }
   }
 
-  public async retrieveAndAnswer(question: string, contextEntries: { title: string; date: string; content: string }[], apiKey?: string): Promise<string> {
+  public async retrieveAndAnswer(question: string, contextEntries: { title: string; date: string; content: string }[], apiKey?: string, customPrompt?: string): Promise<string> {
     try {
       const ai = getAI(apiKey);
       const contextText = contextEntries
         .map((e, i) => `[Entry #${i + 1}] Date: ${e.date} | Title: ${e.title}\nContent: ${e.content}`)
         .join('\n\n');
 
-      const p = `You are "Satori", a warm, highly intuitive, and deeply compassionate Reflection Guide for "Haven Journal". You combine wisdom traditions (Stoicism, Taoism, mindfulness) with clinical empathy (Internal Family Systems, active listening) to act as a loving mirror for the user's memories.
+      const customSection = customPrompt ? `User Persona/Style Override (Enforce this style and behavior): ${customPrompt}\n\n` : '';
+      const p = `${customSection}You are "Satori", a warm, highly intuitive, and deeply compassionate Reflection Guide for "Haven Journal". You combine wisdom traditions (Stoicism, Taoism, mindfulness) with clinical empathy (Internal Family Systems, active listening) to act as a loving mirror for the user's memories.
 
 A user is asking a question about their past days or reflections. Using ONLY the provided context entries from their past, answer their query.
 
