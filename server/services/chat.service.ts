@@ -7,7 +7,7 @@ export class ChatService {
   private entryRepository = new EntryRepository();
   private vectorRepository = new VectorRepository();
 
-  public async askPastEntries(userId: string, question: string, apiKey?: string): Promise<{ answer: string; sources: { id: string; title: string; date: string }[] }> {
+  public async askPastEntries(userId: string, question: string, apiKey?: string, customPrompt?: string): Promise<{ answer: string; sources: { id: string; title: string; date: string }[] }> {
     if (!question.trim()) {
       throw new Error('Question content cannot be empty.');
     }
@@ -62,7 +62,7 @@ export class ChatService {
     }
 
     // 4. Call AIService to retrieve exact facts and answer empathetic guidelines
-    const answer = await this.aiService.retrieveAndAnswer(question, relevantEntries, apiKey);
+    const answer = await this.aiService.retrieveAndAnswer(question, relevantEntries, apiKey, customPrompt);
 
     return {
       answer,
