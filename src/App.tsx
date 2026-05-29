@@ -27,6 +27,7 @@ import {
   Cpu,
   ExternalLink
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import LoginScreen from './components/LoginScreen';
 import ActiveJournal from './components/ActiveJournal';
 import EntriesList from './components/EntriesList';
@@ -34,6 +35,7 @@ import SemanticSearch from './components/SemanticSearch';
 import MemoryChat from './components/MemoryChat';
 import WeeklyInsights from './components/WeeklyInsights';
 import MemoriesDashboard from './components/MemoriesDashboard';
+import BackgroundOrbs from './components/BackgroundOrbs';
 import { JournalEntry } from './types';
 import { API_BASE } from './api';
 
@@ -233,18 +235,21 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6EE] flex flex-col md:flex-row font-sans text-[#2C2621]">
+    <div className="min-h-screen bg-[#08070C] flex flex-col md:flex-row font-sans text-[#E7E7EC] relative overflow-hidden">
+      {/* Background ambient lighting */}
+      <BackgroundOrbs />
+
       {/* Sidebar navigation on Desktop, top header on Mobile */}
-      <header className="md:hidden bg-[#F3EDE2] border-b border-[#E3DAC9] p-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+      <header className="md:hidden bg-[#13111A]/90 backdrop-blur-md border-b border-white/5 p-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#E5ECE4] border border-[#C1D2BD] rounded-lg flex items-center justify-center text-[#4A6447]">
-            <Heart className="w-4 h-4 fill-current text-[#A98E75]" />
+          <div className="w-8 h-8 bg-white/[0.03] border border-white/10 rounded-lg flex items-center justify-center text-[#8B5CF6]">
+            <Heart className="w-4.5 h-4.5 fill-[#EC4899] text-[#EC4899]" />
           </div>
-          <span className="font-serif font-bold text-[#2C2621] text-base">Solace Diaries</span>
+          <span className="font-serif font-bold text-[#F3F3F5] text-base">Solace Diaries</span>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-[#60554C] hover:text-[#2C2621] transition"
+          className="text-[#ADA9BA] hover:text-[#F3F3F5] transition"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -254,17 +259,17 @@ export default function App() {
       <aside
         className={`fixed inset-y-0 left-0 transform ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:sticky md:top-0 md:h-screen md:translate-x-0 transition duration-300 ease-in-out z-30 w-64 bg-[#F3EDE2] border-r border-[#E3DAC9] flex flex-col justify-between shrink-0 pt-0 md:pt-6 pb-6`}
+        } md:sticky md:top-0 md:h-screen md:translate-x-0 transition duration-300 ease-in-out z-30 w-64 glass-panel border-r border-white/5 flex flex-col justify-between shrink-0 pt-0 md:pt-6 pb-6`}
       >
         <div className="flex flex-col space-y-6">
           {/* Logo segment */}
-          <div className="p-4 border-b border-[#E3DAC9]/60 flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#E5ECE4] border border-[#C1D2BD] rounded-xl flex items-center justify-center text-[#4A6447] shadow-sm">
-              <Heart className="w-4.5 h-4.5 fill-[#AF5D45] text-[#AF5D45]" />
+          <div className="p-4 border-b border-white/5 flex items-center gap-3">
+            <div className="w-9 h-9 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-[#8B5CF6] shadow-sm">
+              <Heart className="w-4.5 h-4.5 fill-[#EC4899] text-[#EC4899]" />
             </div>
             <div>
-              <span className="block font-serif font-bold text-[#2C2621] text-md">Solace Diaries</span>
-              <span className="block text-[10px] text-[#827468] font-sans tracking-wide">Simple space for reflection</span>
+              <span className="block font-serif font-bold text-[#F3F3F5] text-md leading-tight">Solace Diaries</span>
+              <span className="block text-[9px] text-[#ADA9BA] font-sans tracking-wide">Sanctuary of reflections</span>
             </div>
           </div>
 
@@ -276,10 +281,10 @@ export default function App() {
                 setActiveEntry(null);
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'write'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -291,10 +296,10 @@ export default function App() {
                 setActiveTab('list');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'list'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <Calendar className="w-4 h-4" />
@@ -306,10 +311,10 @@ export default function App() {
                 setActiveTab('search');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'search'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <Search className="w-4 h-4" />
@@ -321,10 +326,10 @@ export default function App() {
                 setActiveTab('chat');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'chat'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -336,10 +341,10 @@ export default function App() {
                 setActiveTab('insights');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'insights'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <TrendingUp className="w-4 h-4" />
@@ -351,10 +356,10 @@ export default function App() {
                 setActiveTab('memories');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'memories'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <Brain className="w-4 h-4" />
@@ -366,10 +371,10 @@ export default function App() {
                 setActiveTab('settings');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
-                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
               <Settings className="w-4 h-4" />
@@ -380,19 +385,19 @@ export default function App() {
 
         {/* Footer info & Logout button */}
         <div className="px-3 space-y-3">
-          <div className="p-3 bg-[#FAF6EE]/90 rounded-xl border border-[#E3DAC9] flex items-center gap-2.5 shadow-sm">
-            <div className="w-7 h-7 bg-[#E5ECE4] border border-[#C1D2BD] rounded-lg flex items-center justify-center text-[#4A6447] shrink-0">
-              <User className="w-3.5 h-3.5" />
+          <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center gap-2.5 shadow-inner backdrop-blur-md">
+            <div className="w-7 h-7 bg-white/[0.05] border border-white/10 rounded-lg flex items-center justify-center text-[#ADA9BA] shrink-0">
+              <User className="w-3.5 h-3.5 text-[#8B5CF6]" />
             </div>
             <div className="truncate min-w-0">
-              <span className="block text-[8px] font-sans font-medium text-[#827468] uppercase tracking-wider">My Account</span>
-              <span className="block text-xs font-medium text-[#2C2621] truncate">{email}</span>
+              <span className="block text-[8px] font-sans font-semibold text-[#ADA9BA] uppercase tracking-wider">My Account</span>
+              <span className="block text-xs font-semibold text-[#F3F3F5] truncate">{email}</span>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#827468] hover:text-[#AF5D45] hover:bg-[#AF5D45]/5 border border-transparent transition cursor-pointer"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#ADA9BA] hover:text-[#F43F5E] hover:bg-[#F43F5E]/10 transition-all duration-200 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
@@ -401,329 +406,340 @@ export default function App() {
       </aside>
 
       {/* Main workspace frame */}
-      <main className="grow overflow-y-auto relative z-10">
-        {activeTab === 'write' && (
-          <ActiveJournal
-            token={token}
-            userApiKey={userApiKey}
-            customPrompt={customPrompt}
-            activeEntry={activeEntry}
-            onSaveSuccess={handleSaveSuccess}
-            onCancel={() => {
-              setActiveEntry(null);
-              setActiveTab('list');
-            }}
-          />
-        )}
+      <main className="grow overflow-y-auto relative z-10 flex flex-col min-h-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab + (activeEntry ? `-${activeEntry.id}` : '')}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="grow"
+          >
+            {activeTab === 'write' && (
+              <ActiveJournal
+                token={token}
+                userApiKey={userApiKey}
+                customPrompt={customPrompt}
+                activeEntry={activeEntry}
+                onSaveSuccess={handleSaveSuccess}
+                onCancel={() => {
+                  setActiveEntry(null);
+                  setActiveTab('list');
+                }}
+              />
+            )}
 
-        {activeTab === 'list' && (
-          <EntriesList
-            entries={entries}
-            onEditEntry={handleEditEntry}
-            onDeleteEntry={handleDeleteEntry}
-          />
-        )}
+            {activeTab === 'list' && (
+              <EntriesList
+                entries={entries}
+                onEditEntry={handleEditEntry}
+                onDeleteEntry={handleDeleteEntry}
+              />
+            )}
 
-        {activeTab === 'search' && <SemanticSearch token={token} userApiKey={userApiKey} />}
+            {activeTab === 'search' && <SemanticSearch token={token} userApiKey={userApiKey} />}
 
-        {activeTab === 'chat' && <MemoryChat token={token} userApiKey={userApiKey} customPrompt={customPrompt} />}
+            {activeTab === 'chat' && <MemoryChat token={token} userApiKey={userApiKey} customPrompt={customPrompt} />}
 
-        {activeTab === 'insights' && <WeeklyInsights token={token} userApiKey={userApiKey} entriesCount={entries.length} customPrompt={customPrompt} />}
+            {activeTab === 'insights' && <WeeklyInsights token={token} userApiKey={userApiKey} entriesCount={entries.length} customPrompt={customPrompt} />}
 
-        {activeTab === 'memories' && <MemoriesDashboard token={token} />}
+            {activeTab === 'memories' && <MemoriesDashboard token={token} />}
 
-        {activeTab === 'settings' && (
-          <div className="max-w-6xl mx-auto py-8 px-4 font-sans text-[#2C2621] space-y-8 animate-fade-in">
-            {/* Header banner */}
-            <div className="border-b border-[#E3DAC9] pb-5 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-3xl font-serif font-bold text-[#2C2621] flex items-center gap-3">
-                  <Settings className="w-7 h-7 text-[#AF5D45]" />
-                  Settings
-                </h2>
-                <p className="text-sm text-[#60554C] mt-1">Customize your private AI sanctuary, system prompts, and API credentials.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Left Column: AI Persona Options (Col-span 7) */}
-              <div className="lg:col-span-7 space-y-6">
-                <div className="bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl p-6 shadow-sm space-y-6">
-                  <div className="flex items-center gap-2 border-b border-[#E3DAC9]/60 pb-4">
-                    <Sliders className="w-5 h-5 text-[#4A6447]" />
-                    <h3 className="font-serif font-bold text-lg text-[#2C2621]">AI Voice & Reflection Style</h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-[#60554C] uppercase tracking-wider">
-                        Current System Prompt
-                      </label>
-                      <p className="text-xs text-[#827468]">
-                        This shapes the tone, perspective, and depth of your daily analyses, insights, and chats.
-                      </p>
-                    </div>
-
-                    <textarea
-                      placeholder="E.g., Adopt a warm, compassionate, Stoicism-focused voice..."
-                      value={customPrompt || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCustomPrompt(val || null);
-                        if (val.trim()) {
-                          localStorage.setItem('journal_custom_prompt', val);
-                        } else {
-                          localStorage.removeItem('journal_custom_prompt');
-                        }
-                      }}
-                      className="w-full bg-[#FAF6EE] border border-[#DFD5C4] focus:border-[#4A6447] focus:ring-2 focus:ring-[#4A6447]/20 rounded-xl py-3 px-4 text-xs text-[#2C2621] placeholder-[#A09384] outline-none transition min-h-[120px] leading-relaxed resize-y font-mono"
-                    />
-
-                    {customPrompt ? (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-[#4A6447] font-semibold flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Custom Prompt Active
-                        </span>
-                        <button
-                          onClick={() => {
-                            setCustomPrompt(null);
-                            localStorage.removeItem('journal_custom_prompt');
-                          }}
-                          className="text-xs font-semibold text-[#AF5D45] hover:underline flex items-center gap-1 transition"
-                        >
-                          <RefreshCw className="w-3 h-3" /> Reset to Default (Satori Wisdom)
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-[#827468] block">
-                        Using Default: 🌿 Satori (Warm & Philosophical)
-                      </span>
-                    )}
-                  </div>
-
-                  {/* 10 click presets grid */}
-                  <div className="space-y-3 pt-4 border-t border-[#E3DAC9]/60">
-                    <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-[#60554C] uppercase tracking-wider">
-                        Quick Persona Presets
-                      </h4>
-                      <p className="text-xs text-[#827468]">
-                        Instantly swap between these carefully crafted psychological and philosophical frames.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {PRESETS.map((p) => {
-                        const isActive = customPrompt === p.prompt || (!customPrompt && p.name.includes("Satori"));
-                        
-                        // Map specific icon for each preset style
-                        let PresetIcon = Sparkles;
-                        if (p.name.includes("CBT")) PresetIcon = Brain;
-                        else if (p.name.includes("Zen")) PresetIcon = Heart;
-                        else if (p.name.includes("Jungian")) PresetIcon = Compass;
-                        else if (p.name.includes("Stoic")) PresetIcon = Shield;
-                        else if (p.name.includes("Accountability")) PresetIcon = Activity;
-                        else if (p.name.includes("Socratic")) PresetIcon = HelpCircle;
-                        else if (p.name.includes("IFS")) PresetIcon = Users;
-                        else if (p.name.includes("Poetic")) PresetIcon = Compass;
-
-                        return (
-                          <button
-                            key={p.name}
-                            onClick={() => {
-                              setCustomPrompt(p.prompt);
-                              localStorage.setItem('journal_custom_prompt', p.prompt);
-                            }}
-                            className={`text-left border p-3 rounded-xl cursor-pointer transition flex gap-3 items-start select-none ${
-                              isActive
-                                ? 'bg-[#E5ECE4]/70 border-[#4A6447] ring-2 ring-[#4A6447]/10'
-                                : 'bg-[#FAF6EE] hover:bg-[#EBE5D8]/70 border-[#DFD5C4] hover:border-[#C1D2BD]'
-                            }`}
-                          >
-                            <div className={`p-2 rounded-lg shrink-0 ${isActive ? 'bg-[#4A6447] text-white' : 'bg-[#E5ECE4] text-[#4A6447]'}`}>
-                              <PresetIcon className="w-4 h-4" />
-                            </div>
-                            <div className="space-y-0.5">
-                              <span className="font-bold text-[#2C2621] block text-xs flex items-center gap-1.5">
-                                {p.name}
-                                {isActive && <Check className="w-3.5 h-3.5 text-[#4A6447]" />}
-                              </span>
-                              <span className="text-[10px] text-[#827468] block leading-normal">{p.desc}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+            {activeTab === 'settings' && (
+              <div className="max-w-6xl mx-auto py-8 px-4 font-sans text-[#E7E7EC] space-y-8">
+                {/* Header banner */}
+                <div className="border-b border-white/5 pb-5 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h2 className="text-3xl font-serif font-bold text-[#F3F3F5] flex items-center gap-3">
+                      <Settings className="w-7 h-7 text-[#8B5CF6]" />
+                      Settings
+                    </h2>
+                    <p className="text-sm text-[#ADA9BA] mt-1">Customize your private AI sanctuary, system prompts, and API credentials.</p>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: API & Privacy (Col-span 5) */}
-              <div className="lg:col-span-5 space-y-6">
-                {/* Credentials Panel */}
-                <div className="bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl p-6 shadow-sm space-y-5">
-                  <div className="flex items-center gap-2 border-b border-[#E3DAC9]/60 pb-4">
-                    <Key className="w-5 h-5 text-[#AF5D45]" />
-                    <h3 className="font-serif font-bold text-lg text-[#2C2621]">API Credentials</h3>
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column: AI Persona Options (Col-span 7) */}
+                  <div className="lg:col-span-7 space-y-6">
+                    <div className="glass-card rounded-2xl p-6 shadow-sm space-y-6">
+                      <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+                        <Sliders className="w-5 h-5 text-[#8B5CF6]" />
+                        <h3 className="font-serif font-bold text-lg text-[#F3F3F5]">AI Voice & Reflection Style</h3>
+                      </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-[#60554C] uppercase tracking-wider">
-                        Gemini API Key
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showApiKey ? "text" : "password"}
-                          placeholder={userApiKey ? "••••••••••••••••••••••••" : "Paste your Gemini API key..."}
-                          value={userApiKey || ''}
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-[#ADA9BA] uppercase tracking-wider">
+                            Current System Prompt
+                          </label>
+                          <p className="text-xs text-[#ADA9BA]">
+                            This shapes the tone, perspective, and depth of your daily analyses, insights, and chats.
+                          </p>
+                        </div>
+
+                        <textarea
+                          placeholder="E.g., Adopt a warm, compassionate, Stoicism-focused voice..."
+                          value={customPrompt || ''}
                           onChange={(e) => {
                             const val = e.target.value;
-                            setUserApiKey(val || null);
-                            setKeyTestingStatus('idle');
+                            setCustomPrompt(val || null);
                             if (val.trim()) {
-                              localStorage.setItem('journal_gemini_api_key', val.trim());
+                              localStorage.setItem('journal_custom_prompt', val);
                             } else {
-                              localStorage.removeItem('journal_gemini_api_key');
+                              localStorage.removeItem('journal_custom_prompt');
                             }
                           }}
-                          className="w-full bg-[#FAF6EE] border border-[#DFD5C4] focus:border-[#4A6447] focus:ring-2 focus:ring-[#4A6447]/20 rounded-xl py-2.5 pl-4 pr-10 text-xs font-mono text-[#2C2621] placeholder-[#A09384] outline-none transition"
+                          className="w-full glass-input rounded-xl py-3 px-4 text-xs placeholder-[#ADA9BA]/40 outline-none transition min-h-[120px] leading-relaxed resize-y font-mono"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowApiKey(!showApiKey)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#827468] hover:text-[#2C2621] transition"
-                        >
-                          {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
 
-                    <p className="text-[11px] text-[#60554C] leading-relaxed">
-                      All semantic search vector processing, entry parsing, summaries, and chat features will use your custom key when set.
-                    </p>
-
-                    {/* Test and status buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={testApiKey}
-                        disabled={!userApiKey || keyTestingStatus === 'testing'}
-                        className="flex-1 bg-[#4A6447] hover:bg-[#3D523A] disabled:bg-[#827468]/40 text-white font-semibold py-2 px-3 rounded-xl transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
-                      >
-                        {keyTestingStatus === 'testing' ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            Verifying...
-                          </>
+                        {customPrompt ? (
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                              <Check className="w-3 h-3" /> Custom Prompt Active
+                            </span>
+                            <button
+                              onClick={() => {
+                                setCustomPrompt(null);
+                                localStorage.removeItem('journal_custom_prompt');
+                              }}
+                              className="text-xs font-semibold text-[#8B5CF6] hover:underline flex items-center gap-1 transition"
+                            >
+                              <RefreshCw className="w-3 h-3" /> Reset to Default (Satori Wisdom)
+                            </button>
+                          </div>
                         ) : (
-                          <>
-                            <Activity className="w-3.5 h-3.5" />
-                            Test Connection
-                          </>
+                          <span className="text-[10px] text-[#ADA9BA] block">
+                            Using Default: 🌿 Satori (Warm & Philosophical)
+                          </span>
                         )}
-                      </button>
+                      </div>
 
-                      {userApiKey && (
-                        <button
-                          onClick={() => {
-                            setUserApiKey(null);
-                            localStorage.removeItem('journal_gemini_api_key');
-                            setKeyTestingStatus('idle');
-                          }}
-                          className="bg-transparent border border-[#AF5D45] text-[#AF5D45] hover:bg-[#AF5D45]/5 font-semibold py-2 px-3 rounded-xl transition cursor-pointer text-xs"
-                        >
-                          Clear Key
-                        </button>
-                      )}
+                      {/* 10 click presets grid */}
+                      <div className="space-y-3 pt-4 border-t border-white/5">
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-bold text-[#ADA9BA] uppercase tracking-wider">
+                            Quick Persona Presets
+                          </h4>
+                          <p className="text-xs text-[#ADA9BA]">
+                            Instantly swap between these carefully crafted psychological and philosophical frames.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {PRESETS.map((p) => {
+                            const isActive = customPrompt === p.prompt || (!customPrompt && p.name.includes("Satori"));
+                            
+                            // Map specific icon for each preset style
+                            let PresetIcon = Sparkles;
+                            if (p.name.includes("CBT")) PresetIcon = Brain;
+                            else if (p.name.includes("Zen")) PresetIcon = Heart;
+                            else if (p.name.includes("Jungian")) PresetIcon = Compass;
+                            else if (p.name.includes("Stoic")) PresetIcon = Shield;
+                            else if (p.name.includes("Accountability")) PresetIcon = Activity;
+                            else if (p.name.includes("Socratic")) PresetIcon = HelpCircle;
+                            else if (p.name.includes("IFS")) PresetIcon = Users;
+                            else if (p.name.includes("Poetic")) PresetIcon = Compass;
+
+                            return (
+                              <button
+                                key={p.name}
+                                onClick={() => {
+                                  setCustomPrompt(p.prompt);
+                                  localStorage.setItem('journal_custom_prompt', p.prompt);
+                                }}
+                                className={`text-left border p-3 rounded-xl cursor-pointer transition-all duration-300 flex gap-3 items-start select-none ${
+                                  isActive
+                                    ? 'bg-[#8B5CF6]/10 border-[#8B5CF6] ring-2 ring-[#8B5CF6]/10 text-white'
+                                    : 'glass-card hover:bg-white/[0.04] border-white/5 hover:border-white/10 text-[#ADA9BA] hover:text-[#F3F3F5]'
+                                }`}
+                              >
+                                <div className={`p-2 rounded-lg shrink-0 ${isActive ? 'bg-[#8B5CF6] text-white' : 'bg-white/[0.04] text-[#ADA9BA]'}`}>
+                                  <PresetIcon className="w-4 h-4" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <span className="font-bold text-[#F3F3F5] block text-xs flex items-center gap-1.5">
+                                    {p.name}
+                                    {isActive && <Check className="w-3.5 h-3.5 text-[#8B5CF6]" />}
+                                  </span>
+                                  <span className="text-[10px] leading-normal block opacity-80">{p.desc}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: API & Privacy (Col-span 5) */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {/* Credentials Panel */}
+                    <div className="glass-card rounded-2xl p-6 shadow-sm space-y-5">
+                      <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+                        <Key className="w-5 h-5 text-[#8B5CF6]" />
+                        <h3 className="font-serif font-bold text-lg text-[#F3F3F5]">API Credentials</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-[#ADA9BA] uppercase tracking-wider">
+                            Gemini API Key
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showApiKey ? "text" : "password"}
+                              placeholder={userApiKey ? "••••••••••••••••••••••••" : "Paste your Gemini API key..."}
+                              value={userApiKey || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setUserApiKey(val || null);
+                                setKeyTestingStatus('idle');
+                                if (val.trim()) {
+                                  localStorage.setItem('journal_gemini_api_key', val.trim());
+                                } else {
+                                  localStorage.removeItem('journal_gemini_api_key');
+                                }
+                              }}
+                              className="w-full glass-input rounded-xl py-2.5 pl-4 pr-10 text-xs font-mono placeholder-[#ADA9BA]/40 outline-none transition"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowApiKey(!showApiKey)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADA9BA] hover:text-[#F3F3F5] transition"
+                            >
+                              {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-[#ADA9BA] leading-relaxed">
+                          All semantic search vector processing, entry parsing, summaries, and chat features will use your custom key when set.
+                        </p>
+
+                        {/* Test and status buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={testApiKey}
+                            disabled={!userApiKey || keyTestingStatus === 'testing'}
+                            className="flex-1 bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] hover:from-[#7C3AED] hover:to-[#4F46E5] disabled:from-[#ADA9BA]/20 disabled:to-[#ADA9BA]/20 text-white font-bold py-2 px-3 rounded-xl transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                          >
+                            {keyTestingStatus === 'testing' ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                Verifying...
+                              </>
+                            ) : (
+                              <>
+                                <Activity className="w-3.5 h-3.5" />
+                                Test Connection
+                              </>
+                            )}
+                          </button>
+
+                          {userApiKey && (
+                            <button
+                              onClick={() => {
+                                setUserApiKey(null);
+                                localStorage.removeItem('journal_gemini_api_key');
+                                setKeyTestingStatus('idle');
+                              }}
+                              className="bg-transparent border border-rose-500/50 hover:bg-rose-500/10 text-rose-400 font-bold py-2 px-3 rounded-xl transition cursor-pointer text-xs"
+                            >
+                              Clear Key
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Connection Test Result Feedback */}
+                        {keyTestingStatus === 'testing' && (
+                          <div className="p-3 rounded-xl text-xs flex gap-2.5 items-center border bg-white/[0.01] border-white/5 text-[#ADA9BA] animate-pulse">
+                            <RefreshCw className="w-4 h-4 animate-spin text-[#8B5CF6] shrink-0" />
+                            <div>
+                              <p className="font-bold text-[#F3F3F5]">Verifying connection...</p>
+                              <p className="text-[10px] opacity-90 mt-0.5">Attempting a secure handshake with the Google Gemini API.</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {keyTestingStatus !== 'idle' && keyTestingStatus !== 'testing' && (
+                          <div className={`p-3 rounded-xl text-xs flex gap-2.5 items-start border animate-fade-in ${
+                            keyTestingStatus === 'valid'
+                              ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                              : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
+                          }`}>
+                            <div className="shrink-0 mt-0.5">
+                              {keyTestingStatus === 'valid' ? <Check className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <p className="font-bold">
+                                {keyTestingStatus === 'valid' ? 'Verified Successfully' : 'Verification Failed'}
+                              </p>
+                              <p className="text-[10px] opacity-90 mt-0.5">
+                                {keyTestingStatus === 'valid'
+                                  ? 'Your API key is active and successfully communicated with Gemini API endpoints.'
+                                  : 'The API returned an authentication error. Verify the characters and ensure billing or usage constraints are met.'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Connection Test Result Feedback */}
-                    {keyTestingStatus === 'testing' && (
-                      <div className="p-3 rounded-xl text-xs flex gap-2.5 items-center border bg-[#FAF6EE] border-[#DFD5C4] text-[#827468] animate-pulse">
-                        <RefreshCw className="w-4 h-4 animate-spin text-[#4A6447] shrink-0" />
-                        <div>
-                          <p className="font-bold text-[#2C2621]">Verifying connection...</p>
-                          <p className="text-[10px] opacity-90 mt-0.5">Attempting a secure handshake with the Google Gemini API.</p>
-                        </div>
+                    {/* Secure Architecture Info Card */}
+                    <div className="glass-card rounded-2xl p-5 space-y-4 text-[#ADA9BA]">
+                      <div className="flex items-center gap-2 text-[#F3F3F5] font-bold text-xs uppercase tracking-wider">
+                        <Shield className="w-4.5 h-4.5 text-[#8B5CF6]" />
+                        <span>Security & Sandbox Privacy</span>
                       </div>
-                    )}
-
-                    {keyTestingStatus !== 'idle' && keyTestingStatus !== 'testing' && (
-                      <div className={`p-3 rounded-xl text-xs flex gap-2.5 items-start border animate-fade-in ${
-                        keyTestingStatus === 'valid'
-                          ? 'bg-[#E5ECE4]/70 border-[#C1D2BD] text-[#4A6447]'
-                          : 'bg-red-50 border-red-200 text-red-700'
-                      }`}>
-                        <div className="shrink-0 mt-0.5">
-                          {keyTestingStatus === 'valid' ? <Check className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
-                        </div>
-                        <div>
-                          <p className="font-bold">
-                            {keyTestingStatus === 'valid' ? 'Verified Successfully' : 'Verification Failed'}
-                          </p>
-                          <p className="text-[10px] opacity-90 mt-0.5">
-                            {keyTestingStatus === 'valid'
-                              ? 'Your API key is active and successfully communicated with Gemini API endpoints.'
-                              : 'The API returned an authentication error. Verify the characters and ensure billing or usage constraints are met.'}
-                          </p>
-                        </div>
+                      <p className="text-xs leading-relaxed">
+                        Solace Diaries implements a <strong>zero server-side key footprint</strong> architecture. Your API key and custom system instructions are stored exclusively inside your browser's local sandbox (local storage).
+                      </p>
+                      <p className="text-xs leading-relaxed">
+                        Requests to analyze or query entries utilize your API key directly on your hardware or through browser-directed requests, meaning your keys are never stored on any shared databases.
+                      </p>
+                      <div className="pt-2">
+                        <a
+                          href="https://aistudio.google.com/apikey"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-semibold text-[#8B5CF6] underline underline-offset-2 hover:text-white transition inline-flex items-center gap-1"
+                        >
+                          Retrieve API Key from Google AI Studio
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Secure Architecture Info Card */}
-                <div className="bg-[#FAF6EE] border border-[#E3DAC9] rounded-2xl p-5 space-y-4 text-[#60554C]">
-                  <div className="flex items-center gap-2 text-[#2C2621] font-semibold text-xs uppercase tracking-wider">
-                    <Shield className="w-4.5 h-4.5 text-[#4A6447]" />
-                    <span>Security & Sandbox Privacy</span>
-                  </div>
-                  <p className="text-xs leading-relaxed">
-                    Solace Diaries implements a <strong>zero server-side key footprint</strong> architecture. Your API key and custom system instructions are stored exclusively inside your browser's local sandbox (local storage).
-                  </p>
-                  <p className="text-xs leading-relaxed">
-                    Requests to analyze or query entries utilize your API key directly on your hardware or through browser-directed requests, meaning your keys are never stored on any shared databases.
-                  </p>
-                  <div className="pt-2">
-                    <a
-                      href="https://aistudio.google.com/apikey"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-[#4A6447] underline underline-offset-2 hover:text-[#2C2621] transition inline-flex items-center gap-1"
-                    >
-                      Retrieve API Key from Google AI Studio
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Floating Profile & Sign Out (Bottom Left) */}
       <div className="md:hidden fixed bottom-4 left-4 z-40 font-sans">
         {mobileProfileOpen && (
-          <div className="mb-2 p-3 bg-[#FFFDF9]/95 backdrop-blur-md border border-[#DFD5C4] rounded-xl shadow-lg space-y-2.5 min-w-[200px] animate-fade-in">
+          <div className="mb-2 p-3 bg-[#13111A]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-lg space-y-2.5 min-w-[200px] animate-fade-in">
             <div className="truncate min-w-0">
-              <span className="block text-[8px] font-sans font-semibold text-[#827468] uppercase tracking-wider">My Account</span>
-              <span className="block text-xs font-semibold text-[#2C2621] truncate">{email}</span>
+              <span className="block text-[8px] font-sans font-semibold text-[#ADA9BA] uppercase tracking-wider">My Account</span>
+              <span className="block text-xs font-semibold text-[#F3F3F5] truncate">{email}</span>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#827468] hover:text-[#AF5D45] transition cursor-pointer"
+              className="w-full flex items-center gap-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#ADA9BA] hover:text-[#F43F5E] transition cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
               <span>Sign Out</span>
             </button>
           </div>
         )}
         <button
           onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
-          className="w-10 h-10 bg-[#E5ECE4] border border-[#C1D2BD] hover:border-[#4A6447] rounded-full flex items-center justify-center text-[#4A6447] shadow-md transition cursor-pointer active:scale-95"
+          className="w-10 h-10 bg-white/[0.04] border border-white/10 hover:border-[#8B5CF6] rounded-full flex items-center justify-center text-white shadow-md transition cursor-pointer active:scale-95"
         >
-          <User className="w-5 h-5" />
+          <User className="w-5 h-5 text-[#8B5CF6]" />
         </button>
       </div>
     </div>

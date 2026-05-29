@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Heart, BookOpen, Clock, Tag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SearchResult } from '../types';
 import { API_BASE } from '../api';
 
@@ -47,15 +48,18 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 font-sans text-[#2C2621]">
+    <div className="max-w-4xl mx-auto py-8 px-4 font-sans text-[#E7E7EC] relative z-10">
+      
       {/* Cover Header */}
-      <div className="border-b border-[#E3DAC9] pb-6 mb-8">
-        <h2 className="text-2xl font-serif font-bold text-[#2C2621] flex items-center gap-2">
-          <Heart className="w-5 h-5 text-[#AF5D45] fill-[#AF5D45]" />
-          Search
+      <div className="border-b border-white/5 pb-6 mb-8">
+        <h2 className="text-2xl font-serif font-bold text-[#F3F3F5] flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-[#8B5CF6]/10 flex items-center justify-center border border-[#8B5CF6]/20">
+            <Search className="w-4.5 h-4.5 text-[#8B5CF6]" />
+          </div>
+          Semantic Search
         </h2>
-        <p className="text-xs text-[#60554C] mt-1.5 leading-relaxed">
-          Search your past entries by concept or mood, rather than just exact keywords.
+        <p className="text-xs text-[#ADA9BA] mt-2.5 leading-relaxed">
+          Retrieve past diary pages using semantic concepts, emotional cues, or topic contexts rather than exact string queries.
         </p>
       </div>
 
@@ -63,20 +67,20 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
       <form onSubmit={handleSearch} className="mb-8">
         <div className="flex gap-2.5">
           <div className="relative grow">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#827468] w-4.5 h-4.5" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 w-4 h-4" />
             <input
               type="text"
               required
-              placeholder="Search entries..."
+              placeholder="Search concepts e.g. 'feeling overwhelmed but holding hope' or 'creative breakthroughs'"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-[#FFFDF9] border border-[#DFD5C4] focus:border-[#4A6447] focus:ring-1 focus:ring-[#4A6447] rounded-xl py-3 pl-11 pr-4 text-sm text-[#2C2621] placeholder-[#A09384] transition outline-none"
+              className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="bg-[#597459] hover:bg-[#4A6447] text-white font-bold px-6 rounded-xl text-xs flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
+            className="bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] hover:from-[#7C3AED] hover:to-[#4F46E5] text-white font-bold px-6 rounded-xl text-xs flex items-center gap-2 cursor-pointer transition-all duration-300 disabled:opacity-50 shadow-lg shadow-indigo-500/10"
           >
             {loading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -89,93 +93,113 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
 
       {/* Error State */}
       {error && (
-        <div className="p-4 bg-[#FAF0EC] border border-[#ECD5CB] rounded-xl text-sm text-[#9B5D47] mt-4">
+        <div className="p-4 bg-rose-500/10 border border-rose-500/25 rounded-2xl text-xs text-rose-300 mb-6">
           {error}
         </div>
       )}
 
       {/* Results Rendering */}
-      {loading ? (
-        <div className="py-20 text-center space-y-3">
-          <Heart className="w-8 h-8 text-[#AF5D45] animate-bounce mx-auto fill-[#AF5D45]" />
-          <p className="text-sm font-serif font-bold text-[#2C2621]">Searching...</p>
-          <p className="text-xs text-[#60554C] max-w-sm mx-auto leading-relaxed">Searching your entries for related topics and feelings.</p>
-        </div>
-      ) : results ? (
-        <div className="space-y-6 animate-fade-in">
-          <span className="block text-[10px] font-sans font-semibold uppercase tracking-wider text-[#827468]">
-            Found {results.length} result{results.length !== 1 ? 's' : ''}
-          </span>
-
-          {results.length === 0 ? (
-            <div className="text-center py-12 bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl shadow-sm">
-              <p className="text-[#60554C] font-serif text-sm">No results found</p>
-              <p className="text-[#827468] text-xs mt-1">Try different search terms or write more entries.</p>
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="py-20 text-center space-y-4"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-[#8B5CF6]/10 flex items-center justify-center mx-auto border border-[#8B5CF6]/20">
+              <Heart className="w-5 h-5 text-[#EC4899] fill-[#EC4899] animate-bounce" />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {results.map(({ entry, score }) => {
-                const percentage = Math.max(0, Math.min(100, Math.round(score * 100)));
-                return (
-                  <div
-                    key={entry.id}
-                    className="p-6 bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl space-y-4 hover:border-[#C1D2BD] transition duration-150 shadow-sm"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E3DAC9]/60 pb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-block px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-[#FAF0EC] text-[#9B5D47] border border-[#ECD5CB]">
-                          {entry.mood}
-                        </span>
-                        <div className="text-xs text-[#827468] flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-[#827468]" />
-                          <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
+            <p className="text-sm font-serif font-bold text-[#F3F3F5]">Exploring your story archive...</p>
+            <p className="text-xs text-[#ADA9BA] max-w-sm mx-auto leading-relaxed">Scanning diary pages and analyzing semantic coordinates.</p>
+          </motion.div>
+        ) : results ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="space-y-6"
+          >
+            <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-[#ADA9BA]">
+              Found {results.length} semantic correlation{results.length !== 1 ? 's' : ''}
+            </span>
 
-                      {/* Score Badge */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-[#4A6447]">{percentage}% match</span>
-                        <div className="w-20 bg-[#FAF6EE] h-2 rounded-full overflow-hidden border border-[#DFD5C4]">
-                          <div
-                            className="bg-[#597459] h-full rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <h3 className="text-lg font-serif font-bold text-[#2C2621] tracking-tight">{entry.title}</h3>
-                      <p className="text-[#60554C] text-sm leading-relaxed whitespace-pre-line">
-                        {entry.content}
-                      </p>
-                    </div>
-
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {entry.tags.map((tg) => (
-                          <span
-                            key={tg}
-                            className="flex items-center gap-1 text-[10px] bg-[#E5ECE4] text-[#4A6447] px-2.5 py-0.5 rounded-md border border-[#C1D2BD]"
-                          >
-                            <Tag className="w-2.5 h-2.5" />
-                            <span>{tg}</span>
+            {results.length === 0 ? (
+              <div className="text-center py-12 glass-card rounded-3xl border border-white/5 shadow-sm">
+                <p className="text-[#ADA9BA] font-serif text-sm">No correlations found</p>
+                <p className="text-[#ADA9BA]/60 text-xs mt-1">Try expanding your search query description.</p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {results.map(({ entry, score }, index) => {
+                  const percentage = Math.max(0, Math.min(100, Math.round(score * 100)));
+                  return (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }}
+                      className="glass-card hover:bg-white/[0.04] border border-white/5 hover:border-white/10 p-6 rounded-3xl space-y-4 hover:shadow-xl transition-all duration-300"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                            {entry.mood}
                           </span>
-                        ))}
+                          <div className="text-xs text-[#ADA9BA] flex items-center gap-1.5 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                            <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Score Badge */}
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-semibold text-[#8B5CF6]">{percentage}% match</span>
+                          <div className="w-20 bg-white/[0.05] h-1.5 rounded-full overflow-hidden border border-white/5">
+                            <div
+                              className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] h-full rounded-full"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-[#FFFDF9] border border-[#DFD5C4] rounded-2xl shadow-sm">
-          <BookOpen className="w-9 h-9 text-[#827468] mx-auto mb-3" />
-          <p className="text-xs text-[#60554C] italic">Enter a search query to search your journal entries.</p>
-        </div>
-      )}
+
+                      <div className="space-y-1.5">
+                        <h3 className="text-lg font-serif font-bold text-[#F3F3F5] tracking-tight">{entry.title}</h3>
+                        <p className="text-[#ADA9BA] text-sm leading-relaxed whitespace-pre-line">
+                          {entry.content}
+                        </p>
+                      </div>
+
+                      {entry.tags && entry.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {entry.tags.map((tg) => (
+                            <span
+                              key={tg}
+                              className="flex items-center gap-1 text-[10px] bg-white/[0.03] text-[#ADA9BA] px-2.5 py-0.5 rounded-md border border-white/5"
+                            >
+                              <Tag className="w-2.5 h-2.5 text-[#8B5CF6]" />
+                              <span>{tg}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16 glass-card rounded-3xl border border-white/5"
+          >
+            <BookOpen className="w-10 h-10 text-[#8B5CF6] mx-auto mb-4 animate-pulse" />
+            <p className="text-xs text-[#ADA9BA] italic font-medium">Describe a feeling or memory context above to begin searching.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

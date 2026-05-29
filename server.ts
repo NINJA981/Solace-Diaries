@@ -6,8 +6,12 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createServer as createViteServer } from 'vite';
 import apiRouter from './server/routes';
+import { initDb } from './server/db.client';
 
 async function startServer() {
+  // Test connection to postgres and resolve mocks if necessary
+  await initDb();
+
   const app = express();
   const PORT = 3000;
 
