@@ -21,6 +21,21 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
   const [isRecording, setIsRecording] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
   const [speechSupported, setSpeechSupported] = useState(true);
+  const [pendingPrompt, setPendingPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch pending prompt for today
+    fetch(`${API_BASE}/api/memories/pending-prompt`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.promptText) {
+          setPendingPrompt(data);
+        }
+      })
+      .catch(() => {});
+  }, [token]);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -181,6 +196,33 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
           Cancel
         </button>
       </div>
+
+      {pendingPrompt && !activeEntry && !savedData && (
+        <div className="mb-6 bg-[#FAF6EE] border border-[#AF5D45]/30 rounded-2xl p-5 shadow-sm animate-fade-in flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex gap-3">
+            <Sparkles className="w-5 h-5 text-[#AF5D45] shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-[#2C2621]">Solace reached out:</p>
+              <p className="text-sm text-[#4A3F35] font-serif italic">"{pendingPrompt.promptText}"</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setTitle('Reflecting on Solace\'s thought');
+              setContent(`*In response to: "${pendingPrompt.promptText}"*\n\n`);
+              // Mark as delivered in background
+              fetch(`${API_BASE}/api/memories/prompt/${pendingPrompt.id}/respond`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ responseText: 'Acknowledged through new entry.' })
+              }).then(() => setPendingPrompt(null));
+            }}
+            className="text-xs bg-[#FFFDF9] border border-[#DFD5C4] hover:border-[#AF5D45] text-[#AF5D45] px-4 py-2 rounded-xl transition font-semibold shrink-0"
+          >
+            Write in response
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Lined Notebook Paper Writer Area */}

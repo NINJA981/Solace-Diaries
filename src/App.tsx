@@ -33,6 +33,7 @@ import EntriesList from './components/EntriesList';
 import SemanticSearch from './components/SemanticSearch';
 import MemoryChat from './components/MemoryChat';
 import WeeklyInsights from './components/WeeklyInsights';
+import MemoriesDashboard from './components/MemoriesDashboard';
 import { JournalEntry } from './types';
 import { API_BASE } from './api';
 
@@ -92,7 +93,7 @@ const PRESETS = [
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState('');
-  const [activeTab, setActiveTab] = useState<'write' | 'list' | 'search' | 'chat' | 'insights' | 'settings'>('write');
+  const [activeTab, setActiveTab] = useState<'write' | 'list' | 'search' | 'chat' | 'insights' | 'memories' | 'settings'>('write');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [activeEntry, setActiveEntry] = useState<JournalEntry | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -347,6 +348,21 @@ export default function App() {
 
             <button
               onClick={() => {
+                setActiveTab('memories');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition cursor-pointer ${
+                activeTab === 'memories'
+                  ? 'bg-[#E5ECE4] text-[#4A6447] border border-[#C1D2BD]'
+                  : 'text-[#60554C] hover:text-[#2C2621] hover:bg-[#FAF6EE]/70 border border-transparent'
+              }`}
+            >
+              <Brain className="w-4 h-4" />
+              <span>Memories</span>
+            </button>
+
+            <button
+              onClick={() => {
                 setActiveTab('settings');
                 setMobileMenuOpen(false);
               }}
@@ -413,6 +429,8 @@ export default function App() {
         {activeTab === 'chat' && <MemoryChat token={token} userApiKey={userApiKey} customPrompt={customPrompt} />}
 
         {activeTab === 'insights' && <WeeklyInsights token={token} userApiKey={userApiKey} entriesCount={entries.length} customPrompt={customPrompt} />}
+
+        {activeTab === 'memories' && <MemoriesDashboard token={token} />}
 
         {activeTab === 'settings' && (
           <div className="max-w-6xl mx-auto py-8 px-4 font-sans text-[#2C2621] space-y-8 animate-fade-in">
