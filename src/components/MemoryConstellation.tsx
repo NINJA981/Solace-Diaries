@@ -154,7 +154,10 @@ export default function MemoryConstellation() {
             const otherProjY = (other.y - height / 2) * otherScale + height / 2;
 
             ctx.lineTo(otherProjX, otherProjY);
-            ctx.strokeStyle = `rgba(173, 169, 186, ${opacity})`;
+            const isLight = document.body.classList.contains('light');
+            ctx.strokeStyle = isLight
+              ? `rgba(96, 85, 76, ${opacity * 1.5})`
+              : `rgba(173, 169, 186, ${opacity})`;
             ctx.lineWidth = 0.5 * scale;
             ctx.stroke();
           }
@@ -184,14 +187,18 @@ export default function MemoryConstellation() {
         
         ctx.shadowBlur = currentGlow;
         ctx.shadowColor = node.color;
-        ctx.fillStyle = isHovered ? '#FFFFFF' : node.color;
+        const isLight = document.body.classList.contains('light');
+        ctx.fillStyle = isHovered ? (isLight ? '#2C2621' : '#FFFFFF') : node.color;
         ctx.fill();
         ctx.shadowBlur = 0; // reset shadow
 
         // Render labels for prominent nodes
         if (node.label && scale > 1.05) {
+          const isLight = document.body.classList.contains('light');
           ctx.font = `italic 300 ${Math.max(9, Math.round(10 * scale))}px var(--font-serif)`;
-          ctx.fillStyle = `rgba(231, 231, 236, ${Math.max(0.2, (scale - 0.8) * 0.8)})`;
+          ctx.fillStyle = isLight
+            ? `rgba(44, 38, 33, ${Math.max(0.3, (scale - 0.8) * 0.85)})`
+            : `rgba(231, 231, 236, ${Math.max(0.2, (scale - 0.8) * 0.8)})`;
           ctx.textAlign = 'center';
           ctx.fillText(node.label, projX, projY - size - 8);
         }

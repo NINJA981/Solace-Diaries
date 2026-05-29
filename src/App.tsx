@@ -298,7 +298,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'write'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -313,7 +313,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'list'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -328,7 +328,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'search'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -343,7 +343,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'chat'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -358,7 +358,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'insights'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -373,7 +373,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'memories'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -388,7 +388,7 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'bg-white/[0.04] text-white border-l-2 border-[#8B5CF6] shadow-sm font-bold'
+                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
                   : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
               }`}
             >
@@ -574,7 +574,7 @@ export default function App() {
                                 }}
                                 className={`text-left border p-3 rounded-xl cursor-pointer transition-all duration-300 flex gap-3 items-start select-none ${
                                   isActive
-                                    ? 'bg-[#8B5CF6]/10 border-[#8B5CF6] ring-2 ring-[#8B5CF6]/10 text-white'
+                                    ? 'bg-[#8B5CF6]/10 border-[#8B5CF6] ring-2 ring-[#8B5CF6]/10 text-[var(--text-title)] font-bold'
                                     : 'glass-card hover:bg-white/[0.04] border-white/5 hover:border-white/10 text-[#ADA9BA] hover:text-[#F3F3F5]'
                                 }`}
                               >
