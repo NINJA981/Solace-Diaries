@@ -1,6 +1,9 @@
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
 import { createServer as createViteServer } from 'vite';
 import apiRouter from './server/routes';
 
