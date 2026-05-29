@@ -87,7 +87,7 @@ export default function MemoriesDashboard({ token }: MemoriesDashboardProps) {
       case 'life_event': return <CalendarDays className="w-4 h-4 text-[#FDA4AF]" />;
       case 'unfinished_goal': return <Clock className="w-4 h-4 text-[#ADA9BA]" />;
       case 'milestone': return <Sparkles className="w-4 h-4 text-[#F43F5E]" />;
-      case 'behavioral_pattern': return <Activity className="w-4 h-4 text-white" />;
+      case 'behavioral_pattern': return <Activity className="w-4 h-4 text-[#8B5CF6]" />;
       default: return <Compass className="w-4 h-4 text-[#8B5CF6]" />;
     }
   };
