@@ -250,7 +250,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] flex flex-col md:flex-row font-sans text-[var(--text-main)] relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen md:h-screen bg-[var(--bg-main)] flex flex-col md:flex-row font-sans text-[var(--text-main)] relative overflow-hidden md:overflow-hidden transition-colors duration-300">
       {/* Background ambient lighting */}
       {theme === 'dark' && <BackgroundOrbs />}
 
@@ -274,7 +274,7 @@ export default function App() {
       <aside
         className={`fixed inset-y-0 left-0 transform ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:sticky md:top-0 md:h-screen md:translate-x-0 transition duration-300 ease-in-out z-30 w-64 glass-panel border-r border-white/5 flex flex-col justify-between shrink-0 pt-0 md:pt-6 pb-6`}
+        } md:sticky md:top-0 md:h-screen md:translate-x-0 overflow-y-auto scrollbar-thin transition duration-300 ease-in-out z-30 w-64 glass-panel border-r border-white/5 flex flex-col justify-between shrink-0 pt-0 md:pt-6 pb-6`}
       >
         <div className="flex flex-col space-y-6">
           {/* Logo segment */}
