@@ -29,10 +29,36 @@ export interface VectorRecord {
   createdAt: string;
 }
 
+export interface MemoryFragment {
+  id: string;
+  userId: string;
+  category: string;
+  content: string;
+  strength: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProactivePrompt {
+  id: string;
+  userId: string;
+  memoryFragmentId: string | null;
+  promptText: string;
+  triggerType: string;
+  scheduledFor: string;
+  isDelivered: boolean;
+  deliveredAt: string | null;
+  userResponse: string | null;
+  createdAt: string;
+}
+
 export interface DbSchema {
   users: User[];
   entries: JournalEntry[];
   vectors: VectorRecord[];
+  memories: MemoryFragment[];
+  prompts: ProactivePrompt[];
 }
 
 export class Database {
@@ -43,15 +69,22 @@ export class Database {
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
-        const initial: DbSchema = { users: [], entries: [], vectors: [] };
+        const initial: DbSchema = { users: [], entries: [], vectors: [], memories: [], prompts: [] };
         fs.writeFileSync(DB_PATH, JSON.stringify(initial, null, 2), 'utf-8');
         return initial;
       }
       const data = fs.readFileSync(DB_PATH, 'utf-8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      return {
+        users: parsed.users || [],
+        entries: parsed.entries || [],
+        vectors: parsed.vectors || [],
+        memories: parsed.memories || [],
+        prompts: parsed.prompts || []
+      };
     } catch (err) {
       console.error('Failed to load database. Returning empty schema.', err);
-      return { users: [], entries: [], vectors: [] };
+      return { users: [], entries: [], vectors: [], memories: [], prompts: [] };
     }
   }
 
@@ -94,6 +127,26 @@ export class Database {
   public static saveVectors(vectors: VectorRecord[]): void {
     const db = this.load();
     db.vectors = vectors;
+    this.save(db);
+  }
+
+  public static getMemories(): MemoryFragment[] {
+    return this.load().memories;
+  }
+
+  public static saveMemories(memories: MemoryFragment[]): void {
+    const db = this.load();
+    db.memories = memories;
+    this.save(db);
+  }
+
+  public static getPrompts(): ProactivePrompt[] {
+    return this.load().prompts;
+  }
+
+  public static savePrompts(prompts: ProactivePrompt[]): void {
+    const db = this.load();
+    db.prompts = prompts;
     this.save(db);
   }
 }

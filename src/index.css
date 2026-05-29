@@ -5,38 +5,160 @@
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Lora", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Premium Charcoal Color System */
+  --color-charcoal-50: #F3F3F5;
+  --color-charcoal-100: #E7E7EC;
+  --color-charcoal-200: #D1D0DA;
+  --color-charcoal-300: #ADA9BA;
+  --color-charcoal-400: #817C94;
+  --color-charcoal-500: #625D75;
+  --color-charcoal-600: #4B465B;
+  --color-charcoal-700: #373344;
+  --color-charcoal-800: #23202C;
+  --color-charcoal-900: #13111A;
+  --color-charcoal-950: #08070C;
+
+  /* Muted Elegant Accent Palette */
+  --color-accent-violet: #8B5CF6;
+  --color-accent-indigo: #6366F1;
+  --color-accent-blue: #3B82F6;
+  --color-accent-pink: #EC4899;
+  --color-accent-rose: #F43F5E;
 }
 
-/* Cozy Custom Scrollbar designed for the warm paper palette */
+/* Base Body Styles for Deep Dark Sanctuary */
+body {
+  background-color: #08070C;
+  color: #E7E7EC;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Premium Editorial Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #FAF6EE;
+  background: #08070C;
 }
 ::-webkit-scrollbar-thumb {
-  background: #DFD5C4;
+  background: #23202C;
   border-radius: 9999px;
-  border: 2px solid #FAF6EE;
+  border: 1px solid #08070C;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C7BBA5;
+  background: #373344;
 }
 
-/* Custom fade-in and smooth transitions */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+/* Custom Glassmorphism Panels */
+.glass-panel {
+  background: rgba(19, 17, 26, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(35, 32, 44, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.glass-card-hover:hover {
+  background: rgba(35, 32, 44, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.05);
+}
+
+/* Focus and input styling overrides */
+.glass-input {
+  background: rgba(19, 17, 26, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #F3F3F5;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-input:focus {
+  background: rgba(19, 17, 26, 0.8);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+  outline: none;
+}
+
+/* Custom Animation Keyframes */
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes slow-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.2; transform: scale(1); filter: blur(80px); }
+  50% { opacity: 0.4; transform: scale(1.15); filter: blur(100px); }
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
-/* Editorial line-heights and paper styling adjustments */
-.paper-textarea {
-  background-image: linear-gradient(rgba(223, 213, 196, 0.4) 1px, transparent 1px);
-  background-size: 100% 2rem;
-  line-height: 2rem;
+.animate-slow-rotate {
+  animation: slow-rotate 40s linear infinite;
+}
+
+.animate-slide-up {
+  animation: slideInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.glow-overlay-indigo {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+  animation: pulse-glow 10s ease-in-out infinite;
+}
+
+.glow-overlay-violet {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  animation: pulse-glow 12s ease-in-out infinite alternate;
+}
+
+/* Distraction-Free Editor Transitions */
+.editor-focus-mode {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Markdown Customization for Premium Typography */
+.markdown-body {
+  font-family: var(--font-sans);
+  color: #D1D0DA;
+}
+.markdown-body p {
+  margin-bottom: 1rem;
+  line-height: 1.65;
+}
+.markdown-body ul, .markdown-body ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  list-style-type: disc;
+}
+.markdown-body strong {
+  color: #F3F3F5;
+  font-weight: 600;
+}
+.markdown-body em {
+  font-family: var(--font-serif);
+  font-style: italic;
 }
