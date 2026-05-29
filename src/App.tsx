@@ -25,7 +25,9 @@ import {
   RefreshCw,
   Sliders,
   Cpu,
-  ExternalLink
+  ExternalLink,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoginScreen from './components/LoginScreen';
@@ -105,6 +107,19 @@ export default function App() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [keyTestingStatus, setKeyTestingStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('journal_theme') as 'light' | 'dark') || 'dark';
+  });
+
+  useEffect(() => {
+    const bodyClass = document.body.classList;
+    if (theme === 'light') {
+      bodyClass.add('light');
+    } else {
+      bodyClass.remove('light');
+    }
+    localStorage.setItem('journal_theme', theme);
+  }, [theme]);
 
   const testApiKey = async () => {
     if (!userApiKey) return;
@@ -235,9 +250,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#08070C] flex flex-col md:flex-row font-sans text-[#E7E7EC] relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-main)] flex flex-col md:flex-row font-sans text-[var(--text-main)] relative overflow-hidden transition-colors duration-300">
       {/* Background ambient lighting */}
-      <BackgroundOrbs />
+      {theme === 'dark' && <BackgroundOrbs />}
 
       {/* Sidebar navigation on Desktop, top header on Mobile */}
       <header className="md:hidden bg-[#13111A]/90 backdrop-blur-md border-b border-white/5 p-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
@@ -385,6 +400,15 @@ export default function App() {
 
         {/* Footer info & Logout button */}
         <div className="px-3 space-y-3">
+          {/* Theme switcher */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent-color)] hover:bg-white/[0.02] transition-all duration-200 cursor-pointer"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+
           <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center gap-2.5 shadow-inner backdrop-blur-md">
             <div className="w-7 h-7 bg-white/[0.05] border border-white/10 rounded-lg flex items-center justify-center text-[#ADA9BA] shrink-0">
               <User className="w-3.5 h-3.5 text-[#8B5CF6]" />
