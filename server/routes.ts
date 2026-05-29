@@ -3,6 +3,7 @@ import { AuthService } from './services/auth.service';
 import { EntryService } from './services/entry.service';
 import { ChatService } from './services/chat.service';
 import { InsightService } from './services/insight.service';
+import { MemoryService } from './services/memory.service';
 
 const router = Router();
 
@@ -10,6 +11,7 @@ const authService = new AuthService();
 const entryService = new EntryService();
 const chatService = new ChatService();
 const insightService = new InsightService();
+const memoryService = new MemoryService();
 
 // Extends Express Request with a custom user field safely
 export interface AuthenticatedRequest extends Request {
@@ -187,6 +189,39 @@ router.get('/insights', requireAuth, async (req: AuthenticatedRequest, res) => {
     res.status(200).json(insights);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to generate week insights.' });
+  }
+});
+
+// --- MEMORY LAYER ENDPOINTS ---
+
+router.get('/memories/graph', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const memories = await memoryService.getActiveMemories(userId);
+    res.status(200).json(memories);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch memories.' });
+  }
+});
+
+router.get('/memories/pending-prompt', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const prompt = await memoryService.getPendingPrompt(userId);
+    res.status(200).json(prompt || null);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch pending prompt.' });
+  }
+});
+
+router.post('/memories/prompt/:id/respond', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const { responseText } = req.body;
+    const prompt = await memoryService.respondToPrompt(userId, req.params.id, responseText);
+    res.status(200).json(prompt);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to respond to prompt.' });
   }
 });
 

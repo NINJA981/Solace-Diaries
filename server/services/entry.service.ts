@@ -2,12 +2,14 @@ import crypto from 'crypto';
 import { EntryRepository } from '../repositories/entry.repository';
 import { VectorRepository } from '../repositories/vector.repository';
 import { AIService } from './ai.service';
+import { MemoryService } from './memory.service';
 import { JournalEntry } from '../db';
 
 export class EntryService {
   private entryRepository = new EntryRepository();
   private vectorRepository = new VectorRepository();
   private aiService = new AIService();
+  private memoryService = new MemoryService();
 
   public async getEntries(userId: string): Promise<JournalEntry[]> {
     return this.entryRepository.findAllByUserId(userId);
@@ -62,6 +64,11 @@ export class EntryService {
       });
     }
 
+    // 5. Asynchronous Memory Processing
+    this.memoryService.extractAndProcessMemories(userId, savedEntry.id, content, apiKey).catch(err => {
+      console.error('Background memory processing failed:', err);
+    });
+
     return savedEntry;
   }
 
@@ -96,6 +103,11 @@ export class EntryService {
       } catch (err) {
         console.warn('Could not regenerate vector on edit', err);
       }
+      
+      // Re-run memory extraction on updated content
+      this.memoryService.extractAndProcessMemories(userId, id, updatedContent, apiKey).catch(err => {
+        console.error('Background memory processing failed on update:', err);
+      });
     }
 
     return this.entryRepository.update(id, userId, updateData);
