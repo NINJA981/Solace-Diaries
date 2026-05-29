@@ -341,7 +341,7 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
               onChange={(e) => setContent(e.target.value)}
               className="w-full grow bg-transparent text-[#E7E7EC] placeholder-[#ADA9BA]/20 text-base leading-relaxed resize-none outline-none focus:ring-0 min-h-[350px] font-sans"
               style={{
-                background: 'linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px)',
+                background: 'linear-gradient(var(--notebook-line, rgba(255, 255, 255, 0.02)) 1px, transparent 1px)',
                 backgroundSize: '100% 2.2rem',
                 lineHeight: '2.2rem'
               }}
