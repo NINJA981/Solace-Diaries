@@ -164,12 +164,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             )}
 
             <div>
-              <label className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider mb-1.5">
+              <label htmlFor="email" className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider mb-1.5">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 w-4 h-4" />
                 <input
+                  id="email"
                   type="email"
                   required
                   placeholder="name@domain.com"
@@ -181,12 +182,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             </div>
 
             <div>
-              <label className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider mb-1.5">
+              <label htmlFor="password" className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 w-4 h-4" />
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="Min. 6 characters"
@@ -196,6 +198,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 hover:text-[#F3F3F5] transition"
                 >

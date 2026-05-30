@@ -607,11 +607,12 @@ export default function App() {
 
                       <div className="space-y-4">
                         <div className="space-y-1.5">
-                          <label className="block text-xs font-bold text-[#ADA9BA] uppercase tracking-wider">
+                          <label htmlFor="api-key" className="block text-xs font-bold text-[#ADA9BA] uppercase tracking-wider">
                             Gemini API Key
                           </label>
                           <div className="relative">
                             <input
+                              id="api-key"
                               type={showApiKey ? "text" : "password"}
                               placeholder={userApiKey ? "••••••••••••••••••••••••" : "Paste your Gemini API key..."}
                               value={userApiKey || ''}
@@ -629,6 +630,7 @@ export default function App() {
                             />
                             <button
                               type="button"
+                              aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
                               onClick={() => setShowApiKey(!showApiKey)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADA9BA] hover:text-[#F3F3F5] transition"
                             >

@@ -1,0 +1,3 @@
+## 2024-05-30 - Add form labels and ARIA attributes to authentication inputs
+**Learning:** Found that multiple core components (LoginScreen, Settings in App) used `<label>` elements visually but lacked the critical `htmlFor`/`id` linking to their respective `<input>` elements, breaking screen reader association. Additionally, "show/hide password" style toggles were missing `aria-label` attributes to announce their purpose, despite using visual icons.
+**Action:** Always link `<label>` directly to `<input>` using `htmlFor` and `id`, even when wrapping inputs in layout divs. Always provide `aria-label` for icon-only toggle buttons like password visibility.
