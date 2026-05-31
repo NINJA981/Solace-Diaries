@@ -179,6 +179,7 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                       onClick={() => onEditEntry(entry)}
                       className="flex items-center justify-center border border-white/5 hover:border-[#8B5CF6] p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] text-[#ADA9BA] hover:text-[#F3F3F5] transition duration-200 cursor-pointer shadow-sm"
                       title="Edit entry"
+                      aria-label="Edit entry"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -190,6 +191,7 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                       }}
                       className="flex items-center justify-center border border-white/5 hover:border-rose-500/30 p-2.5 rounded-xl bg-white/[0.02] hover:bg-rose-500/10 text-[#ADA9BA] hover:text-rose-400 transition duration-200 cursor-pointer shadow-sm"
                       title="Delete entry"
+                      aria-label="Delete entry"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

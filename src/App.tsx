@@ -264,7 +264,9 @@ export default function App() {
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-[#ADA9BA] hover:text-[#F3F3F5] transition"
+          className="text-[#ADA9BA] hover:text-[#F3F3F5] transition cursor-pointer"
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileMenuOpen}
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -630,7 +632,8 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setShowApiKey(!showApiKey)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADA9BA] hover:text-[#F3F3F5] transition"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADA9BA] hover:text-[#F3F3F5] transition cursor-pointer"
+                              aria-label="Toggle API key visibility"
                             >
                               {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -762,6 +765,8 @@ export default function App() {
         <button
           onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
           className="w-10 h-10 bg-white/[0.04] border border-white/10 hover:border-[#8B5CF6] rounded-full flex items-center justify-center text-white shadow-md transition cursor-pointer active:scale-95"
+          aria-label="Toggle user profile menu"
+          aria-expanded={mobileProfileOpen}
         >
           <User className="w-5 h-5 text-[#8B5CF6]" />
         </button>
