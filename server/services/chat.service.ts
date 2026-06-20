@@ -133,7 +133,7 @@ export class ChatService {
     }
 
     // 5. Call AIService to retrieve exact facts and answer empathetic guidelines
-    const answer = await this.aiService.retrieveAndAnswer(question, finalEntries, apiKey, customPrompt, relevantMemories);
+    const answer = await this.aiService.retrieveAndAnswer(question, finalEntries, apiKey, customPrompt, relevantMemories, true);
 
     return {
       answer,

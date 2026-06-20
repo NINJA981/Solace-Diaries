@@ -74,10 +74,9 @@ Respond STRICTLY in JSON matching this schema, completely without markdown forma
       });
 
       let text = response.text?.trim() || '';
-      if (text.startsWith('```json')) {
-        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (text.startsWith('```')) {
-        text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        text = jsonMatch[0];
       }
       const result = JSON.parse(text);
 
