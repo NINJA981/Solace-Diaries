@@ -213,11 +213,14 @@ Provide the compressed context representation, keeping it concise and structured
     contextEntries: { title: string; date: string; content: string }[],
     apiKey?: string,
     customPrompt?: string,
-    memories?: { content: string; confidence: number }[]
+    memories?: { content: string; confidence: number }[],
+    isContextAlreadyCompressed?: boolean
   ): Promise<string> {
     try {
       const ai = getAI(apiKey);
-      const compressedContext = await this.compressContext(question, contextEntries, apiKey);
+      const compressedContext = isContextAlreadyCompressed
+        ? contextEntries.map((e, i) => `[Entry #${i + 1}] Date: ${e.date} | Title: ${e.title}\nContent: ${e.content}`).join('\n\n')
+        : await this.compressContext(question, contextEntries, apiKey);
 
       const memoriesText = memories && memories.length > 0
         ? memories.map((m) => `- ${m.content} (Confidence: ${(m.confidence * 100).toFixed(0)}%)`).join('\n')

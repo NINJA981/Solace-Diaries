@@ -5,6 +5,15 @@ import crypto from 'crypto';
 import { LongTermMemoryRepository } from '../repositories/longterm-memory.repository';
 import { LongTermMemoryService } from '../services/longterm-memory.service';
 
+// Mock DB client
+vi.mock('../db.client', () => {
+  return {
+    shouldUseMock: vi.fn().mockReturnValue(true),
+    prisma: {},
+    initDb: vi.fn()
+  };
+});
+
 describe('Long-Term Memory System', () => {
   let repository: LongTermMemoryRepository;
   let service: LongTermMemoryService;
