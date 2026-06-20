@@ -141,7 +141,9 @@ export class Database {
         memories: parsed.memories || [],
         prompts: parsed.prompts || [],
         imageAssets: parsed.imageAssets || [],
-        longTermMemories: parsed.longTermMemories || []
+        longTermMemories: parsed.longTermMemories || [],
+        entities: parsed.entities || [],
+        relationships: parsed.relationships || []
       };
     } catch (err) {
       console.error('Failed to load database. Returning empty schema.', err);
