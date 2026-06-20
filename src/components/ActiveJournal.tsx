@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, AlertCircle, Save, CheckCircle, Heart, Notebook, Mic, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, AlertCircle, Save, CheckCircle, Heart, Notebook, Mic, Sparkles, Eye, EyeOff, Trash, X, Paperclip, Image as LucideImage } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { JournalEntry } from '../types';
+import { JournalEntry, ImageAsset } from '../types';
 import { API_BASE } from '../api';
 
 interface ActiveJournalProps {
@@ -25,6 +25,18 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
   const [pendingPrompt, setPendingPrompt] = useState<any>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<ImageAsset[]>([]);
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      previews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previews]);
 
   useEffect(() => {
     // Fetch pending prompt for today
@@ -119,13 +131,63 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
     if (activeEntry) {
       setTitle(activeEntry.title);
       setContent(activeEntry.content);
+      setExistingImages(activeEntry.images || []);
       setSavedData(null);
     } else {
       setTitle('');
       setContent('');
+      setExistingImages([]);
       setSavedData(null);
     }
+    // Clear preview states when loading an entry
+    setSelectedFiles([]);
+    setPreviews([]);
+    setDeletedImageIds([]);
   }, [activeEntry]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    
+    const validFiles: File[] = [];
+    let fileError: string | null = null;
+
+    files.forEach((file) => {
+      const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedMimes.includes(file.type)) {
+        fileError = 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        fileError = 'File size limit exceeded. Images must be smaller than 5MB.';
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (fileError) {
+      setError(fileError);
+      return;
+    }
+
+    const newFiles = [...selectedFiles, ...validFiles];
+    setSelectedFiles(newFiles);
+
+    const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+    setPreviews([...previews, ...newPreviews]);
+    setError(null);
+  };
+
+  const removeSelectedFile = (index: number) => {
+    URL.revokeObjectURL(previews[index]);
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const markExistingImageForDeletion = (id: string) => {
+    setDeletedImageIds((prev) => [...prev, id]);
+    setExistingImages((prev) => prev.filter((img) => img.id !== id));
+  };
 
   const wordCount = content.trim() === '' ? 0 : content.trim().split(/\s+/).length;
   const charCount = content.length;
@@ -146,7 +208,6 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
 
     try {
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       };
       if (userApiKey) {
@@ -156,10 +217,22 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
         headers['x-custom-prompt'] = customPrompt;
       }
 
+      const formData = new FormData();
+      formData.append('title', title || 'Untitled Reflection');
+      formData.append('content', content);
+
+      selectedFiles.forEach((file) => {
+        formData.append('images', file);
+      });
+
+      if (deletedImageIds.length > 0) {
+        formData.append('deletedImageIds', JSON.stringify(deletedImageIds));
+      }
+
       const response = await fetch(`${API_BASE}${url}`, {
         method,
         headers,
-        body: JSON.stringify({ title: title || 'Untitled Reflection', content })
+        body: formData
       });
 
       const data = await response.json();
@@ -170,6 +243,15 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
 
       setSavedData(data);
       setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      
+      // Clear file upload states and update current images
+      setSelectedFiles([]);
+      setPreviews([]);
+      setDeletedImageIds([]);
+      if (data && data.images) {
+        setExistingImages(data.images);
+      }
+
       onSaveSuccess();
     } catch (err: any) {
       setError(err.message || 'Failed to save entry. Please check your connection.');
@@ -319,6 +401,22 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
                   </>
                 )}
               </button>
+
+              {/* Attach Images */}
+              <label
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] border border-white/5 hover:border-[#8B5CF6] text-[#ADA9BA] hover:text-[#F3F3F5] transition cursor-pointer select-none"
+                title="Attach images (< 5MB)"
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>Attach</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </label>
             </div>
           </div>
 
@@ -347,6 +445,61 @@ export default function ActiveJournal({ token, userApiKey, customPrompt, activeE
               }}
             />
           </div>
+
+          {/* Attached Assets Gallery / Previews Grid */}
+          {(existingImages.length > 0 || previews.length > 0) && (
+            <div className="space-y-3.5 pt-4 border-t border-white/5 animate-fade-in">
+              <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-[#ADA9BA]">
+                Attached Assets ({existingImages.length + previews.length})
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3.5">
+                {/* Existing Saved Images */}
+                {existingImages.map((img) => (
+                  <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden border border-white/5 group shadow-md bg-white/[0.02]">
+                    <img
+                      src={img.imageUrl.startsWith('/') ? `${API_BASE}${img.imageUrl}` : img.imageUrl}
+                      alt="Journal Entry Image"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => markExistingImageForDeletion(img.id)}
+                        className="p-2 bg-rose-500/20 hover:bg-rose-500/80 text-rose-300 hover:text-white rounded-xl transition duration-200 cursor-pointer border border-rose-500/30"
+                        title="Delete image"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* New Image Previews */}
+                {previews.map((url, idx) => (
+                  <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-dashed border-[#8B5CF6]/30 group shadow-md bg-white/[0.02]">
+                    <img
+                      src={url}
+                      alt="Upload Preview"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider bg-[#8B5CF6] text-white rounded-md shadow-md">
+                      New
+                    </div>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedFile(idx)}
+                        className="p-2 bg-rose-500/20 hover:bg-rose-500/80 text-rose-300 hover:text-white rounded-xl transition duration-200 cursor-pointer border border-rose-500/30"
+                        title="Remove preview"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Footer Metadata & Save button */}
           <div className="flex items-center justify-between pt-5 border-t border-white/5 text-xs text-[#ADA9BA] font-medium">

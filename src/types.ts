@@ -3,6 +3,13 @@ export interface User {
   email: string;
 }
 
+export interface ImageAsset {
+  id: string;
+  entryId: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
 export interface JournalEntry {
   id: string;
   title: string;
@@ -11,6 +18,7 @@ export interface JournalEntry {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  images?: ImageAsset[];
 }
 
 export interface SearchResult {

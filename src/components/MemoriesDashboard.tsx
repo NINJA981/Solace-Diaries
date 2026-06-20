@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Heart, Sparkles, Send, CheckCircle, Clock, Target, Users, Compass, Activity, CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { API_BASE } from '../api';
 import MemoryConstellation from './MemoryConstellation';
 
@@ -19,13 +20,22 @@ interface ProactivePrompt {
   createdAt: string;
 }
 
+interface DurableMemory {
+  id: string;
+  content: string;
+  confidence: number;
+  updatedAt: string;
+}
+
 interface MemoriesDashboardProps {
   token: string;
 }
 
 export default function MemoriesDashboard({ token }: MemoriesDashboardProps) {
   const [memories, setMemories] = useState<MemoryFragment[]>([]);
+  const [durableMemories, setDurableMemories] = useState<DurableMemory[]>([]);
   const [pendingPrompt, setPendingPrompt] = useState<ProactivePrompt | null>(null);
+  const [reflection, setReflection] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [response, setResponse] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -38,15 +48,24 @@ export default function MemoriesDashboard({ token }: MemoriesDashboardProps) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [memRes, promptRes] = await Promise.all([
+      const [memRes, promptRes, durableRes, reflectionRes] = await Promise.all([
         fetch(`${API_BASE}/api/memories/graph`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/memories/pending-prompt`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${API_BASE}/api/memories/pending-prompt`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/memories/durable`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/memories/reflection`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       if (memRes.ok) {
         setMemories(await memRes.json());
       }
       if (promptRes.ok) {
         setPendingPrompt(await promptRes.json());
+      }
+      if (durableRes.ok) {
+        setDurableMemories(await durableRes.json());
+      }
+      if (reflectionRes.ok) {
+        const refData = await reflectionRes.json();
+        setReflection(refData.reflection || '');
       }
     } catch (err) {
       console.error('Failed to load memories', err);
@@ -113,7 +132,7 @@ export default function MemoriesDashboard({ token }: MemoriesDashboardProps) {
       
       {/* Immersive memory graph banner with live constellation */}
       <div className="relative h-72 rounded-3xl overflow-hidden border border-white/5 shadow-2xl flex flex-col justify-end p-8 bg-[#09080E]/60 backdrop-blur-md">
-        <MemoryConstellation />
+        <MemoryConstellation token={token} />
         
         {/* Glow overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#08070C] via-[#08070C]/40 to-transparent pointer-events-none z-0" />
@@ -139,6 +158,23 @@ export default function MemoriesDashboard({ token }: MemoriesDashboardProps) {
       ) : (
         <div className="space-y-8">
           
+          {/* Dynamic Psychological Reflection Card */}
+          {reflection && (
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-3xl p-6 md:p-8 shadow-md border border-white/5 space-y-4"
+            >
+              <div className="flex items-center gap-2.5 text-[#8B5CF6]">
+                <Brain className="w-5 h-5 text-[#8B5CF6]" />
+                <h3 className="font-serif font-bold text-lg text-[#F3F3F5]">Constellation Insights</h3>
+              </div>
+              <div className="prose prose-invert max-w-none text-sm text-[#ADA9BA] leading-relaxed font-sans">
+                <ReactMarkdown>{reflection}</ReactMarkdown>
+              </div>
+            </motion.div>
+          )}
+
           {/* Active Proactive Prompt reflection card */}
           {pendingPrompt && (
             <div className="glass-card rounded-3xl p-6 md:p-8 shadow-sm space-y-5 animate-fade-in relative overflow-hidden border border-[#8B5CF6]/10">
@@ -175,6 +211,67 @@ export default function MemoriesDashboard({ token }: MemoriesDashboardProps) {
               )}
             </div>
           )}
+
+          {/* Durable Mind Anchors (Long-Term Memories) */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-[#8B5CF6]" />
+              <h3 className="font-serif font-bold text-xl text-[#F3F3F5]">Durable Mind Anchors</h3>
+            </div>
+            
+            {durableMemories.length === 0 ? (
+              <div className="glass-card border border-white/5 p-8 rounded-3xl text-center bg-[#09080E]/20">
+                <p className="text-[#ADA9BA] text-sm leading-relaxed">
+                  No durable mind anchors have crystallized yet. Continue writing reflections to generate permanent memories.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                {durableMemories.map((dMemory, index) => {
+                  return (
+                    <motion.div
+                      key={dMemory.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0, transition: { delay: index * 0.04 } }}
+                      className="glass-card border border-violet-500/10 shadow-violet-500/5 bg-violet-500/[0.02] p-5 rounded-3xl hover:shadow-xl hover:bg-violet-500/[0.04] transition-all duration-300 group flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-[#8B5CF6]">
+                            Durable Memory
+                          </span>
+                          <span className="text-[10px] text-violet-400 font-semibold">
+                            {(dMemory.confidence * 100).toFixed(0)}% Confidence
+                          </span>
+                        </div>
+                        
+                        <p className="text-xs text-[#E7E7EC] leading-relaxed font-serif italic">
+                          "{dMemory.content}"
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
+                        {/* Confidence Progress Bar */}
+                        <div className="w-full bg-white/[0.04] h-1.5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${dMemory.confidence * 100}%` }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] h-full rounded-full"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-[9px] text-[#ADA9BA]/50 font-medium">
+                          <span>Confidence Level</span>
+                          <span>{new Date(dMemory.updatedAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Memory Fragments List */}
           <div className="space-y-5">

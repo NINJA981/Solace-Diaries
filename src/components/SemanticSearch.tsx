@@ -170,6 +170,28 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
                         </p>
                       </div>
 
+                      {/* Image attachments list */}
+                      {entry.images && entry.images.length > 0 && (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 pt-1">
+                          {entry.images.map((img) => (
+                            <a
+                              key={img.id}
+                              href={img.imageUrl.startsWith('/') ? `${API_BASE}${img.imageUrl}` : img.imageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block aspect-square rounded-xl overflow-hidden border border-white/5 bg-white/[0.01] hover:border-[#8B5CF6]/30 transition duration-300 shadow-sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <img
+                                src={img.imageUrl.startsWith('/') ? `${API_BASE}${img.imageUrl}` : img.imageUrl}
+                                alt="Journal Attachment"
+                                className="w-full h-full object-cover hover:scale-105 transition duration-300"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
                       {entry.tags && entry.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {entry.tags.map((tg) => (

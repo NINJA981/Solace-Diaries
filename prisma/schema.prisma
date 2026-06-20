@@ -15,6 +15,9 @@ model User {
   entries          JournalEntry[]
   memoryFragments  MemoryFragment[]
   proactivePrompts ProactivePrompt[]
+  memories         Memory[]
+  graphEntities    GraphEntity[]
+  graphRelationships GraphRelationship[]
 }
 
 model JournalEntry {
@@ -29,6 +32,28 @@ model JournalEntry {
   updatedAt DateTime      @updatedAt
   vectors   VectorRecord[]
   memorySources MemoryFragmentSource[]
+  images    ImageAsset[]
+  chunks    JournalChunk[]
+  searchVector  Unsupported("tsvector")? @map("search_vector")
+}
+
+model JournalChunk {
+  id         String       @id @default(uuid())
+  entryId    String
+  entry      JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  content    String       @db.Text
+  chunkIndex Int
+  vector     Unsupported("vector(768)")?
+  createdAt  DateTime     @default(now())
+}
+
+model ImageAsset {
+  id          String       @id @default(uuid())
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  imageUrl    String
+  description String?      @db.Text
+  createdAt   DateTime     @default(now())
 }
 
 model VectorRecord {
@@ -76,4 +101,46 @@ model ProactivePrompt {
   deliveredAt      DateTime?
   userResponse     String?         @db.Text
   createdAt        DateTime        @default(now())
+}
+
+model Memory {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  confidence Float
+  vector     Unsupported("vector(768)")?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model GraphEntity {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      String             // "people" | "places" | "projects" | "goals" | "habits" | "emotions"
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  
+  sourceRelationships GraphRelationship[] @relation("SourceEntity")
+  targetRelationships GraphRelationship[] @relation("TargetEntity")
+
+  @@unique([userId, name, type])
+}
+
+model GraphRelationship {
+  id         String      @id @default(uuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceId   String
+  source     GraphEntity @relation("SourceEntity", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId   String
+  target     GraphEntity @relation("TargetEntity", fields: [targetId], references: [id], onDelete: Cascade)
+  type       String      // e.g. "triggers" | "improves" | "hinders" | "relates_to" | "participates_in"
+  strength   Int         @default(1)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([userId, sourceId, targetId, type])
 }

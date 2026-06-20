@@ -101,7 +101,7 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 font-sans text-[#E7E7EC] h-[calc(100vh-4rem)] flex flex-col relative z-10">
+    <div className="max-w-5xl w-full mx-auto py-8 px-4 font-sans text-[#E7E7EC] flex flex-col grow min-h-0 relative z-10">
       
       {/* Title block */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4 shrink-0">
