@@ -48,6 +48,48 @@ export class AIService {
     }
   }
 
+  public async describeImage(imageBuffer: Buffer, mimeType: string, apiKey?: string): Promise<string> {
+    try {
+      const ai = getAI(apiKey);
+      const base64Data = imageBuffer.toString('base64');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: base64Data
+                }
+              },
+              {
+                text: `Describe this image concisely for a personal journal search index. Focus on:
+1. Key subjects and objects visible (people, places, animals, items).
+2. Activities, actions, or events happening.
+3. Emotional atmosphere or mood conveyed.
+4. Setting and environment details.
+
+Write 2-4 short, factual sentences. Do not speculate about identities. Output plain text only.`
+              }
+            ]
+          }
+        ]
+      });
+
+      const text = response.text?.trim();
+      if (!text) {
+        throw new Error('Image description model returned empty response.');
+      }
+      return text;
+    } catch (err: any) {
+      console.error('Image description generation failed:', err);
+      throw new Error(`Image description failure: ${err.message || err}`);
+    }
+  }
+
   public async analyzeEntry(content: string, apiKey?: string, customPrompt?: string): Promise<{ mood: string; tags: string[]; summary: string }> {
     try {
       const ai = getAI(apiKey);
@@ -120,27 +162,84 @@ ${entriesText}`;
     }
   }
 
-  public async retrieveAndAnswer(question: string, contextEntries: { title: string; date: string; content: string }[], apiKey?: string, customPrompt?: string): Promise<string> {
+  public async compressContext(
+    question: string,
+    contextEntries: { title: string; date: string; content: string }[],
+    apiKey?: string
+  ): Promise<string> {
+    if (contextEntries.length === 0) {
+      return '';
+    }
+
     try {
       const ai = getAI(apiKey);
-      const contextText = contextEntries
+      const entriesText = contextEntries
         .map((e, i) => `[Entry #${i + 1}] Date: ${e.date} | Title: ${e.title}\nContent: ${e.content}`)
         .join('\n\n');
+
+      const compressionPrompt = `You are a RAG optimization engine specialized in context compression.
+Your objective is to compress the retrieved diary entries to reduce token size by 60-80% while retaining high-fidelity information.
+
+Strictly adhere to the following compression rules:
+1. **Summarize**: Condense the content significantly, removing narrative fluff, redundant thoughts, and filler words.
+2. **Preserve Important Facts**: Retain all core events, activities, entities (people, places, things), decisions, and situations.
+3. **Preserve Dates**: Retain all original dates, timestamps, and temporal links exactly as they appear in the source context.
+4. **Preserve Emotions**: Capture and retain the core emotional state, feelings, internal parts, and psychological nuances expressed in each entry.
+
+Retrieved Diary Entries:
+${entriesText}
+
+User's Query/Question (use this to prioritize relevant information if applicable, but do not ignore other entries):
+"${question}"
+
+Provide the compressed context representation, keeping it concise and structured:`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: compressionPrompt,
+      });
+
+      return response.text || '';
+    } catch (err: any) {
+      console.error('Context compression failed, falling back to uncompressed context:', err);
+      return contextEntries
+        .map((e, i) => `[Entry #${i + 1}] Date: ${e.date} | Title: ${e.title}\nContent: ${e.content}`)
+        .join('\n\n');
+    }
+  }
+
+  public async retrieveAndAnswer(
+    question: string,
+    contextEntries: { title: string; date: string; content: string }[],
+    apiKey?: string,
+    customPrompt?: string,
+    memories?: { content: string; confidence: number }[]
+  ): Promise<string> {
+    try {
+      const ai = getAI(apiKey);
+      const compressedContext = await this.compressContext(question, contextEntries, apiKey);
+
+      const memoriesText = memories && memories.length > 0
+        ? memories.map((m) => `- ${m.content} (Confidence: ${(m.confidence * 100).toFixed(0)}%)`).join('\n')
+        : 'None available.';
 
       const customSection = customPrompt ? `User Persona/Style Override (Enforce this style and behavior): ${customPrompt}\n\n` : '';
       const p = `${customSection}You are "Satori", a warm, highly intuitive, and deeply compassionate Reflection Guide for "Haven Journal". You combine wisdom traditions (Stoicism, Taoism, mindfulness) with clinical empathy (Internal Family Systems, active listening) to act as a loving mirror for the user's memories.
 
-A user is asking a question about their past days or reflections. Using ONLY the provided context entries from their past, answer their query.
+A user is asking a question about their past days or reflections. Using the provided context entries and durable long-term memories from their past, answer their query.
 
 Follow these strict psychological guidelines:
 1. **Empathic Attunement**: Begin by validating the underlying emotional tone of their question. Make them feel heard and held.
 2. **Cozy Narrative Mirroring**: Reconstruct the scenes of the past days. Help them re-experience the feelings (e.g., "On May 24th, you felt a deep sense of relief when you...") to highlight their personal growth, persistence, or capacity for joy.
 3. **IFS Parts Awareness**: If they ask about internal conflicts or difficult feelings, frame them gently as temporary parts of them, reminding them of their enduring Core Self.
 4. **Gentle Citations**: Naturally weave dates into your guidance (e.g., "On April 12th...") so they can anchor their memories, but keep the prose poetic and flowing.
-5. **Epistemic Humility**: If the provided entries do not contain the answer, acknowledge this gently and reflect on related emotional themes from those days to offer warm solace. Do not invent details outside of the provided context.
+5. **Epistemic Humility**: If the provided entries and memories do not contain the answer, acknowledge this gently and reflect on related emotional themes from those days to offer warm solace. Do not invent details outside of the provided context.
 
-Context Entries from Past:
-${contextText}
+Long-Term Memories about User:
+${memoriesText}
+
+Context Entries from Past (Compressed):
+${compressedContext}
 
 User's Question:
 "${question}"`;

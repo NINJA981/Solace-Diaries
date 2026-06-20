@@ -1,17 +1,51 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import express from 'express';
+import path from 'path';
+import multer from 'multer';
 import { AuthService } from './services/auth.service';
 import { EntryService } from './services/entry.service';
 import { ChatService } from './services/chat.service';
 import { InsightService } from './services/insight.service';
 import { MemoryService } from './services/memory.service';
+import { LongTermMemoryService } from './services/longterm-memory.service';
+import { GraphService } from './services/graph.service';
 
 const router = Router();
+
+// Expose public uploads static folder
+router.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, callback) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.'));
+    }
+  }
+});
+
+const uploadImages = (req: Request, res: Response, next: NextFunction) => {
+  upload.array('images')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Image upload failed.' });
+    }
+    next();
+  });
+};
 
 const authService = new AuthService();
 const entryService = new EntryService();
 const chatService = new ChatService();
 const insightService = new InsightService();
 const memoryService = new MemoryService();
+const longTermMemoryService = new LongTermMemoryService();
+const graphService = new GraphService();
 
 // Extends Express Request with a custom user field safely
 export interface AuthenticatedRequest extends Request {
@@ -109,26 +143,49 @@ router.get('/entries/:id', requireAuth, async (req: AuthenticatedRequest, res) =
   }
 });
 
-router.post('/entries', requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post('/entries', requireAuth, uploadImages, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
     const { title, content } = req.body;
+    const files = req.files as Express.Multer.File[] | undefined;
     const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
     const customPrompt = req.headers['x-custom-prompt'] as string | undefined;
-    const entry = await entryService.createEntry(userId, title, content, apiKey, customPrompt);
+    const entry = await entryService.createEntry(userId, title, content, files, apiKey, customPrompt);
     res.status(201).json(entry);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Failed to create entry' });
   }
 });
 
-router.put('/entries/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+router.put('/entries/:id', requireAuth, uploadImages, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
-    const { title, content } = req.body;
+    const { title, content, deletedImageIds } = req.body;
+    const files = req.files as Express.Multer.File[] | undefined;
     const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
     const customPrompt = req.headers['x-custom-prompt'] as string | undefined;
-    const entry = await entryService.updateEntry(req.params.id, userId, title, content, apiKey, customPrompt);
+
+    let parsedDeletedIds: string[] = [];
+    if (deletedImageIds) {
+      try {
+        parsedDeletedIds = JSON.parse(deletedImageIds);
+      } catch (e) {
+        if (typeof deletedImageIds === 'string') {
+          parsedDeletedIds = deletedImageIds.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    const entry = await entryService.updateEntry(
+      req.params.id,
+      userId,
+      title,
+      content,
+      files,
+      parsedDeletedIds,
+      apiKey,
+      customPrompt
+    );
     if (!entry) {
       res.status(404).json({ error: 'Entry not found or unauthorized.' });
       return;
@@ -194,13 +251,44 @@ router.get('/insights', requireAuth, async (req: AuthenticatedRequest, res) => {
 
 // --- MEMORY LAYER ENDPOINTS ---
 
-router.get('/memories/graph', requireAuth, async (req: AuthenticatedRequest, res) => {
+router.get('/memories/active', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
     const memories = await memoryService.getActiveMemories(userId);
     res.status(200).json(memories);
   } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to fetch memories.' });
+    res.status(500).json({ error: err.message || 'Failed to fetch active memories.' });
+  }
+});
+
+router.get('/memories/durable', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const memories = await longTermMemoryService.getMemories(userId);
+    res.status(200).json(memories);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch durable memories.' });
+  }
+});
+
+router.get('/memories/graph', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const graphData = await graphService.getGraph(userId);
+    res.status(200).json(graphData);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch graph constellation.' });
+  }
+});
+
+router.get('/memories/reflection', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const apiKey = req.headers['x-gemini-api-key'] as string | undefined;
+    const reflection = await graphService.generateReflection(userId, apiKey);
+    res.status(200).json({ reflection });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to generate graph reflection.' });
   }
 });
 

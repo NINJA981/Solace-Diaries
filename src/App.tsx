@@ -430,7 +430,7 @@ export default function App() {
       </aside>
 
       {/* Main workspace frame */}
-      <main className="grow overflow-y-auto relative z-10 flex flex-col min-h-0">
+      <main className={`grow relative z-10 flex flex-col min-h-0 ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab + (activeEntry ? `-${activeEntry.id}` : '')}
@@ -438,7 +438,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="grow"
+            className="grow flex flex-col min-h-0"
           >
             {activeTab === 'write' && (
               <ActiveJournal
