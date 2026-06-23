@@ -13,40 +13,50 @@ async function startServer() {
   await initDb();
 
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
-  // Mount CORS first to handle pre-flight requests
+  // Build allowed origins list from FRONTEND_URL env var
+  const allowedOrigins: string[] = [];
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ''));
+  }
+
   app.use(cors({
-    origin: process.env.APP_URL || '*',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl, mobile apps)
+      if (!origin) return callback(null, true);
+      // In development, allow all origins
+      if (process.env.NODE_ENV !== 'production') return callback(null, true);
+      // In production, check against allowed list
+      if (allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.vercel.app'))) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
   }));
 
   // Core payload parsers
   app.use(express.json());
 
-  // Mount API endpoints first
+  // Mount API endpoints
   app.use('/api', apiRouter);
 
   // Serve static uploads folder directly at root path
   app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
-  // Vite static vs HMR middleware configuration
+  // In development, use Vite's HMR middleware for the frontend
+  // In production, the frontend is deployed separately on Vercel
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa'
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Haven Journal] Server active at http://localhost:${PORT}`);
+    console.log(`[Solace Diaries] API server active at http://localhost:${PORT}`);
   });
 }
 
