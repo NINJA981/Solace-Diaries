@@ -56,11 +56,11 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto py-20 text-center space-y-4 font-sans text-[#E7E7EC]">
-        <div className="w-12 h-12 rounded-2xl bg-[#8B5CF6]/10 flex items-center justify-center mx-auto border border-[#8B5CF6]/20">
-          <Heart className="w-5 h-5 text-[#EC4899] fill-[#EC4899] animate-pulse" />
+        <div className="w-12 h-12 rounded-[2px] bg-[var(--accent-color)]/10 flex items-center justify-center mx-auto border border-[var(--accent-color)]/20">
+          <Heart className="w-5 h-5 text-[var(--accent-heart)] fill-[var(--accent-heart)] animate-pulse" />
         </div>
-        <h3 className="text-base font-serif font-bold text-[#F3F3F5]">Analyzing narrative patterns...</h3>
-        <p className="text-xs text-[#ADA9BA] max-w-sm mx-auto leading-relaxed">Aggregating emotional states and mapping weekly growth vectors.</p>
+        <h3 className="text-base font-serif font-bold text-[#F3F3F5]">Analyzing journal entries...</h3>
+        <p className="text-xs text-[#ADA9BA] max-w-sm mx-auto leading-relaxed">Analyzing emotional trends and compiling weekly summary.</p>
       </div>
     );
   }
@@ -68,13 +68,13 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
   if (error) {
     return (
       <div className="max-w-4xl mx-auto py-12 px-4 font-sans text-[#E7E7EC] space-y-4">
-        <div className="p-4 bg-rose-500/10 border border-rose-500/25 rounded-2xl flex items-center gap-3 text-rose-300 text-xs shadow-sm">
+        <div className="p-4 bg-rose-500/10 border border-rose-500/25 rounded-[2px] flex items-center gap-3 text-rose-300 text-xs shadow-sm">
           <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
           <span>{error}</span>
         </div>
         <button
           onClick={fetchInsights}
-          className="bg-white/[0.04] hover:bg-white/[0.08] text-[#E7E7EC] text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
+          className="bg-white/[0.04] hover:bg-white/[0.08] text-[#E7E7EC] text-xs px-4 py-2.5 rounded-[2px] transition cursor-pointer"
         >
           Retry
         </button>
@@ -94,15 +94,15 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div>
           <h2 className="text-2xl font-serif font-bold text-[#F3F3F5] flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#8B5CF6]" />
-            Narrative Insights
+            <TrendingUp className="w-5 h-5 text-[var(--accent-color)]" />
+            Weekly Summary
           </h2>
-          <p className="text-xs text-[#ADA9BA] mt-1.5 leading-relaxed">Review emotional trends, tag distributions, and AI-compiled weekly summaries.</p>
+          <p className="text-xs text-[#ADA9BA] mt-1.5 leading-relaxed">Review emotional trends, tag distributions, and weekly summaries.</p>
         </div>
 
         <button
           onClick={fetchInsights}
-          className="flex items-center gap-1.5 text-xs text-[#ADA9BA] hover:text-[#F3F3F5] bg-white/[0.02] border border-white/5 hover:border-white/10 px-4 py-2.5 rounded-xl cursor-pointer transition-all shadow-sm font-semibold"
+          className="flex items-center gap-1.5 text-xs text-[#ADA9BA] hover:text-[#F3F3F5] bg-white/[0.02] border border-white/5 hover:border-white/10 px-4 py-2.5 rounded-[2px] cursor-pointer transition-all shadow-sm font-semibold"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh Analysis
@@ -110,19 +110,19 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
       </div>
 
       {entriesCount === 0 ? (
-        <div className="text-center py-16 glass-card rounded-3xl border border-white/5 shadow-sm">
-          <TrendingUp className="w-9 h-9 text-[#8B5CF6] mx-auto mb-3 animate-pulse" />
+        <div className="text-center py-16 glass-card rounded-[2px] border border-white/5 shadow-sm">
+          <TrendingUp className="w-9 h-9 text-[var(--accent-color)] mx-auto mb-3 animate-pulse" />
           <p className="text-base font-serif font-bold text-[#F3F3F5]">No insights available</p>
           <p className="text-xs text-[#ADA9BA] mt-2 max-w-[280px] mx-auto leading-relaxed">
-            Write more journal reflections to trace sentiment charts and unlock narrative summaries.
+            Write more journal entries to generate weekly summaries and sentiment charts.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Mood distribution column */}
-          <div className="p-6 glass-card rounded-3xl space-y-5 border border-white/5 hover:border-white/10 transition-all duration-300">
+          <div className="p-6 glass-card rounded-[2px] space-y-5 border border-white/5 hover:border-white/10 transition-all duration-300">
             <span className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-[#8B5CF6]" />
+               <TrendingUp className="w-4 h-4 text-[var(--accent-color)]" />
               Emotion Distribution
             </span>
 
@@ -143,7 +143,7 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
                           initial={{ width: 0 }}
                           animate={{ width: `${percentage}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className="bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] h-full rounded-full"
+                          className="bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] h-full rounded-full"
                         />
                       </div>
                     </div>
@@ -154,10 +154,10 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
           </div>
 
           {/* Tags cloud column */}
-          <div className="p-6 glass-card rounded-3xl space-y-5 border border-white/5 hover:border-white/10 transition-all duration-300">
+          <div className="p-6 glass-card rounded-[2px] space-y-5 border border-white/5 hover:border-white/10 transition-all duration-300">
             <span className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider flex items-center gap-1.5">
-              <Tag className="w-4 h-4 text-[#EC4899]" />
-              Top Reflection Tags
+              <Tag className="w-4 h-4 text-[var(--accent-heart)]" />
+              Top Tags
             </span>
 
             {tagList.length === 0 ? (
@@ -177,7 +177,7 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
                           initial={{ width: 0 }}
                           animate={{ width: `${percentage}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut', delay: 0.15 }}
-                          className="bg-gradient-to-r from-[#EC4899] to-[#FDA4AF] h-full rounded-full"
+                          className="bg-gradient-to-r from-[var(--accent-heart)] to-[var(--accent-gradient-to)] h-full rounded-full"
                         />
                       </div>
                     </div>
@@ -191,15 +191,15 @@ export default function WeeklyInsights({ token, userApiKey, entriesCount, custom
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="md:col-span-2 p-6 glass-card rounded-3xl space-y-4 border border-white/5"
+            className="md:col-span-2 p-6 glass-card rounded-[2px] space-y-4 border border-white/5"
           >
             <div className="flex items-center gap-2 text-[#ADA9BA] border-b border-white/5 pb-3">
-              <PlusCircle className="w-4 h-4 text-[#8B5CF6]" />
-              <span className="text-xs font-sans font-bold uppercase tracking-wider text-[#ADA9BA]">AI Summary & Observations</span>
+              <PlusCircle className="w-4 h-4 text-[var(--accent-color)]" />
+              <span className="text-xs font-sans font-bold uppercase tracking-wider text-[#ADA9BA]">Summary & Observations</span>
             </div>
 
             <div className="markdown-body text-sm leading-relaxed text-[#ADA9BA] space-y-3 prose max-w-none">
-              <ReactMarkdown>{data?.markdownSummary || 'Synthesizing observational summary...'}</ReactMarkdown>
+              <ReactMarkdown>{data?.markdownSummary || 'Generating summary...'}</ReactMarkdown>
             </div>
           </motion.div>
         </div>

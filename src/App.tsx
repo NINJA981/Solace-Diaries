@@ -38,6 +38,7 @@ import MemoryChat from './components/MemoryChat';
 import WeeklyInsights from './components/WeeklyInsights';
 import MemoriesDashboard from './components/MemoriesDashboard';
 import BackgroundOrbs from './components/BackgroundOrbs';
+import MemorySpark from './components/MemorySpark';
 import { JournalEntry } from './types';
 import { API_BASE } from './api';
 
@@ -107,6 +108,7 @@ export default function App() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [keyTestingStatus, setKeyTestingStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('journal_theme') as 'light' | 'dark') || 'dark';
   });
@@ -250,195 +252,61 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen md:h-screen bg-[var(--bg-main)] flex flex-col md:flex-row font-sans text-[var(--text-main)] relative overflow-hidden md:overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen md:h-screen bg-[var(--bg-main)] flex flex-col font-sans text-[var(--text-main)] relative overflow-hidden transition-colors duration-300">
       {/* Background ambient lighting */}
       {theme === 'dark' && <BackgroundOrbs />}
 
-      {/* Sidebar navigation on Desktop, top header on Mobile */}
-      <header className="md:hidden bg-[#13111A]/90 backdrop-blur-md border-b border-white/5 p-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/[0.03] border border-white/10 rounded-lg flex items-center justify-center text-[#8B5CF6]">
-            <Heart className="w-4.5 h-4.5 fill-[#EC4899] text-[#EC4899]" />
-          </div>
-          <span className="font-serif font-bold text-[#F3F3F5] text-base">Solace Diaries</span>
-        </div>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-[#ADA9BA] hover:text-[#F3F3F5] transition"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </header>
-
-      {/* Navigation sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 transform ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:sticky md:top-0 md:h-screen md:translate-x-0 overflow-y-auto scrollbar-thin transition duration-300 ease-in-out z-30 w-64 glass-panel border-r border-white/5 flex flex-col justify-between shrink-0 pt-0 md:pt-6 pb-6`}
-      >
-        <div className="flex flex-col space-y-6">
-          {/* Logo segment */}
-          <div className="p-4 border-b border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-[#8B5CF6] shadow-sm">
-              <Heart className="w-4.5 h-4.5 fill-[#EC4899] text-[#EC4899]" />
-            </div>
-            <div>
-              <span className="block font-serif font-bold text-[#F3F3F5] text-md leading-tight">Solace Diaries</span>
-              <span className="block text-[9px] text-[#ADA9BA] font-sans tracking-wide">Sanctuary of reflections</span>
-            </div>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="px-3 space-y-1">
-            <button
-              onClick={() => {
-                setActiveTab('write');
-                setActiveEntry(null);
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'write'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>{activeEntry ? 'Edit Entry' : 'Write'}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('list');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'list'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Entries</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('search');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'search'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <Search className="w-4 h-4" />
-              <span>Search</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('chat');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'chat'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Chat</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('insights');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'insights'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>Insights</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('memories');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'memories'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <Brain className="w-4 h-4" />
-              <span>Memories</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('settings');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
-                activeTab === 'settings'
-                  ? 'bg-white/[0.04] text-[var(--text-title)] border-l-2 border-[#8B5CF6] shadow-sm font-bold'
-                  : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.02] border-l-2 border-transparent'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
-            </button>
-          </nav>
-        </div>
-
-        {/* Footer info & Logout button */}
-        <div className="px-3 space-y-3">
-          {/* Theme switcher */}
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent-color)] hover:bg-white/[0.02] transition-all duration-200 cursor-pointer"
+      {/* Top Minimalist Navigation (Desktop) - Hides in Focus Mode */}
+      <AnimatePresence>
+        {!isFocusMode && (
+          <motion.header
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="hidden md:flex fixed top-0 left-0 right-0 z-40 p-4 items-center justify-between pointer-events-none"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
-            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
-
-          <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center gap-2.5 shadow-inner backdrop-blur-md">
-            <div className="w-7 h-7 bg-white/[0.05] border border-white/10 rounded-lg flex items-center justify-center text-[#ADA9BA] shrink-0">
-              <User className="w-3.5 h-3.5 text-[#8B5CF6]" />
+            <div className="flex items-center gap-3 pointer-events-auto">
+              <div className="w-10 h-10 bg-white/[0.02] backdrop-blur-md border border-white/10 rounded-[2px] flex items-center justify-center shadow-sm">
+                <Heart className="w-5 h-5 text-[var(--accent-heart)] fill-[var(--accent-heart)]" />
+              </div>
+              <span className="font-serif font-bold text-[#F3F3F5] tracking-tight">Solace Diaries</span>
             </div>
-            <div className="truncate min-w-0">
-              <span className="block text-[8px] font-sans font-semibold text-[#ADA9BA] uppercase tracking-wider">My Account</span>
-              <span className="block text-xs font-semibold text-[#F3F3F5] truncate">{email}</span>
-            </div>
-          </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#ADA9BA] hover:text-[#F43F5E] hover:bg-[#F43F5E]/10 transition-all duration-200 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
+            <nav className="flex items-center gap-1 bg-white/[0.02] backdrop-blur-md border border-white/10 p-1 rounded-[2px] shadow-sm pointer-events-auto">
+              <button onClick={() => { setActiveTab('write'); setActiveEntry(null); }} className={`flex items-center gap-2 px-4 py-2 rounded-[2px] text-xs font-semibold transition-all ${activeTab === 'write' ? 'bg-[var(--accent-color)] text-white shadow-md' : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.04]'}`}> <BookOpen className="w-4 h-4" /> <span>Write</span> </button>
+              <button onClick={() => setActiveTab('list')} className={`flex items-center gap-2 px-4 py-2 rounded-[2px] text-xs font-semibold transition-all ${activeTab === 'list' ? 'bg-[var(--accent-color)] text-white shadow-md' : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.04]'}`}> <Calendar className="w-4 h-4" /> <span>Entries</span> </button>
+              <button onClick={() => setActiveTab('search')} className={`flex items-center gap-2 px-4 py-2 rounded-[2px] text-xs font-semibold transition-all ${activeTab === 'search' ? 'bg-[var(--accent-color)] text-white shadow-md' : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.04]'}`}> <Search className="w-4 h-4" /> <span>Search</span> </button>
+              <button onClick={() => setActiveTab('chat')} className={`flex items-center gap-2 px-4 py-2 rounded-[2px] text-xs font-semibold transition-all ${activeTab === 'chat' ? 'bg-[var(--accent-color)] text-white shadow-md' : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.04]'}`}> <MessageSquare className="w-4 h-4" /> <span>Chat</span> </button>
+              <button onClick={() => setActiveTab('insights')} className={`flex items-center gap-2 px-4 py-2 rounded-[2px] text-xs font-semibold transition-all ${activeTab === 'insights' ? 'bg-[var(--accent-color)] text-white shadow-md' : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.04]'}`}> <TrendingUp className="w-4 h-4" /> <span>Insights</span> </button>
+              <button onClick={() => setActiveTab('memories')} className={`flex items-center gap-2 px-4 py-2 rounded-[2px] text-xs font-semibold transition-all ${activeTab === 'memories' ? 'bg-[var(--accent-color)] text-white shadow-md' : 'text-[#ADA9BA] hover:text-[#F3F3F5] hover:bg-white/[0.04]'}`}> <Brain className="w-4 h-4" /> <span>Memories</span> </button>
+            </nav>
+
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-10 h-10 bg-white/[0.02] backdrop-blur-md border border-white/10 rounded-[2px] flex items-center justify-center text-[#ADA9BA] hover:text-[var(--accent-color)] transition cursor-pointer">
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+              </button>
+              <button onClick={() => setActiveTab('settings')} className="w-10 h-10 bg-white/[0.02] backdrop-blur-md border border-white/10 rounded-[2px] flex items-center justify-center text-[#ADA9BA] hover:text-[var(--accent-color)] transition cursor-pointer">
+                <Settings className="w-4 h-4" />
+              </button>
+              <button onClick={handleLogout} className="w-10 h-10 bg-white/[0.02] backdrop-blur-md border border-white/10 rounded-[2px] flex items-center justify-center text-[#ADA9BA] hover:text-rose-400 transition cursor-pointer">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.header>
+        )}
+      </AnimatePresence>
 
       {/* Main workspace frame */}
-      <main className={`grow relative z-10 flex flex-col min-h-0 ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      <main className={`grow relative z-10 flex flex-col min-h-0 ${isFocusMode ? '' : 'md:pt-24 pb-24 md:pb-8'} ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin'}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab + (activeEntry ? `-${activeEntry.id}` : '')}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="grow flex flex-col min-h-0"
+            className="grow flex flex-col min-h-0 w-full max-w-6xl mx-auto"
           >
             {activeTab === 'write' && (
               <ActiveJournal
@@ -451,6 +319,8 @@ export default function App() {
                   setActiveEntry(null);
                   setActiveTab('list');
                 }}
+                isFocusMode={isFocusMode}
+                setIsFocusMode={setIsFocusMode}
               />
             )}
 
@@ -476,20 +346,20 @@ export default function App() {
                 <div className="border-b border-white/5 pb-5 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <h2 className="text-3xl font-serif font-bold text-[#F3F3F5] flex items-center gap-3">
-                      <Settings className="w-7 h-7 text-[#8B5CF6]" />
+                      <Settings className="w-7 h-7 text-[var(--accent-color)]" />
                       Settings
                     </h2>
-                    <p className="text-sm text-[#ADA9BA] mt-1">Customize your private AI sanctuary, system prompts, and API credentials.</p>
+                    <p className="text-sm text-[#ADA9BA] mt-1">Customize your private journal workspace, system prompts, and API credentials.</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   {/* Left Column: AI Persona Options (Col-span 7) */}
                   <div className="lg:col-span-7 space-y-6">
-                    <div className="glass-card rounded-2xl p-6 shadow-sm space-y-6">
+                    <div className="glass-card rounded-[2px] p-6 shadow-sm space-y-6">
                       <div className="flex items-center gap-2 border-b border-white/5 pb-4">
-                        <Sliders className="w-5 h-5 text-[#8B5CF6]" />
-                        <h3 className="font-serif font-bold text-lg text-[#F3F3F5]">AI Voice & Reflection Style</h3>
+                        <Sliders className="w-5 h-5 text-[var(--accent-color)]" />
+                        <h3 className="font-serif font-bold text-lg text-[#F3F3F5]">AI Response Tone</h3>
                       </div>
 
                       <div className="space-y-4">
@@ -498,7 +368,7 @@ export default function App() {
                             Current System Prompt
                           </label>
                           <p className="text-xs text-[#ADA9BA]">
-                            This shapes the tone, perspective, and depth of your daily analyses, insights, and chats.
+                            This shapes the tone and behavior of the AI for your daily analyses, summaries, and chat responses.
                           </p>
                         </div>
 
@@ -514,7 +384,7 @@ export default function App() {
                               localStorage.removeItem('journal_custom_prompt');
                             }
                           }}
-                          className="w-full glass-input rounded-xl py-3 px-4 text-xs placeholder-[#ADA9BA]/40 outline-none transition min-h-[120px] leading-relaxed resize-y font-mono"
+                          className="w-full glass-input rounded-[2px] py-3 px-4 text-xs placeholder-[#ADA9BA]/40 outline-none transition min-h-[120px] leading-relaxed resize-y font-mono"
                         />
 
                         {customPrompt ? (
@@ -527,9 +397,9 @@ export default function App() {
                                 setCustomPrompt(null);
                                 localStorage.removeItem('journal_custom_prompt');
                               }}
-                              className="text-xs font-semibold text-[#8B5CF6] hover:underline flex items-center gap-1 transition"
+                              className="text-xs font-semibold text-[var(--accent-color)] hover:underline flex items-center gap-1 transition"
                             >
-                              <RefreshCw className="w-3 h-3" /> Reset to Default (Satori Wisdom)
+                              <RefreshCw className="w-3 h-3" /> Reset to Default (Satori - Warm & Philosophical)
                             </button>
                           </div>
                         ) : (
@@ -543,10 +413,10 @@ export default function App() {
                       <div className="space-y-3 pt-4 border-t border-white/5">
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-[#ADA9BA] uppercase tracking-wider">
-                            Quick Persona Presets
+                            Tone Presets
                           </h4>
                           <p className="text-xs text-[#ADA9BA]">
-                            Instantly swap between these carefully crafted psychological and philosophical frames.
+                            Choose a preset style for how the AI responds to your journal entries.
                           </p>
                         </div>
 
@@ -572,19 +442,19 @@ export default function App() {
                                   setCustomPrompt(p.prompt);
                                   localStorage.setItem('journal_custom_prompt', p.prompt);
                                 }}
-                                className={`text-left border p-3 rounded-xl cursor-pointer transition-all duration-300 flex gap-3 items-start select-none ${
+                                className={`text-left border p-3 rounded-[2px] cursor-pointer transition-all duration-300 flex gap-3 items-start select-none ${
                                   isActive
-                                    ? 'bg-[#8B5CF6]/10 border-[#8B5CF6] ring-2 ring-[#8B5CF6]/10 text-[var(--text-title)] font-bold'
+                                    ? 'bg-[var(--accent-color)]/10 border-[var(--accent-color)] ring-2 ring-[var(--accent-color)]/10 text-[var(--text-title)] font-bold'
                                     : 'glass-card hover:bg-white/[0.04] border-white/5 hover:border-white/10 text-[#ADA9BA] hover:text-[#F3F3F5]'
                                 }`}
                               >
-                                <div className={`p-2 rounded-lg shrink-0 ${isActive ? 'bg-[#8B5CF6] text-white' : 'bg-white/[0.04] text-[#ADA9BA]'}`}>
+                                <div className={`p-2 rounded-[2px] shrink-0 ${isActive ? 'bg-[var(--accent-color)] text-white' : 'bg-white/[0.04] text-[#ADA9BA]'}`}>
                                   <PresetIcon className="w-4 h-4" />
                                 </div>
                                 <div className="space-y-0.5">
                                   <span className="font-bold text-[#F3F3F5] block text-xs flex items-center gap-1.5">
                                     {p.name}
-                                    {isActive && <Check className="w-3.5 h-3.5 text-[#8B5CF6]" />}
+                                    {isActive && <Check className="w-3.5 h-3.5 text-[var(--accent-color)]" />}
                                   </span>
                                   <span className="text-[10px] leading-normal block opacity-80">{p.desc}</span>
                                 </div>
@@ -599,9 +469,9 @@ export default function App() {
                   {/* Right Column: API & Privacy (Col-span 5) */}
                   <div className="lg:col-span-5 space-y-6">
                     {/* Credentials Panel */}
-                    <div className="glass-card rounded-2xl p-6 shadow-sm space-y-5">
+                    <div className="glass-card rounded-[2px] p-6 shadow-sm space-y-5">
                       <div className="flex items-center gap-2 border-b border-white/5 pb-4">
-                        <Key className="w-5 h-5 text-[#8B5CF6]" />
+                        <Key className="w-5 h-5 text-[var(--accent-color)]" />
                         <h3 className="font-serif font-bold text-lg text-[#F3F3F5]">API Credentials</h3>
                       </div>
 
@@ -625,7 +495,7 @@ export default function App() {
                                   localStorage.removeItem('journal_gemini_api_key');
                                 }
                               }}
-                              className="w-full glass-input rounded-xl py-2.5 pl-4 pr-10 text-xs font-mono placeholder-[#ADA9BA]/40 outline-none transition"
+                              className="w-full glass-input rounded-[2px] py-2.5 pl-4 pr-10 text-xs font-mono placeholder-[#ADA9BA]/40 outline-none transition"
                             />
                             <button
                               type="button"
@@ -638,7 +508,7 @@ export default function App() {
                         </div>
 
                         <p className="text-[11px] text-[#ADA9BA] leading-relaxed">
-                          All semantic search vector processing, entry parsing, summaries, and chat features will use your custom key when set.
+                          Search indexing, entry analysis, summaries, and chat features will use your custom API key.
                         </p>
 
                         {/* Test and status buttons */}
@@ -646,7 +516,7 @@ export default function App() {
                           <button
                             onClick={testApiKey}
                             disabled={!userApiKey || keyTestingStatus === 'testing'}
-                            className="flex-1 bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] hover:from-[#7C3AED] hover:to-[#4F46E5] disabled:from-[#ADA9BA]/20 disabled:to-[#ADA9BA]/20 text-white font-bold py-2 px-3 rounded-xl transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                            className="flex-1 bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] text-white font-bold py-2 px-3 rounded-[2px] transition cursor-pointer text-xs flex items-center justify-center gap-1.5"
                           >
                             {keyTestingStatus === 'testing' ? (
                               <>
@@ -668,7 +538,7 @@ export default function App() {
                                 localStorage.removeItem('journal_gemini_api_key');
                                 setKeyTestingStatus('idle');
                               }}
-                              className="bg-transparent border border-rose-500/50 hover:bg-rose-500/10 text-rose-400 font-bold py-2 px-3 rounded-xl transition cursor-pointer text-xs"
+                              className="bg-transparent border border-rose-500/50 hover:bg-rose-500/10 text-rose-400 font-bold py-2 px-3 rounded-[2px] transition cursor-pointer text-xs"
                             >
                               Clear Key
                             </button>
@@ -677,17 +547,17 @@ export default function App() {
 
                         {/* Connection Test Result Feedback */}
                         {keyTestingStatus === 'testing' && (
-                          <div className="p-3 rounded-xl text-xs flex gap-2.5 items-center border bg-white/[0.01] border-white/5 text-[#ADA9BA] animate-pulse">
-                            <RefreshCw className="w-4 h-4 animate-spin text-[#8B5CF6] shrink-0" />
+                          <div className="p-3 rounded-[2px] text-xs flex gap-2.5 items-center border bg-white/[0.01] border-white/5 text-[#ADA9BA] animate-pulse">
+                            <RefreshCw className="w-4 h-4 animate-spin text-[var(--accent-color)] shrink-0" />
                             <div>
                               <p className="font-bold text-[#F3F3F5]">Verifying connection...</p>
-                              <p className="text-[10px] opacity-90 mt-0.5">Attempting a secure handshake with the Google Gemini API.</p>
+                              <p className="text-[10px] opacity-90 mt-0.5">Connecting to the Google Gemini API.</p>
                             </div>
                           </div>
                         )}
 
                         {keyTestingStatus !== 'idle' && keyTestingStatus !== 'testing' && (
-                          <div className={`p-3 rounded-xl text-xs flex gap-2.5 items-start border animate-fade-in ${
+                          <div className={`p-3 rounded-[2px] text-xs flex gap-2.5 items-start border animate-fade-in ${
                             keyTestingStatus === 'valid'
                               ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
                               : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
@@ -711,23 +581,23 @@ export default function App() {
                     </div>
 
                     {/* Secure Architecture Info Card */}
-                    <div className="glass-card rounded-2xl p-5 space-y-4 text-[#ADA9BA]">
+                    <div className="glass-card rounded-[2px] p-5 space-y-4 text-[#ADA9BA]">
                       <div className="flex items-center gap-2 text-[#F3F3F5] font-bold text-xs uppercase tracking-wider">
-                        <Shield className="w-4.5 h-4.5 text-[#8B5CF6]" />
+                        <Shield className="w-4.5 h-4.5 text-[var(--accent-color)]" />
                         <span>Security & Sandbox Privacy</span>
                       </div>
                       <p className="text-xs leading-relaxed">
-                        Solace Diaries implements a <strong>zero server-side key footprint</strong> architecture. Your API key and custom system instructions are stored exclusively inside your browser's local sandbox (local storage).
+                        Solace Diaries is built with a client-only architecture. Your API key and custom system prompts are stored only in your browser's local storage.
                       </p>
                       <p className="text-xs leading-relaxed">
-                        Requests to analyze or query entries utilize your API key directly on your hardware or through browser-directed requests, meaning your keys are never stored on any shared databases.
+                        Requests to analyze or query entries run directly from your browser, meaning your keys are never sent to or stored on any external databases.
                       </p>
                       <div className="pt-2">
                         <a
                           href="https://aistudio.google.com/apikey"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs font-semibold text-[#8B5CF6] underline underline-offset-2 hover:text-white transition inline-flex items-center gap-1"
+                          className="text-xs font-semibold text-[var(--accent-color)] underline underline-offset-2 hover:text-white transition inline-flex items-center gap-1"
                         >
                           Retrieve API Key from Google AI Studio
                           <ExternalLink className="w-3 h-3" />
@@ -742,30 +612,31 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Mobile Floating Profile & Sign Out (Bottom Left) */}
-      <div className="md:hidden fixed bottom-4 left-4 z-40 font-sans">
-        {mobileProfileOpen && (
-          <div className="mb-2 p-3 bg-[#13111A]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-lg space-y-2.5 min-w-[200px] animate-fade-in">
-            <div className="truncate min-w-0">
-              <span className="block text-[8px] font-sans font-semibold text-[#ADA9BA] uppercase tracking-wider">My Account</span>
-              <span className="block text-xs font-semibold text-[#F3F3F5] truncate">{email}</span>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#ADA9BA] hover:text-[#F43F5E] transition cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              <span>Sign Out</span>
-            </button>
-          </div>
+      {/* Memory Spark (Desktop only, hides in focus) */}
+      {activeTab === 'write' && !isFocusMode && <MemorySpark entries={entries} />}
+
+      {/* Bottom Floating Action Island (Mobile) */}
+      <AnimatePresence>
+        {!isFocusMode && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="md:hidden fixed bottom-6 left-4 right-4 z-40 flex justify-center pointer-events-none"
+          >
+            <nav className="flex items-center gap-1 bg-[#13111A]/90 backdrop-blur-md border border-white/10 p-2 rounded-[2px] shadow-2xl pointer-events-auto overflow-x-auto scrollbar-none w-full max-w-[400px]">
+              <button onClick={() => { setActiveTab('write'); setActiveEntry(null); }} className={`p-2.5 rounded-[2px] transition shrink-0 ${activeTab === 'write' ? 'bg-[var(--accent-color)] text-white' : 'text-[#ADA9BA] hover:text-[var(--accent-color)]'}`}><BookOpen className="w-5 h-5" /></button>
+              <button onClick={() => setActiveTab('list')} className={`p-2.5 rounded-[2px] transition shrink-0 ${activeTab === 'list' ? 'bg-[var(--accent-color)] text-white' : 'text-[#ADA9BA] hover:text-[var(--accent-color)]'}`}><Calendar className="w-5 h-5" /></button>
+              <button onClick={() => setActiveTab('search')} className={`p-2.5 rounded-[2px] transition shrink-0 ${activeTab === 'search' ? 'bg-[var(--accent-color)] text-white' : 'text-[#ADA9BA] hover:text-[var(--accent-color)]'}`}><Search className="w-5 h-5" /></button>
+              <button onClick={() => setActiveTab('chat')} className={`p-2.5 rounded-[2px] transition shrink-0 ${activeTab === 'chat' ? 'bg-[var(--accent-color)] text-white' : 'text-[#ADA9BA] hover:text-[var(--accent-color)]'}`}><MessageSquare className="w-5 h-5" /></button>
+              <button onClick={() => setActiveTab('memories')} className={`p-2.5 rounded-[2px] transition shrink-0 ${activeTab === 'memories' ? 'bg-[var(--accent-color)] text-white' : 'text-[#ADA9BA] hover:text-[var(--accent-color)]'}`}><Brain className="w-5 h-5" /></button>
+              <div className="w-px h-8 bg-white/10 mx-1 shrink-0" />
+              <button onClick={() => setActiveTab('settings')} className={`p-2.5 rounded-[2px] transition shrink-0 ${activeTab === 'settings' ? 'bg-[var(--accent-color)] text-white' : 'text-[#ADA9BA] hover:text-[var(--accent-color)]'}`}><Settings className="w-5 h-5" /></button>
+            </nav>
+          </motion.div>
         )}
-        <button
-          onClick={() => setMobileProfileOpen(!mobileProfileOpen)}
-          className="w-10 h-10 bg-white/[0.04] border border-white/10 hover:border-[#8B5CF6] rounded-full flex items-center justify-center text-white shadow-md transition cursor-pointer active:scale-95"
-        >
-          <User className="w-5 h-5 text-[#8B5CF6]" />
-        </button>
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

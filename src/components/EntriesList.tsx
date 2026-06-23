@@ -51,9 +51,9 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6 mb-8">
         <div>
           <h2 className="text-2xl font-serif font-bold text-[#F3F3F5] flex items-center gap-2">
-            Timeline Archive
+            Journal History
           </h2>
-          <p className="text-xs text-[#ADA9BA] mt-1">Revisit your thoughts, emotions, and personal trajectory.</p>
+          <p className="text-xs text-[#ADA9BA] mt-1">View all past entries, emotional trends, and tags.</p>
         </div>
 
         {/* Search Input */}
@@ -61,10 +61,10 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search reflections, tags..."
+            placeholder="Search entries, tags..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full glass-input rounded-xl py-2.5 pl-10 pr-4 text-xs"
+            className="w-full glass-input rounded-[2px] py-2.5 pl-10 pr-4 text-xs"
           />
         </div>
       </div>
@@ -79,9 +79,9 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
               <button
                 key={md}
                 onClick={() => setSelectedMood(md)}
-                className={`px-3.5 py-1.5 text-xs rounded-xl border capitalize cursor-pointer transition-all duration-300 ${
+                className={`px-3.5 py-1.5 text-xs rounded-[2px] border capitalize cursor-pointer transition-all duration-300 ${
                   isSelected
-                    ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-white font-bold shadow-sm shadow-indigo-500/10'
+                    ? 'bg-[var(--accent-color)]/20 border-[var(--accent-color)] text-[var(--text-title)] font-bold shadow-sm'
                     : 'glass-card hover:bg-white/[0.04] border-white/5 text-[#ADA9BA] hover:text-[#F3F3F5]'
                 }`}
               >
@@ -97,13 +97,13 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-16 glass-card rounded-3xl flex flex-col items-center justify-center border border-white/5"
+          className="text-center py-16 glass-card rounded-[2px] flex flex-col items-center justify-center border border-white/5"
         >
-          <Sparkles className="w-10 h-10 text-[#8B5CF6] mb-4 animate-pulse" />
-          <p className="text-lg font-serif font-bold text-[#F3F3F5]">Your story starts here.</p>
+          <Sparkles className="w-10 h-10 text-[var(--accent-color)] mb-4 animate-pulse" />
+          <p className="text-lg font-serif font-bold text-[#F3F3F5]">Your journal is empty.</p>
           <p className="text-xs text-[#ADA9BA] mt-2 max-w-[320px] leading-relaxed">
             {entries.length === 0
-              ? 'Begin writing down reflections in the "Write" space to populate your story timeline.'
+              ? 'Start writing in the "Write" tab to build your journal history.'
               : 'No entries found matching your query. Try searching different terms.'}
           </p>
         </motion.div>
@@ -111,7 +111,7 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
         <div className="relative pl-6 md:pl-8 border-l border-white/5 space-y-8">
           
           {/* Vertical Timeline Line Accent Glow */}
-          <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-[#8B5CF6] via-[#EC4899] to-transparent pointer-events-none" />
+          <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-[var(--accent-gradient-from)] via-[var(--accent-gradient-to)] to-transparent pointer-events-none" />
 
           <motion.div 
             variants={containerVariants}
@@ -126,22 +126,22 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                 className="relative"
               >
                 {/* Timeline node dot */}
-                <div className="absolute left-[-31px] md:left-[-37px] top-[14px] w-[11px] h-[11px] rounded-full bg-[#08070C] border-2 border-[#8B5CF6] shadow-[0_0_8px_rgba(139,92,246,0.8)] z-10" />
+                <div className="absolute left-[-31px] md:left-[-37px] top-[14px] w-[11px] h-[11px] rounded-full bg-[#08070C] border-2 border-[var(--accent-color)] shadow-sm z-10" />
 
                 {/* Timeline Card */}
-                <div className="glass-card hover:bg-white/[0.04] rounded-3xl p-5 md:p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-white/5 hover:border-white/10 flex flex-col md:flex-row md:items-start justify-between gap-5 relative overflow-hidden group">
+                <div className="glass-card hover:bg-white/[0.04] rounded-[2px] p-5 md:p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-white/5 hover:border-white/10 flex flex-col md:flex-row md:items-start justify-between gap-5 relative overflow-hidden group">
                   
                   {/* Subtle color highlight in group hover */}
-                  <div className="absolute top-0 left-0 w-[2px] h-0 bg-gradient-to-b from-[#8B5CF6] to-[#EC4899] group-hover:h-full transition-all duration-300" />
+                  <div className="absolute top-0 left-0 w-[2px] h-0 bg-gradient-to-b from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] group-hover:h-full transition-all duration-300" />
                   
                   {/* Left Segment: Meta + Content */}
                   <div className="space-y-3.5 grow">
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="inline-block px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                      <span className="inline-block px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full bg-[var(--accent-color)]/10 text-[var(--accent-color)] border border-[var(--accent-color)]/20">
                         {entry.mood}
                       </span>
                       <div className="flex items-center gap-1.5 text-xs text-[#ADA9BA] font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                        <Calendar className="w-3.5 h-3.5 text-[var(--accent-color)]" />
                         <span>{new Date(entry.createdAt).toLocaleDateString(undefined, {
                           year: 'numeric',
                           month: 'long',
@@ -168,7 +168,7 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                             href={img.imageUrl.startsWith('/') ? `${API_BASE}${img.imageUrl}` : img.imageUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block aspect-square rounded-xl overflow-hidden border border-white/5 bg-white/[0.01] hover:border-[#8B5CF6]/30 transition duration-300 shadow-sm"
+                            className="block aspect-square rounded-[2px] overflow-hidden border border-white/5 bg-white/[0.01] hover:border-[var(--accent-color)]/30 transition duration-300 shadow-sm"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <img
@@ -186,9 +186,9 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                         {entry.tags.map((tg) => (
                           <span
                             key={tg}
-                            className="flex items-center gap-1 text-[10px] bg-white/[0.03] text-[#ADA9BA] border border-white/5 px-2.5 py-0.5 rounded-md"
+                            className="flex items-center gap-1 text-[10px] bg-white/[0.03] text-[#ADA9BA] border border-white/5 px-2.5 py-0.5 rounded-[2px]"
                           >
-                            <Tag className="w-2.5 h-2.5 text-[#8B5CF6]" />
+                            <Tag className="w-2.5 h-2.5 text-[var(--accent-color)]" />
                             <span>{tg}</span>
                           </span>
                         ))}
@@ -200,7 +200,7 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                   <div className="flex md:flex-col items-center gap-2 md:justify-start shrink-0">
                     <button
                       onClick={() => onEditEntry(entry)}
-                      className="flex items-center justify-center border border-white/5 hover:border-[#8B5CF6] p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] text-[#ADA9BA] hover:text-[#F3F3F5] transition duration-200 cursor-pointer shadow-sm"
+                      className="flex items-center justify-center border border-white/5 hover:border-[var(--accent-color)] p-2.5 rounded-[2px] bg-white/[0.02] hover:bg-white/[0.06] text-[#ADA9BA] hover:text-[#F3F3F5] transition duration-200 cursor-pointer shadow-sm"
                       title="Edit entry"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -211,7 +211,7 @@ export default function EntriesList({ entries, onEditEntry, onDeleteEntry }: Ent
                           onDeleteEntry(entry.id);
                         }
                       }}
-                      className="flex items-center justify-center border border-white/5 hover:border-rose-500/30 p-2.5 rounded-xl bg-white/[0.02] hover:bg-rose-500/10 text-[#ADA9BA] hover:text-rose-400 transition duration-200 cursor-pointer shadow-sm"
+                      className="flex items-center justify-center border border-white/5 hover:border-rose-500/30 p-2.5 rounded-[2px] bg-white/[0.02] hover:bg-rose-500/10 text-[#ADA9BA] hover:text-rose-400 transition duration-200 cursor-pointer shadow-sm"
                       title="Delete entry"
                     >
                       <Trash2 className="w-4 h-4" />

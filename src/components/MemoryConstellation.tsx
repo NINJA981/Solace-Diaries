@@ -43,11 +43,11 @@ const MEMORY_LABELS = [
 ];
 
 const COLORS = [
-  'rgba(139, 92, 246, 0.7)', // violet
-  'rgba(99, 102, 241, 0.7)', // indigo
-  'rgba(59, 130, 246, 0.7)', // blue
-  'rgba(236, 72, 153, 0.7)', // pink
-  'rgba(244, 63, 94, 0.7)',  // rose
+  'rgba(181, 156, 93, 0.7)',  // gold/brass
+  'rgba(194, 65, 12, 0.7)',   // terracotta/rust
+  'rgba(87, 107, 82, 0.7)',   // sage/olive
+  'rgba(245, 158, 11, 0.7)',  // amber
+  'rgba(120, 113, 108, 0.7)', // warm bronze
 ];
 
 export default function MemoryConstellation({ token }: MemoryConstellationProps) {
@@ -132,15 +132,15 @@ export default function MemoryConstellation({ token }: MemoryConstellationProps)
             let color = COLORS[i % COLORS.length];
             // Color code by entity type!
             if (gn.type === 'emotions') {
-              color = 'rgba(236, 72, 153, 0.8)'; // Pink/Rose for emotions
+              color = 'rgba(194, 65, 12, 0.8)'; // terracotta/rust for emotions
             } else if (gn.type === 'habits') {
-              color = 'rgba(139, 92, 246, 0.8)'; // Violet/Purple for habits
+              color = 'rgba(120, 113, 108, 0.8)'; // warm bronze for habits
             } else if (gn.type === 'projects' || gn.type === 'goals') {
-              color = 'rgba(59, 130, 246, 0.8)'; // Blue/Indigo for projects
+              color = 'rgba(181, 156, 93, 0.8)'; // gold/brass for projects/goals
             } else if (gn.type === 'places') {
-              color = 'rgba(16, 185, 129, 0.8)'; // Emerald/Green for places
+              color = 'rgba(87, 107, 82, 0.8)'; // sage/olive for places
             } else if (gn.type === 'people') {
-              color = 'rgba(245, 158, 11, 0.8)'; // Amber/Yellow for people
+              color = 'rgba(245, 158, 11, 0.8)'; // amber for people
             }
 
             nodes.push({

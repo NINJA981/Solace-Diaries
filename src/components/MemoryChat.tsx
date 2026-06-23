@@ -106,12 +106,12 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
       {/* Title block */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 rounded-xl flex items-center justify-center text-[#8B5CF6] shadow-sm">
-            <MessageSquare className="w-5 h-5 text-[#8B5CF6]" />
+          <div className="w-10 h-10 bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 rounded-[2px] flex items-center justify-center text-[var(--accent-color)] shadow-sm">
+            <MessageSquare className="w-5 h-5 text-[var(--accent-color)]" />
           </div>
           <div>
-            <h2 className="text-xl font-serif font-bold text-[#F3F3F5]">Reflective Dialogue</h2>
-            <p className="text-xs text-[#ADA9BA]">Hold conversational reflection loops with your past diaries.</p>
+            <h2 className="text-xl font-serif font-bold text-[#F3F3F5]">Memory Chat</h2>
+            <p className="text-xs text-[#ADA9BA]">Chat with your past journal entries to find details or insights.</p>
           </div>
         </div>
       </div>
@@ -129,17 +129,17 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
             >
               {/* Left Avatar for Assistant */}
               {!isUser && (
-                <div className="w-8 h-8 bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 rounded-lg flex items-center justify-center text-[#8B5CF6] shrink-0 shadow-sm mt-1">
-                  <Sparkles className="w-4 h-4 text-[#8B5CF6] animate-pulse" />
+                <div className="w-8 h-8 bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 rounded-[2px] flex items-center justify-center text-[var(--accent-color)] shrink-0 shadow-sm mt-1">
+                  <Sparkles className="w-4 h-4 text-[var(--accent-color)] animate-pulse" />
                 </div>
               )}
 
               {/* Message block */}
               <div className={`space-y-2 max-w-[78%] ${isUser ? 'text-right' : ''}`}>
                 <div
-                  className={`p-4 rounded-2xl text-[13px] leading-relaxed shadow-sm transition-all duration-200 ${
+                  className={`p-4 rounded-[2px] text-[13px] leading-relaxed shadow-sm transition-all duration-200 ${
                     isUser
-                      ? 'bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] text-white rounded-tr-none'
+                      ? 'bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] text-white rounded-tr-none'
                       : 'glass-card border border-white/5 text-[#E7E7EC] rounded-tl-none'
                   }`}
                 >
@@ -153,18 +153,18 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="p-3 bg-white/[0.01] border border-white/5 rounded-2xl space-y-2 text-left shadow-inner"
+                    className="p-3 bg-white/[0.01] border border-white/5 rounded-[2px] space-y-2 text-left shadow-inner"
                   >
                     <span className="block text-[9px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider">
-                      Archived Evidence Cited
+                      Cited Entries
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {msg.sources.map((src) => (
                         <div
                           key={src.id}
-                          className="flex items-center gap-1.5 bg-white/[0.03] hover:bg-[#8B5CF6]/10 border border-white/5 hover:border-[#8B5CF6]/30 px-2.5 py-1 rounded-lg text-[9px] text-[#ADA9BA] hover:text-[#F3F3F5] transition duration-200"
+                          className="flex items-center gap-1.5 bg-white/[0.03] hover:bg-[var(--accent-color)]/10 border border-white/5 hover:border-[var(--accent-color)]/30 px-2.5 py-1 rounded-[2px] text-[9px] text-[#ADA9BA] hover:text-[#F3F3F5] transition duration-200"
                         >
-                          <Calendar className="w-3 h-3 text-[#8B5CF6]" />
+                          <Calendar className="w-3 h-3 text-[var(--accent-color)]" />
                           <span className="font-serif font-semibold">{src.title}</span>
                           <span className="opacity-65">({src.date})</span>
                         </div>
@@ -180,8 +180,8 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
 
               {/* Right Avatar for User */}
               {isUser && (
-                <div className="w-8 h-8 bg-white/[0.04] border border-white/10 rounded-lg flex items-center justify-center text-[#ADA9BA] shrink-0 shadow-sm mt-1">
-                  <User className="w-4 h-4 text-[#8B5CF6]" />
+                <div className="w-8 h-8 bg-white/[0.04] border border-white/10 rounded-[2px] flex items-center justify-center text-[#ADA9BA] shrink-0 shadow-sm mt-1">
+                  <User className="w-4 h-4 text-[var(--accent-color)]" />
                 </div>
               )}
             </motion.div>
@@ -191,25 +191,25 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
         {/* Loading Indicator inside Chat bubble */}
         {loading && (
           <div className="flex gap-3.5 last:animate-pulse">
-            <div className="w-8 h-8 bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 rounded-lg flex items-center justify-center text-[#8B5CF6] shrink-0 shadow-sm mt-1">
-              <Sparkles className="w-4 h-4 text-[#8B5CF6] animate-spin" />
+            <div className="w-8 h-8 bg-[var(--accent-color)]/10 border border-[var(--accent-color)]/20 rounded-[2px] flex items-center justify-center text-[var(--accent-color)] shrink-0 shadow-sm mt-1">
+              <Sparkles className="w-4 h-4 text-[var(--accent-color)] animate-spin" />
             </div>
             <div className="space-y-1.5 max-w-[70%]">
-              <div className="p-4 glass-card border border-white/5 rounded-2xl rounded-tl-none shadow-sm">
+              <div className="p-4 glass-card border border-white/5 rounded-[2px] rounded-tl-none shadow-sm">
                 <div className="flex gap-1.5 items-center py-1">
-                  <span className="w-1.5 h-1.5 bg-[#8B5CF6] rounded-full animate-bounce delay-75" />
-                  <span className="w-1.5 h-1.5 bg-[#EC4899] rounded-full animate-bounce delay-150" />
-                  <span className="w-1.5 h-1.5 bg-[#6366F1] rounded-full animate-bounce delay-300" />
+                  <span className="w-1.5 h-1.5 bg-[var(--accent-color)] rounded-full animate-bounce delay-75" />
+                  <span className="w-1.5 h-1.5 bg-[var(--accent-heart)] rounded-full animate-bounce delay-150" />
+                  <span className="w-1.5 h-1.5 bg-[var(--accent-gradient-to)] rounded-full animate-bounce delay-300" />
                 </div>
               </div>
-              <span className="block text-[9px] text-[#ADA9BA] px-1">Retrieving memory indices...</span>
+              <span className="block text-[9px] text-[#ADA9BA] px-1">Searching entries...</span>
             </div>
           </div>
         )}
 
         {/* Messaging prompt failures */}
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs rounded-xl flex items-center gap-2 shadow-sm animate-fade-in">
+          <div className="p-3 bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs rounded-[2px] flex items-center gap-2 shadow-sm animate-fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
             <span>{error}</span>
           </div>
@@ -223,13 +223,13 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
         {/* Suggestion Chips shown when there's only the welcome message */}
         {messages.length === 1 && !loading && (
           <div className="space-y-2.5 animate-fade-in">
-            <span className="block text-[9px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider">Suggested Reflection Vectors</span>
+            <span className="block text-[9px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider">Suggested Prompts</span>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((sug) => (
                 <button
                   key={sug}
                   onClick={() => handleSend(sug)}
-                  className="bg-white/[0.02] hover:bg-white/[0.06] text-[#ADA9BA] hover:text-[#F3F3F5] border border-white/5 hover:border-white/10 text-xs px-3.5 py-1.5 rounded-xl cursor-pointer transition shadow-sm"
+                  className="bg-white/[0.02] hover:bg-white/[0.06] text-[#ADA9BA] hover:text-[#F3F3F5] border border-white/5 hover:border-white/10 text-xs px-3.5 py-1.5 rounded-[2px] cursor-pointer transition shadow-sm"
                 >
                   {sug}
                 </button>
@@ -240,7 +240,7 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
 
         {/* Input Bar */}
         <form onSubmit={handleSubmitForm}>
-          <div className="relative flex items-center bg-white/[0.02] border border-white/5 focus-within:border-[#8B5CF6] focus-within:ring-1 focus-within:ring-[#8B5CF6] rounded-2xl shadow-sm transition p-1 pr-2 backdrop-blur-md">
+          <div className="relative flex items-center bg-white/[0.02] border border-white/5 focus-within:border-[var(--accent-color)] focus-within:ring-1 focus-within:ring-[var(--accent-color)] rounded-[2px] shadow-sm transition p-1 pr-2 backdrop-blur-md">
             <input
               type="text"
               required
@@ -252,8 +252,8 @@ export default function MemoryChat({ token, userApiKey, customPrompt }: MemoryCh
             />
             <button
               type="submit"
-              disabled={loading || !input.trim()}
-              className="bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] hover:from-[#7C3AED] hover:to-[#4F46E5] disabled:bg-white/[0.04] text-white disabled:text-[#ADA9BA]/30 font-bold w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition disabled:cursor-not-allowed shrink-0 shadow-sm"
+              disabled={loading}
+              className="bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] hover:opacity-95 text-white disabled:text-[#ADA9BA]/30 font-bold w-9 h-9 rounded-[2px] flex items-center justify-center cursor-pointer transition disabled:cursor-not-allowed shrink-0 shadow-sm"
             >
               <Send className="w-3.5 h-3.5" />
             </button>

@@ -53,13 +53,13 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
       {/* Cover Header */}
       <div className="border-b border-white/5 pb-6 mb-8">
         <h2 className="text-2xl font-serif font-bold text-[#F3F3F5] flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#8B5CF6]/10 flex items-center justify-center border border-[#8B5CF6]/20">
-            <Search className="w-4.5 h-4.5 text-[#8B5CF6]" />
+          <div className="w-9 h-9 rounded-[2px] bg-[var(--accent-color)]/10 flex items-center justify-center border border-[var(--accent-color)]/20">
+            <Search className="w-4.5 h-4.5 text-[var(--accent-color)]" />
           </div>
           Semantic Search
         </h2>
         <p className="text-xs text-[#ADA9BA] mt-2.5 leading-relaxed">
-          Retrieve past diary pages using semantic concepts, emotional cues, or topic contexts rather than exact string queries.
+          Find past journal entries by concept or meaning, rather than just exact keywords.
         </p>
       </div>
 
@@ -71,16 +71,16 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
             <input
               type="text"
               required
-              placeholder="Search concepts e.g. 'feeling overwhelmed but holding hope' or 'creative breakthroughs'"
+              placeholder="Search by meaning, e.g., 'feeling overwhelmed but hopeful' or 'creative ideas'"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full glass-input rounded-xl py-3 pl-11 pr-4 text-xs"
+              className="w-full glass-input rounded-[2px] py-3 pl-11 pr-4 text-xs"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] hover:from-[#7C3AED] hover:to-[#4F46E5] text-white font-bold px-6 rounded-xl text-xs flex items-center gap-2 cursor-pointer transition-all duration-300 disabled:opacity-50 shadow-lg shadow-indigo-500/10"
+            className="bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] text-white font-bold px-6 rounded-[2px] text-xs flex items-center gap-2 cursor-pointer transition-all duration-300 disabled:opacity-50 shadow-md"
           >
             {loading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -93,7 +93,7 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
 
       {/* Error State */}
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/25 rounded-2xl text-xs text-rose-300 mb-6">
+        <div className="p-4 bg-rose-500/10 border border-rose-500/25 rounded-[2px] text-xs text-rose-300 mb-6">
           {error}
         </div>
       )}
@@ -107,11 +107,11 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
             exit={{ opacity: 0 }}
             className="py-20 text-center space-y-4"
           >
-            <div className="w-12 h-12 rounded-2xl bg-[#8B5CF6]/10 flex items-center justify-center mx-auto border border-[#8B5CF6]/20">
-              <Heart className="w-5 h-5 text-[#EC4899] fill-[#EC4899] animate-bounce" />
+            <div className="w-12 h-12 rounded-[2px] bg-[var(--accent-color)]/10 flex items-center justify-center mx-auto border border-[var(--accent-color)]/20">
+              <Heart className="w-5 h-5 text-[var(--accent-heart)] fill-[var(--accent-heart)] animate-bounce" />
             </div>
-            <p className="text-sm font-serif font-bold text-[#F3F3F5]">Exploring your story archive...</p>
-            <p className="text-xs text-[#ADA9BA] max-w-sm mx-auto leading-relaxed">Scanning diary pages and analyzing semantic coordinates.</p>
+            <p className="text-sm font-serif font-bold text-[#F3F3F5]">Searching journal entries...</p>
+            <p className="text-xs text-[#ADA9BA] max-w-sm mx-auto leading-relaxed">Searching through journal entries...</p>
           </motion.div>
         ) : results ? (
           <motion.div 
@@ -121,13 +121,13 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
             className="space-y-6"
           >
             <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-[#ADA9BA]">
-              Found {results.length} semantic correlation{results.length !== 1 ? 's' : ''}
+              Found {results.length} match{results.length !== 1 ? 'es' : ''}
             </span>
 
             {results.length === 0 ? (
-              <div className="text-center py-12 glass-card rounded-3xl border border-white/5 shadow-sm">
-                <p className="text-[#ADA9BA] font-serif text-sm">No correlations found</p>
-                <p className="text-[#ADA9BA]/60 text-xs mt-1">Try expanding your search query description.</p>
+              <div className="text-center py-12 glass-card rounded-[2px] border border-white/5 shadow-sm">
+                <p className="text-[#ADA9BA] font-serif text-sm">No matches found</p>
+                <p className="text-[#ADA9BA]/60 text-xs mt-1">Try using different words or a longer description.</p>
               </div>
             ) : (
               <div className="space-y-5">
@@ -138,25 +138,25 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
                       key={entry.id}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }}
-                      className="glass-card hover:bg-white/[0.04] border border-white/5 hover:border-white/10 p-6 rounded-3xl space-y-4 hover:shadow-xl transition-all duration-300"
+                      className="glass-card hover:bg-white/[0.04] border border-white/5 hover:border-white/10 p-6 rounded-[2px] space-y-4 hover:shadow-xl transition-all duration-300"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
                         <div className="flex items-center gap-2">
-                          <span className="inline-block px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                          <span className="inline-block px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-[2px] bg-[var(--accent-color)]/10 text-[var(--accent-color)] border border-[var(--accent-color)]/20">
                             {entry.mood}
                           </span>
                           <div className="text-xs text-[#ADA9BA] flex items-center gap-1.5 font-medium">
-                            <Clock className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                            <Clock className="w-3.5 h-3.5 text-[var(--accent-color)]" />
                             <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
 
                         {/* Score Badge */}
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-semibold text-[#8B5CF6]">{percentage}% match</span>
+                          <span className="text-xs font-semibold text-[var(--accent-color)]">{percentage}% match</span>
                           <div className="w-20 bg-white/[0.05] h-1.5 rounded-full overflow-hidden border border-white/5">
                             <div
-                              className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] h-full rounded-full"
+                              className="bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] h-full rounded-full"
                               style={{ width: `${percentage}%` }}
                             />
                           </div>
@@ -179,7 +179,7 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
                               href={img.imageUrl.startsWith('/') ? `${API_BASE}${img.imageUrl}` : img.imageUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="block aspect-square rounded-xl overflow-hidden border border-white/5 bg-white/[0.01] hover:border-[#8B5CF6]/30 transition duration-300 shadow-sm"
+                              className="block aspect-square rounded-[2px] overflow-hidden border border-white/5 bg-white/[0.01] hover:border-[var(--accent-color)]/30 transition duration-300 shadow-sm"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <img
@@ -197,9 +197,9 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
                           {entry.tags.map((tg) => (
                             <span
                               key={tg}
-                              className="flex items-center gap-1 text-[10px] bg-white/[0.03] text-[#ADA9BA] px-2.5 py-0.5 rounded-md border border-white/5"
+                              className="flex items-center gap-1 text-[10px] bg-white/[0.03] text-[#ADA9BA] px-2.5 py-0.5 rounded-[2px] border border-white/5"
                             >
-                              <Tag className="w-2.5 h-2.5 text-[#8B5CF6]" />
+                              <Tag className="w-2.5 h-2.5 text-[var(--accent-color)]" />
                               <span>{tg}</span>
                             </span>
                           ))}
@@ -215,9 +215,9 @@ export default function SemanticSearch({ token, userApiKey }: SemanticSearchProp
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-16 glass-card rounded-3xl border border-white/5"
+            className="text-center py-16 glass-card rounded-[2px] border border-white/5"
           >
-            <BookOpen className="w-10 h-10 text-[#8B5CF6] mx-auto mb-4 animate-pulse" />
+            <BookOpen className="w-10 h-10 text-[var(--accent-color)] mx-auto mb-4 animate-pulse" />
             <p className="text-xs text-[#ADA9BA] italic font-medium">Describe a feeling or memory context above to begin searching.</p>
           </motion.div>
         )}
