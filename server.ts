@@ -27,6 +27,9 @@ async function startServer() {
   // Mount API endpoints first
   app.use('/api', apiRouter);
 
+  // Serve static uploads folder directly at root path
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+
   // Vite static vs HMR middleware configuration
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

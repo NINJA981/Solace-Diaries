@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Heart, ArrowRight, Lock, Mail, Eye, EyeOff, Sparkles, BookOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, ArrowRight, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { API_BASE } from '../api';
 import MemoryConstellation from './MemoryConstellation';
 import BackgroundOrbs from './BackgroundOrbs';
@@ -68,54 +68,61 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
         {/* Top Logo */}
         <div className="flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-center text-[#8B5CF6] shadow-inner backdrop-blur-md">
-            <Heart className="w-5 h-5 fill-[#EC4899] text-[#EC4899] drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]" />
+          <div className="w-10 h-10 bg-white/[0.03] border border-white/10 rounded-[2px] flex items-center justify-center text-[var(--accent-color)] shadow-inner backdrop-blur-md">
+            <Heart className="w-4 h-4 fill-[var(--accent-heart)] text-[var(--accent-heart)] drop-shadow-[0_0_8px_rgba(var(--accent-heart-rgb),0.3)]" />
           </div>
-          <span className="font-serif font-bold text-xl tracking-tight text-[#E7E7EC]">Solace Diaries</span>
+          <span className="font-serif font-bold text-lg tracking-tight text-[#E7E7EC]">Solace Diaries</span>
         </div>
 
-        {/* Center Storytelling */}
-        <div className="my-auto max-w-xl space-y-6 relative z-10">
+        {/* Center Storytelling (Editorial layout) */}
+        <div className="my-auto max-w-xl space-y-8 relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-4"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#ADA9BA] text-[11px] font-semibold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-[#8B5CF6] animate-pulse" />
-              Mindful Memory Sanctuary
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-white/[0.02] border border-white/5 text-[#ADA9BA] text-[10px] font-mono tracking-widest uppercase">
+              <Sparkles className="w-3 h-3 text-[var(--accent-color)] animate-pulse" />
+              Private Journal Space
             </div>
-            <h2 className="text-4xl xl:text-5xl font-serif font-bold leading-tight tracking-tight text-[#F3F3F5]">
-              Your thoughts align. <br />
-              Your emotions settle. <br />
-              <span className="bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-[#FDA4AF] bg-clip-text text-transparent">
-                Your memories matter.
-              </span>
-            </h2>
-            <p className="text-[#ADA9BA] text-sm leading-relaxed max-w-md">
-              A private, offline-first digital sanctuary designed for deep self-reflection, automated mood tracing, and conversational loops with your history.
+            <h1 className="text-4xl xl:text-6xl font-serif font-medium leading-[1.1] tracking-tight text-[#F3F3F5]">
+              A quiet place <br />
+              for your thoughts.
+            </h1>
+            <p className="text-[#ADA9BA] text-sm leading-relaxed max-w-md mt-6">
+              Capture moments, understand patterns, and revisit memories through thoughtful conversations with your journal.
             </p>
           </motion.div>
 
-          {/* Interactive features display */}
-          <div className="grid grid-cols-2 gap-4 pt-6">
-            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md hover:bg-white/[0.04] transition duration-300">
-              <BookOpen className="w-5 h-5 text-[#8B5CF6] mb-2" />
-              <h4 className="text-xs font-bold text-[#F3F3F5] mb-1">Interactive RAG Chat</h4>
-              <p className="text-[11px] text-[#ADA9BA] leading-relaxed">Discuss and query emotional loops with your diary history.</p>
+          {/* Index-style vertical list of features (Betraying Bento Grid) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-4 pt-8 border-t border-white/5"
+          >
+            <div className="flex items-baseline gap-4 py-2 border-b border-white/5 group hover:border-white/10 transition">
+              <span className="font-mono text-[9px] text-[var(--accent-color)] tracking-widest">01 / CRYPTO</span>
+              <span className="text-[#F3F3F5] text-xs font-semibold uppercase tracking-wider">Private by Default</span>
+              <span className="text-[11px] text-[#ADA9BA] ml-auto">Sandboxed in browser storage</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md hover:bg-white/[0.04] transition duration-300">
-              <Heart className="w-5 h-5 text-[#EC4899] mb-2" />
-              <h4 className="text-xs font-bold text-[#F3F3F5] mb-1">Mood Landscapes</h4>
-              <p className="text-[11px] text-[#ADA9BA] leading-relaxed">Map sentiment distribution and tags to track mental growth.</p>
+            <div className="flex items-baseline gap-4 py-2 border-b border-white/5 group hover:border-white/10 transition">
+              <span className="font-mono text-[9px] text-[var(--accent-color)] tracking-widest">02 / INTERACTIVE</span>
+              <span className="text-[#F3F3F5] text-xs font-semibold uppercase tracking-wider">AI Memory Search</span>
+              <span className="text-[11px] text-[#ADA9BA] ml-auto">Search entries by meaning</span>
             </div>
-          </div>
+            <div className="flex items-baseline gap-4 py-2 border-b border-white/5 group hover:border-white/10 transition">
+              <span className="font-mono text-[9px] text-[var(--accent-color)] tracking-widest">03 / METRICS</span>
+              <span className="text-[#F3F3F5] text-xs font-semibold uppercase tracking-wider">Mood Insights</span>
+              <span className="text-[11px] text-[#ADA9BA] ml-auto">Track mood trends</span>
+            </div>
+          </motion.div>
         </div>
 
         {/* Bottom footer credit */}
-        <div className="text-[11px] text-[#ADA9BA]/50 relative z-10">
-          © {new Date().getFullYear()} Solace. Securely sandboxed in your browser storage.
+        <div className="text-[10px] font-mono tracking-wider text-[#ADA9BA]/40 relative z-10 uppercase">
+          © {new Date().getFullYear()} Solace. Securely sandboxed.
         </div>
       </div>
 
@@ -123,81 +130,84 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 relative z-10 lg:w-5/12 bg-[#08070C]/60 backdrop-blur-lg">
         {/* Mobile Logo (only shown on smaller viewports) */}
         <div className="lg:hidden flex flex-col items-center mb-8 text-center">
-          <div className="w-12 h-12 bg-white/[0.03] border border-white/10 rounded-2xl flex items-center justify-center mb-3 text-[#8B5CF6] shadow-lg backdrop-blur-md">
-            <Heart className="w-6 h-6 fill-[#EC4899] text-[#EC4899]" />
+          <div className="w-12 h-12 bg-white/[0.03] border border-white/10 rounded-[2px] flex items-center justify-center mb-3 text-[var(--accent-color)] shadow-lg backdrop-blur-md">
+            <Heart className="w-6 h-6 fill-[var(--accent-heart)] text-[var(--accent-heart)]" />
           </div>
           <h1 className="text-2xl font-serif font-bold text-[#F3F3F5]">Solace Diaries</h1>
-          <p className="text-xs text-[#ADA9BA] mt-1">Simple space for reflection</p>
+          <p className="text-xs text-[#ADA9BA] mt-1">Your personal journal</p>
         </div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-md glass-card rounded-3xl border border-white/5 shadow-2xl p-8 md:p-10 relative"
+          className="w-full max-w-md bg-[#09080E]/40 backdrop-blur-3xl border border-white/10 rounded-[2px] shadow-[0_30px_60px_rgba(0,0,0,0.3)] p-10 relative"
         >
-          {/* Subtle warm accent border top */}
-          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-[#8B5CF6] via-[#EC4899] to-transparent rounded-t-3xl" />
+          {/* Minimal top hairline border */}
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-[var(--accent-color)] via-[var(--accent-heart)] to-transparent" />
 
           {/* Form Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-serif font-bold tracking-tight text-[#F3F3F5]">
-              {isSignUp ? 'Begin your story' : 'Return to sanctuary'}
+          <div className="mb-8">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--accent-color)] block mb-1">
+              {isSignUp ? 'Sign Up' : 'Sign In'}
+            </span>
+            <h2 className="text-2xl font-serif font-medium tracking-tight text-[#F3F3F5]">
+              {isSignUp ? 'Create your account' : 'Welcome back'}
             </h2>
-            <p className="text-[#ADA9BA] text-xs mt-1.5 leading-relaxed">
-              {isSignUp 
-                ? 'Create a secure space to transcribe your daily reflections.'
-                : 'Welcome back to your safe, thoughtful reflections.'}
+            <p className="text-[#ADA9BA] text-xs mt-2 leading-relaxed">
+              {isSignUp
+                ? 'Create a secure, private account for your daily journal.'
+                : 'Sign in to access your journal entries.'}
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#FDA4AF] text-xs font-semibold rounded-xl text-center"
+                className="p-3 bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[#FDA4AF] text-xs font-semibold rounded-[2px] text-center"
               >
                 {error}
               </motion.div>
             )}
 
-            <div>
-              <label className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider mb-1.5">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-mono font-semibold text-[#ADA9BA]/60 uppercase tracking-widest">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 w-4 h-4" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ADA9BA]/40 w-4 h-4 z-10" />
                 <input
                   type="email"
                   required
                   placeholder="name@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 pl-10 pr-4 text-xs"
+                  className="w-full glass-input py-2.5 pl-9 pr-4 text-xs"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-sans font-bold text-[#ADA9BA] uppercase tracking-wider mb-1.5">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-mono font-semibold text-[#ADA9BA]/60 uppercase tracking-widest">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 w-4 h-4" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ADA9BA]/40 w-4 h-4 z-10" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="Min. 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 pl-10 pr-10 text-xs"
+                  className="w-full glass-input py-2.5 pl-9 pr-10 text-xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#ADA9BA]/50 hover:text-[#F3F3F5] transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ADA9BA]/40 hover:text-[#F3F3F5] transition"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -209,38 +219,38 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               whileTap={{ scale: 0.99 }}
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] hover:from-[#7C3AED] hover:to-[#4F46E5] text-white font-bold rounded-xl py-3 text-xs transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer disabled:opacity-50 mt-4 shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20"
+              className="w-full bg-gradient-to-r from-[var(--accent-gradient-from)] to-[var(--accent-gradient-to)] text-white hover:opacity-95 font-mono uppercase tracking-widest text-[11px] py-3.5 transition-all duration-300 rounded-[2px] cursor-pointer disabled:opacity-50 mt-4 shadow-lg shadow-black/20"
             >
               {loading ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-[var(--bg-main)] border-t-transparent rounded-full animate-spin" />
               ) : (
-                <>
-                  {isSignUp ? 'Initialize Space' : 'Enter Sanctuary'}
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
-                </>
+                <div className="flex items-center justify-center gap-2">
+                  <span>{isSignUp ? 'Sign Up' : 'Sign In'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
               )}
             </motion.button>
           </form>
 
           {/* Toggle Links */}
-          <div className="mt-6 pt-5 border-t border-white/5 text-center">
+          <div className="mt-8 pt-5 border-t border-white/5 text-center">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError(null);
               }}
-              className="text-xs text-[#ADA9BA] hover:text-[#8B5CF6] font-semibold transition"
+              className="text-[10px] font-mono uppercase tracking-wider text-[#ADA9BA] hover:text-[var(--accent-color)] transition cursor-pointer"
             >
               {isSignUp
                 ? 'Already have an account? Sign in'
-                : "New to Solace Diaries? Create your sanctuary"}
+                : "New to Solace Diaries? Create an account"}
             </button>
           </div>
         </motion.div>
 
         {/* Mobile footer credit */}
-        <div className="lg:hidden mt-8 text-[10px] text-[#ADA9BA]/40">
+        <div className="lg:hidden mt-8 text-[9px] font-mono tracking-wider text-[#ADA9BA]/40 uppercase">
           © {new Date().getFullYear()} Solace. Securely sandboxed.
         </div>
       </div>
