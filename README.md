@@ -1,269 +1,510 @@
-# Haven Journal 📖🌱
+<div align="center">
+  <h1>Solace Diaries 🌱</h1>
+  <p><strong>A mindful, AI-powered digital sanctuary for self-reflection and personal growth.</strong></p>
 
-**Haven Journal** is a cozy, private, and mindful digital sanctuary designed for self-reflection and personal growth. By combining an intimate, warm user interface with modern retrieval-augmented generation (RAG) and vector similarity search, it allows you to chronicle your life, explore recurring emotional patterns, and hold gentle conversations with your past pages.
+  <p>
+    <img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node" />
+    <img src="https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma" />
+    <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+    <img src="https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
+  </p>
+</div>
 
-This document provides a comprehensive overview of how Haven Journal is architected, its tech stack, database design, and the under-the-hood workflows that power its intelligence.
+<br />
 
----
+## 📖 Project Overview
 
-## 🛠️ The Tech Stack
+**Solace Diaries** is not just another note-taking application—it is a private, intelligent sanctuary designed for emotional reflection and long-term personal growth. 
 
-Haven Journal is built as a fully decoupled client-server web application.
+Traditional journaling often becomes a disconnected archive of thoughts, making it difficult to uncover emotional patterns or reconnect with past insights. Solace Diaries bridges this gap by transforming your daily entries into a living, interactive memory system. 
+
+Powered by **Google Gemini 2.5 Flash** and semantic vector embeddings, Solace Diaries deeply understands the emotional context of your writing. It acts as an empathetic Reflection Guide, enabling you to converse with your past, identify recurring themes, and achieve a deeper level of self-awareness.
+
+## ✨ Key Features
+
+Solace Diaries brings your journal to life with a suite of advanced AI and memory capabilities:
+
+- **✍️ AI-Powered Journaling:** Automatically analyzes your entries to extract your primary mood, generate mindful tags, and synthesize daily reflections.
+- **🧠 Semantic Memory Retrieval:** Unlike basic keyword search, Solace Diaries leverages `pgvector` and Gemini embeddings to find past entries that share the same *emotional essence* and semantic context.
+- **💬 Reflection Guide Chat:** Hold empathetic, context-aware conversations with your past pages using advanced Retrieval-Augmented Generation (RAG). Ask your journal, *"What made me happy last month?"* or *"Have I been sticking to my goals?"*
+- **🔄 Context-Aware Conversations:** The AI strictly binds to your retrieved entries, providing grounded, cited responses based purely on your lived experiences.
+- **🖼️ Image-Enhanced Memories:** Attach photos and visual memories to your entries via `multer` integration, creating a richer, multi-modal journaling experience.
+- **🕰️ Long-Term Memory Capabilities:** Your entries are continuously compiled into multi-dimensional semantic coordinates, creating a growing, queryable map of your emotional journey over time.
+- **📊 Mood Analysis & Weekly Garden:** Visualizes your emotional trajectory over the week and generates customized, gentle personal growth guidelines based on your most recent themes.
+
+## 🏗️ System Architecture
+
+Solace Diaries is built as a fully decoupled, production-grade web application. It leverages a modern TypeScript stack, ensuring type safety from the React client down to the PostgreSQL database.
+
+The intelligence layer combines the speed of the **Gemini 2.5 Flash** model for text synthesis and cognitive analysis with **gemini-embedding-2-preview** for high-performance semantic coordinate mapping.
+
+### High-Level Flow
 
 ```mermaid
-graph TD
-    subgraph Client [Frontend - Vercel]
-        UI[React 19 SPA + Vite]
-        LS[(Local Storage: User Gemini Key)]
+flowchart TD
+    %% Define Nodes
+    User([User])
+    
+    subgraph Client [Frontend SPA]
+        UI[React 19 + Vite UI]
     end
-
-    subgraph API [Backend - Render]
-        SVR[Express Server]
-        PRM[Prisma ORM]
+    
+    subgraph API [Backend Services]
+        Server[Express Server]
+        Prisma[Prisma ORM]
     end
-
-    subgraph Storage [Database - Supabase]
+    
+    subgraph Storage [Database]
         DB[(PostgreSQL)]
-        VEC[(pgvector Index)]
+        VectorDB[(pgvector Index)]
+    end
+    
+    subgraph Intelligence [Google Gemini]
+        Embeddings[gemini-embedding-2-preview]
+        Gemini[gemini-2.5-flash]
     end
 
-    subgraph AI [AI Services - Google Gemini]
-        GEM[gemini-2.5-flash]
-        EMB[gemini-embedding-2-preview]
-    end
-
-    UI -->|API Request + x-gemini-api-key| SVR
-    LS -->|Header Injection| UI
-    SVR -->|Queries / Mutations| PRM
-    PRM -->|SQL| DB
-    PRM -->|Vector Cosine Distance Query| VEC
-    SVR -->|Embeddings Request| EMB
-    SVR -->|Contextual Prompting| GEM
+    %% Journaling Flow
+    User -->|Writes Entry| UI
+    UI -->|Save Request| Server
+    Server -->|Generate Embedding| Embeddings
+    Server -->|Analyze Mood & Tags| Gemini
+    Embeddings -->|768d Vector| Server
+    Gemini -->|JSON Analysis| Server
+    Server -->|SQL Insert| Prisma
+    Prisma -->|Store Metadata| DB
+    Prisma -->|Store Vector| VectorDB
+    
+    %% RAG Chat Flow
+    User -->|Asks Question| UI
+    UI -->|Chat Request| Server
+    Server -->|Query Vector| Embeddings
+    Server -->|Cosine Similarity Search| Prisma
+    Prisma -->|Retrieve Top Context| VectorDB
+    Server -->|Prompt + Context| Gemini
+    Gemini -->|Grounded Answer| Server
+    Server -->|Empathetic Response| UI
 ```
 
-### 1. Frontend Client
-* **Core Framework**: [React 19](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/) managed via [Vite](https://vite.dev/) as a lightning-fast Single Page Application (SPA).
-* **Styling & Theme**: [Tailwind CSS v4](https://tailwindcss.com/) for fluid responsive layout design, incorporating soft pastel warm-paper palettes, glassmorphism elements, custom micro-interactions, and editorial serif typography to convey a comforting, offline-journal aesthetic.
-* **Iconography**: [Lucide React](https://lucide.dev/) for a clean, consistent, and organic set of icons.
+### Architecture Components
 
-### 2. Backend API
-* **Runtime**: [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) with TypeScript compilation via `tsx`.
-* **Database Access**: [Prisma Client v5.22.0](https://www.prisma.io/) to orchestrate relational database queries and PostgreSQL operations.
-* **Security & Auth**:
-  - Stateless **JSON Web Tokens (JWT)** (`jsonwebtoken`) for secure, stateless sessions.
-  - **bcryptjs** for hashing and salting user passwords.
-  - **CORS** middleware to restrict API traffic to authorized client origins.
-
-### 3. Database & Vector Index
-* **Relational Store**: [PostgreSQL (Supabase)](https://supabase.com/) hosting tables for user authentication and diary metadata.
-* **Vector Database**: PostgreSQL `pgvector` extension for storing and performing high-performance similarity calculations on 768-dimensional embedding vectors.
-
-### 4. Intelligence & Embeddings
-* **Text Synthesis**: [Google Gemini 2.5 Flash](https://ai.google.dev/) via the official `@google/genai` SDK for mood classification, tag extraction, chat responses, and weekly insights.
-* **Vector Embeddings**: `gemini-embedding-2-preview` to compile text content into multidimensional semantic coordinates.
+1. **Client Frontend:** A blazing-fast Single Page Application (SPA) built with **React 19**, **Vite**, and **Tailwind CSS v4**. It features an intimate, warm user interface with glassmorphism elements, custom micro-interactions, and offline-journal aesthetics.
+2. **Backend Services:** A stateless **Node.js/Express** API that orchestrates embedding generation, semantic searches, and cognitive analysis. Includes robust handling for multipart/form-data image uploads.
+3. **Data & Vector Storage:** **Supabase (PostgreSQL)** serves as the primary data store. The `pgvector` extension empowers lightning-fast cosine similarity searches over 768-dimensional embeddings via raw SQL transactions.
+4. **AI Intelligence:** Powered by **Google Gemini**. Text analysis, mood extraction, and empathetic RAG chat are handled by `gemini-2.5-flash`, while the semantic coordinate mapping relies on `gemini-embedding-2-preview`.
 
 ---
 
-## 🗄️ Database Schema Design
+## 🗄️ Database Schema
 
-The application's relational data model is defined in Prisma (`prisma/schema.prisma`) and runs on top of a PostgreSQL instance equipped with the `pgvector` extension.
+The data model is defined in Prisma and runs on PostgreSQL with the `pgvector` extension. The schema captures journal entries, chunked embeddings, image assets, memory fragments, long-term memories, and a full knowledge graph.
 
 ```mermaid
 erDiagram
-    USER ||--o{ JOURNAL-ENTRY : "writes"
-    JOURNAL-ENTRY ||--|| VECTOR-RECORD : "indexed in"
+    USER ||--o{ JOURNAL_ENTRY : "writes"
+    USER ||--o{ MEMORY_FRAGMENT : "owns"
+    USER ||--o{ MEMORY : "has"
+    USER ||--o{ GRAPH_ENTITY : "defines"
+    USER ||--o{ GRAPH_RELATIONSHIP : "connects"
+    USER ||--o{ PROACTIVE_PROMPT : "receives"
+
+    JOURNAL_ENTRY ||--o{ VECTOR_RECORD : "indexed in"
+    JOURNAL_ENTRY ||--o{ JOURNAL_CHUNK : "split into"
+    JOURNAL_ENTRY ||--o{ IMAGE_ASSET : "contains"
+    JOURNAL_ENTRY ||--o{ MEMORY_FRAGMENT_SOURCE : "sources"
+
+    MEMORY_FRAGMENT ||--o{ MEMORY_FRAGMENT_SOURCE : "traced to"
+    MEMORY_FRAGMENT ||--o{ PROACTIVE_PROMPT : "triggers"
+
+    GRAPH_ENTITY ||--o{ GRAPH_RELATIONSHIP : "source of"
+    GRAPH_ENTITY ||--o{ GRAPH_RELATIONSHIP : "target of"
 
     USER {
         string id PK
-        string email UNIQUE
+        string email UK
         string passwordHash
-        DateTime createdAt
+        datetime createdAt
     }
 
-    JOURNAL-ENTRY {
+    JOURNAL_ENTRY {
         string id PK
         string userId FK
         string title
-        string content TEXT
+        text content
         string mood
-        string[] tags
-        DateTime createdAt
-        DateTime updatedAt
+        string_arr tags
+        tsvector searchVector
+        datetime createdAt
+        datetime updatedAt
     }
 
-    VECTOR-RECORD {
+    JOURNAL_CHUNK {
+        string id PK
+        string entryId FK
+        text content
+        int chunkIndex
+        vector_768 vector
+        datetime createdAt
+    }
+
+    IMAGE_ASSET {
+        string id PK
+        string entryId FK
+        string imageUrl
+        text description
+        datetime createdAt
+    }
+
+    VECTOR_RECORD {
         string id PK
         string entryId FK
         string userId FK
-        vector_768 vector "pgvector (Unsupported)"
-        DateTime createdAt
+        vector_768 vector
+        datetime createdAt
+    }
+
+    MEMORY_FRAGMENT {
+        string id PK
+        string userId FK
+        string category
+        text content
+        int strength
+        string status
+        datetime createdAt
+    }
+
+    MEMORY {
+        string id PK
+        string userId FK
+        text content
+        float confidence
+        vector_768 vector
+        datetime createdAt
+    }
+
+    GRAPH_ENTITY {
+        string id PK
+        string userId FK
+        string name
+        string type
+        datetime createdAt
+    }
+
+    GRAPH_RELATIONSHIP {
+        string id PK
+        string userId FK
+        string sourceId FK
+        string targetId FK
+        string type
+        int strength
+        datetime createdAt
+    }
+
+    PROACTIVE_PROMPT {
+        string id PK
+        string userId FK
+        string memoryFragmentId FK
+        text promptText
+        string triggerType
+        datetime scheduledFor
+        bool isDelivered
     }
 ```
 
-### Prisma Schema Definition
-
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  passwordHash String
-  createdAt    DateTime       @default(now())
-  entries      JournalEntry[]
-}
-
-model JournalEntry {
-  id        String        @id @default(uuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  content   String        @db.Text
-  mood      String
-  tags      String[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  vectors   VectorRecord[]
-}
-
-model VectorRecord {
-  id        String       @id @default(uuid())
-  entryId   String
-  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  userId    String
-  vector    Unsupported("vector(768)")?
-  createdAt DateTime     @default(now())
-}
-```
-
-> [!NOTE]
-> Since Prisma does not natively support the PostgreSQL `vector` data type, the `VectorRecord.vector` field is mapped as `Unsupported("vector(768)")`. Writing and querying vector data is performed bypass-style using raw SQL transactions (`prisma.$queryRaw` and `prisma.$executeRaw`).
+> **Note:** Since Prisma does not natively support the PostgreSQL `vector` data type, `vector(768)` fields are mapped as `Unsupported` and all vector I/O uses raw SQL (`$queryRaw` / `$executeRaw`).
 
 ---
 
-## 🔍 How It Works: Under the Hood
+## 🔍 Under the Hood: Data Pipelines
 
-### 1. Inscribe & Reflect (Journal Entry Creation Flow)
+### 1. Journal Entry Creation Pipeline
 
-When you write a journal entry and click **Save**, the backend processes the entry through a multi-step pipeline:
+When a user writes and saves an entry, the backend orchestrates a multi-stage AI processing pipeline before persisting data and spawning asynchronous background tasks.
 
 ```mermaid
 sequenceDiagram
     participant User as Client Browser
-    participant API as Express API Server
-    participant Gemini as Gemini SDK
-    participant DB as Supabase DB
+    participant API as Express Server
+    participant AI as Gemini 2.5 Flash
+    participant Embed as Gemini Embeddings
+    participant DB as PostgreSQL + pgvector
 
-    User->>API: POST /api/entries { title, content }
-    rect rgb(240, 235, 225)
-        Note over API, Gemini: Step 1: Cognitive Analysis
-        API->>Gemini: gemini-2.5-flash: analyzeEntry(content)
-        Gemini-->>API: returns { mood, tags, summary }
+    User->>API: POST /api/entries {title, content, images}
+
+    rect rgb(45, 40, 55)
+        Note over API,AI: Stage 1 — Cognitive Analysis
+        API->>AI: analyzeEntry(content)
+        AI-->>API: {mood, tags, summary}
     end
-    rect rgb(230, 240, 230)
-        Note over API, Gemini: Step 2: Vector Embeddings
-        API->>Gemini: gemini-embedding-2-preview: generateEmbedding(text)
-        Gemini-->>API: returns number[768]
+
+    rect rgb(40, 50, 45)
+        Note over API,AI: Stage 2 — Image Processing
+        API->>AI: describeImage(buffer, mimeType)
+        AI-->>API: text description per image
+        API->>API: Upload files to /public/uploads
     end
-    API->>DB: Write JournalEntry (Prisma client)
-    API->>DB: Write VectorRecord (raw SQL INSERT with ::vector cast)
-    DB-->>API: Confirmation
-    API-->>User: Returns created Entry with tags & mood
+
+    rect rgb(40, 45, 55)
+        Note over API,Embed: Stage 3 — Chunk Embeddings
+        API->>API: chunkText(semanticDoc)
+        loop For each chunk
+            API->>Embed: generateEmbedding(chunk)
+            Embed-->>API: number[768]
+        end
+    end
+
+    API->>DB: INSERT JournalEntry + ImageAssets
+    API->>DB: INSERT JournalChunks with vectors
+
+    rect rgb(50, 45, 40)
+        Note over API,DB: Stage 4 — Async Background Tasks
+        API-->>API: fire-and-forget
+        API-)DB: extractAndProcessMemories()
+        API-)DB: longTermMemory.extractAndProcess()
+        API-)DB: graphService.extractAndProcessGraph()
+    end
+
+    API-->>User: 201 Created {entry with mood, tags, images}
 ```
 
-* **Cognitive Analysis**: The `gemini-2.5-flash` model parses the entry text. Using structured JSON Schema enforcement (`responseMimeType: 'application/json'`), it extracts the primary mood (e.g., *peaceful*, *joyful*, *anxious*) and generates 2-4 mindful tags.
-* **Vector Embedding**: The title and entry content are combined and converted into a 768-dimensional embedding vector representing the semantic "essence" of your day.
+**Key details:**
+- **Chunking:** Entries are split into overlapping text chunks before embedding, enabling fine-grained RAG retrieval at the paragraph level.
+- **Semantic Document:** The title, content, and AI-generated image descriptions are combined into a single semantic document before chunking.
+- **Background Processing:** Memory fragment extraction, long-term memory consolidation, and knowledge graph updates all run asynchronously to keep the save response fast.
 
 ---
 
-### 2. Echoes of the Heart (Semantic Memory Search)
+### 2. RAG Chat Pipeline (Reflection Guide)
 
-Instead of searching for raw keywords (which fail to capture emotional context), Haven Journal searches for entries based on semantic similarity.
-
-1. The search query (e.g., *"feeling lost but hoping for a new start"*) is sent to `gemini-embedding-2-preview` to generate a 768-dimensional query vector.
-2. The server executes a cosine similarity search against the `VectorRecord` table using pgvector's cosine distance operator (`<=>`).
-3. Cosine similarity score is calculated as `1 - CosineDistance`:
-
-```typescript
-async findTopSimilar(userId: string, targetVector: number[], topK = 5) {
-  const vectorString = `[${targetVector.join(',')}]`;
-
-  // Cosine distance <=> yields 0 for exact match, 2 for opposite.
-  // 1 - distance gives us a similarity score between 0 and 1.
-  const results = await prisma.$queryRaw<Array<{ entryId: string; score: number }>>`
-    SELECT "entryId", (1 - (vector <=> ${vectorString}::vector)) AS "score"
-    FROM "VectorRecord"
-    WHERE "userId" = ${userId}
-    ORDER BY vector <=> ${vectorString}::vector ASC
-    LIMIT ${topK}
-  `;
-
-  return results.map(r => ({
-    entryId: r.entryId,
-    score: Number(r.score)
-  }));
-}
-```
-
----
-
-### 3. Conversations with Past Pages (Retrieval-Augmented Generation / RAG)
-
-The Reflection Guide allows you to speak directly with your history (e.g. *"What made me happy last month?"* or *"Have I been sticking to my sleep goals?"*).
+The Reflection Guide chat uses a multi-source retrieval pipeline that combines chunk-level semantic search, long-term memories, knowledge graph context, and context compression before prompting the LLM.
 
 ```mermaid
-graph TD
-    Question[User Question] --> VecQ[Generate Query Vector]
-    VecQ --> Search[pgvector Cosine Search]
-    Search -->|Top 4 Match IDs| Fetch[Fetch Entry Content]
-    Fetch --> Context[Format Entries as Context Sheet]
-    Context --> SystemPrompt[Inject into Reflection Guide Prompt]
-    SystemPrompt --> Gemini[gemini-2.5-flash]
-    Gemini --> Answer[Empathetic Response with Date Citations]
+sequenceDiagram
+    participant User as Client Browser
+    participant API as Express Server
+    participant Embed as Gemini Embeddings
+    participant DB as PostgreSQL + pgvector
+    participant Compress as Compression Service
+    participant Graph as Graph Repository
+    participant LTM as Long-Term Memory
+    participant AI as Gemini 2.5 Flash
+
+    User->>API: POST /api/chat {question}
+
+    rect rgb(45, 40, 55)
+        Note over API,DB: Phase 1 — Multi-Source Retrieval
+        API->>Embed: generateEmbedding(question)
+        Embed-->>API: queryVector[768]
+        API->>DB: Chunk cosine similarity search (top 10)
+        DB-->>API: matched chunks + scores
+        API->>LTM: findTopSimilar(queryVector, top 5)
+        LTM-->>API: durable memories with confidence
+    end
+
+    rect rgb(40, 50, 45)
+        Note over API,Graph: Phase 2 — Graph Context Enrichment
+        API->>Graph: getEntities + getRelationships
+        Graph-->>API: matched entity-relationship triples
+        API->>API: Format graph connections as context
+    end
+
+    rect rgb(50, 45, 40)
+        Note over API,Compress: Phase 3 — Context Compression
+        API->>Compress: compress(question, entries)
+        Compress->>AI: LLM-based compression (60-80% reduction)
+        AI-->>Compress: compressed entries preserving facts + emotions
+        Compress-->>API: compressed context + metrics
+    end
+
+    rect rgb(40, 45, 55)
+        Note over API,AI: Phase 4 — Empathetic Generation
+        API->>AI: System prompt + compressed context + graph + memories + question
+        AI-->>API: Grounded, cited, empathetic response
+    end
+
+    API-->>User: {answer, sources[]}
 ```
 
-* **Context Constraints**: The system prompt strictly binds Gemini to the retrieved entries:
-  > *"You are a warm, highly intuitive, and loving Reflection Guide for 'Haven Journal'... Using ONLY the provided context entries from their past, answer their query with deep emotional alignment... Always cite the dates of the entries you are referencing. If the entries do not contain the answer, say so gently."*
-* **Security**: The LLM only sees the top 4 entries related to your question. It never exposes your complete journal database.
+**Key details:**
+- **Adaptive Threshold:** Only chunks scoring above `max(0.4, bestScore × 0.8)` are included, preventing low-quality noise from diluting context.
+- **Context Compression:** A dedicated `ContextCompressionService` reduces token usage by 60-80% while preserving all facts, dates, and emotional tone.
+- **Graph Enrichment:** The knowledge graph contributes behavioral trigger/influence relationships (e.g., *"Gym improves Confidence"*) to the LLM context for richer insights.
 
 ---
 
-### 4. Garden Insights (Weekly Analytics & Summaries)
+### 3. Hybrid Search Architecture
 
-The **Weekly Garden** compiles your emotional trajectory over the last 7 days.
+Search combines semantic vector similarity with PostgreSQL full-text keyword matching for maximum recall.
 
-* **Quantitative Aggregations**: The backend calculates mood frequencies and tags using database aggregation.
-* **Qualitative Growth Synthesis**: The full text of the week's journal entries is sent to `gemini-2.5-flash`. The model reviews the week's trajectory, outlines recurring themes (e.g., sleep issues, gratitude, work pressure), and generates 3 customized, gentle personal growth guidelines.
+```mermaid
+flowchart LR
+    Query([User Query])
+
+    Query --> EmbedQ[Generate Query Embedding]
+    Query --> KeywordQ[PostgreSQL tsvector Search]
+
+    EmbedQ --> CosineSim["Chunk Cosine Similarity\n(pgvector <=> operator)"]
+    CosineSim --> Dedup["Deduplicate Chunks → Entries\n(adaptive threshold)"]
+
+    KeywordQ --> Rank["ts_rank Scoring\n(normalized to 0-1)"]
+
+    Dedup --> Merge
+    Rank --> Merge
+
+    Merge["Weighted Merge\n0.7 × Semantic + 0.3 × Keyword"]
+    Merge --> TopK["Top 10 Results"]
+    TopK --> Results([Ranked Entries + Scores])
+```
 
 ---
 
-## 🔒 Sanctuary Settings & Key Architecture
+### 4. Memory Layer Architecture
 
-To preserve security and make the application completely free and open, Haven Journal supports localized API key authorization.
+Solace Diaries maintains three distinct memory tiers that are extracted and updated asynchronously each time a journal entry is saved.
+
+```mermaid
+flowchart TD
+    Entry([New Journal Entry])
+
+    Entry --> FragExtract["Memory Fragment Extraction\n(Gemini 2.5 Flash)"]
+    Entry --> LTMExtract["Long-Term Memory Extraction\n(Gemini 2.5 Flash)"]
+    Entry --> GraphExtract["Knowledge Graph Extraction\n(Gemini 2.5 Flash)"]
+
+    subgraph Tier1 ["Tier 1 — Memory Fragments"]
+        FragExtract --> NewFrag["Create New Fragments\n(ambitions, relationships,\nemotional trends, milestones)"]
+        FragExtract --> UpdateFrag["Reinforce Existing Fragments\n(increment strength)"]
+        FragExtract --> Prompts["Schedule Proactive Prompts\n(next_day, weeks_later,\nafternoon_followup, spontaneous)"]
+    end
+
+    subgraph Tier2 ["Tier 2 — Durable Long-Term Memory"]
+        LTMExtract --> NewMem["Create New Memories\n(third-person declarative facts)"]
+        LTMExtract --> UpdateMem["Update Existing Memories\n(refine content + confidence)"]
+        LTMExtract --> DeleteMem["Delete Contradicted Memories"]
+        NewMem --> MemVec["Generate Memory Vector\n(768d embedding)"]
+        UpdateMem --> MemVec
+    end
+
+    subgraph Tier3 ["Tier 3 — Knowledge Graph"]
+        GraphExtract --> Entities["Extract Entities\n(people, places, projects,\ngoals, habits, emotions)"]
+        GraphExtract --> Rels["Extract Relationships\n(triggers, improves, hinders,\nrelates_to, participates_in)"]
+        Entities --> Resolve["Resolve & Deduplicate\nagainst existing graph"]
+        Rels --> Strength["Create or Increment\nrelationship strength"]
+    end
+
+    Prompts --> ProactiveUI["Surface as Proactive Prompt\nin the next session"]
+    MemVec --> VectorSearch["Available for Cosine\nSimilarity Search in RAG"]
+    Strength --> Constellation["Rendered as Interactive\nMemory Constellation"]
+```
+
+| Memory Tier | Storage | Purpose | RAG Integration |
+|---|---|---|---|
+| **Fragments** | Relational (Prisma) | Track ambitions, relationships, emotional patterns with strength scores | Feeds proactive prompts |
+| **Durable Memory** | Relational + pgvector | Persistent declarative facts about the user with confidence and vector embeddings | Cosine similarity search in chat |
+| **Knowledge Graph** | Entity-Relationship graph | Maps causal/influence links between people, habits, emotions, goals | Injected into RAG context as behavioral insights |
+
+---
+
+### 5. Knowledge Graph & Constellation
+
+The knowledge graph models the user's inner world as a network of interconnected entities and causal relationships, extracted by an AI "narrative psychologist."
+
+```mermaid
+flowchart TD
+    subgraph EntityTypes ["Entity Types"]
+        People["👤 People\n(friends, family, coworkers)"]
+        Places["📍 Places\n(gym, office, home)"]
+        Projects["📁 Projects\n(presentations, apps)"]
+        Goals["🎯 Goals\n(run a 5k, pass exam)"]
+        Habits["🔄 Habits\n(meditation, running)"]
+        Emotions["💜 Emotions\n(confidence, anxiety)"]
+    end
+
+    subgraph RelTypes ["Relationship Types"]
+        Triggers["⚡ triggers"]
+        Improves["📈 improves"]
+        Hinders["📉 hinders"]
+        RelatesTo["🔗 relates_to"]
+        ParticipatesIn["🤝 participates_in"]
+    end
+
+    Habits -->|improves| Emotions
+    Projects -->|triggers| Emotions
+    People -->|relates_to| Emotions
+    Goals -->|participates_in| Projects
+    Places -->|triggers| Habits
+
+    subgraph Output ["Constellation Output"]
+        Viz["Interactive Node-Link\nVisualization"]
+        Reflect["AI-Generated Narrative\nReflection (Satori)"]
+    end
+
+    Emotions --> Viz
+    Habits --> Viz
+    Viz --> Reflect
+```
+
+---
+
+## 🔒 Security Architecture
+
+Solace Diaries uses a zero-trust API key model to keep the application free, open, and private.
 
 ```mermaid
 sequenceDiagram
     participant LS as localStorage
-    participant UI as React UI
-    participant API as Backend Express Server
+    participant UI as React Client
+    participant API as Express Server
     participant Gemini as Google Gemini API
 
-    Note over UI, LS: User enters Gemini API Key
-    UI->>LS: Save key locally
-    UI->>API: HTTP Request (headers['x-gemini-api-key'] = key)
-    Note over API: Extracts header
-    API->>Gemini: Instantiates GoogleGenAI(key)
-    Note over API: Destroys instance after response completes
-    API-->>UI: Response
+    Note over UI, LS: User configures Gemini API Key
+    UI->>LS: Persist key in browser sandbox
+    UI->>API: HTTP Request + x-gemini-api-key header + Bearer JWT
+    Note over API: Extract & validate JWT session
+    Note over API: Extract x-gemini-api-key header
+    API->>Gemini: Instantiate ephemeral GoogleGenAI(key)
+    Gemini-->>API: AI Response
+    Note over API: Destroy GoogleGenAI instance
+    API-->>UI: Response payload
 ```
 
-* **Zero Backend Key Storage**: The database does not have an API key column.
-* **Browser Sandbox**: The user's key resides exclusively in their browser's secure `localStorage`.
-* **Isolated Instances**: On every incoming API request, the server extracts the `x-gemini-api-key` header and initializes an ephemeral `GoogleGenAI` instance. This instance is garbage-collected once the request finishes, leaving zero footprint.
+| Security Layer | Implementation |
+|---|---|
+| **Authentication** | Stateless JWT tokens via `jsonwebtoken` |
+| **Password Storage** | bcrypt hashing + salting via `bcryptjs` |
+| **API Key Isolation** | Zero backend storage — key lives only in `localStorage` and ephemeral request headers |
+| **CORS** | Restricted to authorized client origins |
+| **Ephemeral AI Instances** | `GoogleGenAI` is instantiated per-request and garbage-collected immediately after |
+
+---
+
+## 📡 API Reference
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/signup` | — | Create a new user account |
+| `POST` | `/api/auth/login` | — | Authenticate and receive a JWT |
+| `POST` | `/api/auth/logout` | Bearer | Invalidate the current session |
+| `GET` | `/api/auth/me` | Bearer | Retrieve current session user |
+| `GET` | `/api/entries` | Bearer | List all journal entries |
+| `GET` | `/api/entries/:id` | Bearer | Get a single journal entry |
+| `POST` | `/api/entries` | Bearer | Create entry (supports `multipart/form-data` images) |
+| `PUT` | `/api/entries/:id` | Bearer | Update entry + manage images |
+| `DELETE` | `/api/entries/:id` | Bearer | Delete entry and all associated vectors/images |
+| `GET` | `/api/search?q=` | Bearer | Hybrid semantic + keyword search |
+| `POST` | `/api/chat` | Bearer | RAG-powered Reflection Guide chat |
+| `GET` | `/api/insights` | Bearer | Generate weekly growth insights |
+| `GET` | `/api/memories/active` | Bearer | List active memory fragments |
+| `GET` | `/api/memories/durable` | Bearer | List long-term durable memories |
+| `GET` | `/api/memories/graph` | Bearer | Get knowledge graph (nodes + links) |
+| `GET` | `/api/memories/reflection` | Bearer | AI-generated graph narrative reflection |
+| `GET` | `/api/memories/pending-prompt` | Bearer | Get pending proactive prompt |
+| `POST` | `/api/memories/prompt/:id/respond` | Bearer | Respond to a proactive prompt |
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ for mindfulness and emotional well-being.</sub>
+</div>
