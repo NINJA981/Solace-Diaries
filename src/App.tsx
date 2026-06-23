@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   BookOpen,
@@ -110,8 +110,29 @@ export default function App() {
   const [keyTestingStatus, setKeyTestingStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('journal_theme') as 'light' | 'dark') || 'dark';
+    return (localStorage.getItem('journal_theme') as 'light' | 'dark') || 'light';
   });
+
+  const [showHeader, setShowHeader] = useState(true);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    setShowHeader(true);
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    const currentScrollY = e.currentTarget.scrollTop;
+    if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+      setShowHeader(false);
+    } else {
+      setShowHeader(true);
+    }
+    lastScrollY.current = currentScrollY;
+  };
 
   useEffect(() => {
     const bodyClass = document.body.classList;
@@ -258,7 +279,7 @@ export default function App() {
 
       {/* Top Minimalist Navigation (Desktop) - Hides in Focus Mode */}
       <AnimatePresence>
-        {!isFocusMode && (
+        {!isFocusMode && showHeader && (
           <motion.header
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -298,7 +319,11 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main workspace frame */}
-      <main className={`grow relative z-10 flex flex-col min-h-0 ${isFocusMode ? '' : 'md:pt-24 pb-24 md:pb-8'} ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin'}`}>
+      <main 
+        ref={mainRef}
+        onScroll={handleScroll}
+        className={`grow relative z-10 flex flex-col min-h-0 ${isFocusMode ? '' : 'md:pt-24 pb-24 md:pb-8'} ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-thin'}`}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab + (activeEntry ? `-${activeEntry.id}` : '')}
