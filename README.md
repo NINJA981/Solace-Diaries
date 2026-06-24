@@ -506,5 +506,5 @@ sequenceDiagram
 ---
 
 <div align="center">
-  <sub>Built with ❤️ for mindfulness and emotional well-being.</sub>
+  <sub>this nigga actually builds stuff <3</sub>
 </div>
