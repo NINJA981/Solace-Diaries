@@ -1,0 +1,197 @@
+/*
+ * Solace design tokens — "ink & lamplight".
+ * Writing at night by a brass lamp; memories surface as stars.
+ *   ink      deep indigo night (dark) / cool paper (light) — never cream, never #000
+ *   lamp     warm brass: the one accent for primary actions & the user's own voice
+ *   dusk     soft violet: anything Solace (AI) contributes — memories, citations, insights
+ *   mood     a 5-step valence ramp, slate-blue (low) → gold (high), for charts & mood chips
+ * Theme: <html data-theme="light|dark">; absent = follow the OS.
+ * Every text/background pair here meets WCAG AA (4.5:1 body, 3:1 large/UI) in both themes.
+ */
+
+@theme {
+  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* Radii follow hierarchy: controls < cards < sheets; chips are pills. */
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 22px;
+
+  /* Type scale (1.2 minor third), body 17px for comfortable long-form reading. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: 2.16rem;
+  --text-4xl: 2.6rem;
+  --text-5xl: clamp(2.6rem, 6vw, 4.4rem);
+
+  /* Colors exposed as Tailwind utilities (bg-ink, text-fg-muted, border-line, …). */
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-lamp: var(--lamp);
+  --color-lamp-fg: var(--lamp-fg);
+  --color-lamp-soft: var(--lamp-soft);
+  --color-dusk: var(--dusk);
+  --color-dusk-soft: var(--dusk-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-focus: var(--focus);
+  --color-mood-1: var(--mood-1);
+  --color-mood-2: var(--mood-2);
+  --color-mood-3: var(--mood-3);
+  --color-mood-4: var(--mood-4);
+  --color-mood-5: var(--mood-5);
+}
+
+/* ── Dark (default visual identity) ─────────────────────────── */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #131a2c; /* page background — deep indigo ink */
+  --surface: #1a2238; /* panels, nav */
+  --raised: #222b45; /* cards, popovers */
+  --sunken: #0f1524; /* editor well, inputs */
+  --line: #2e3858;
+  --line-strong: #46527a;
+  --fg: #ebe8f3; /* 14.3:1 on ink */
+  --fg-muted: #b3afc6; /* 8.1:1 on ink */
+  --fg-faint: #9894b0; /* ≥4.5:1 on every dark surface */
+  --lamp: #e3b65e; /* brass lamplight — 9.2:1 on ink */
+  --lamp-fg: #1b1608; /* text on lamp fills */
+  --lamp-soft: rgb(227 182 94 / 0.14);
+  --dusk: #a99cf0; /* Solace's voice — 7.2:1 on ink */
+  --dusk-soft: rgb(169 156 240 / 0.14);
+  --danger: #f29a8f; /* 8.1:1 on ink */
+  --danger-soft: rgb(242 154 143 / 0.14);
+  --success: #8fd4a8;
+  --focus: #f0cb7e;
+  /* mood valence ramp: very low → very high */
+  --mood-1: #6f86d6;
+  --mood-2: #9a9ee0;
+  --mood-3: #c4bdd6;
+  --mood-4: #e2c27e;
+  --mood-5: #f2a640;
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 32px -18px rgb(5 8 20 / 0.9);
+  --star-glow: rgb(227 182 94 / 0.55);
+}
+
+/* ── Light: cool paper, same ink family ─────────────────────── */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ink: #f4f3f8;
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --sunken: #ebe9f2;
+  --line: #dcd9e7;
+  --line-strong: #b9b4cc;
+  --fg: #1a2036; /* 14.6:1 on ink */
+  --fg-muted: #4b4f68; /* 7.3:1 */
+  --fg-faint: #5d6078; /* ≥4.5:1 on every light surface */
+  --lamp: #8a5f12; /* deep brass — 5.1:1 on ink, used for text & fills */
+  --lamp-fg: #ffffff;
+  --lamp-soft: rgb(138 95 18 / 0.1);
+  --dusk: #5a47b8; /* 6.3:1 */
+  --dusk-soft: rgb(90 71 184 / 0.09);
+  --danger: #b3261e; /* 5.9:1 */
+  --danger-soft: rgb(179 38 30 / 0.08);
+  --success: #19683a;
+  --focus: #8a5f12;
+  --mood-1: #3f58b0;
+  --mood-2: #7470c4;
+  --mood-3: #a39cb8;
+  --mood-4: #c08a2a;
+  --mood-5: #d9730f;
+  --shadow-card: 0 1px 2px rgb(26 32 54 / 0.06), 0 10px 28px -16px rgb(26 32 54 / 0.22);
+  --star-glow: rgb(138 95 18 / 0.35);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --ink: #f4f3f8;
+    --surface: #ffffff;
+    --raised: #ffffff;
+    --sunken: #ebe9f2;
+    --line: #dcd9e7;
+    --line-strong: #b9b4cc;
+    --fg: #1a2036;
+    --fg-muted: #4b4f68;
+    --fg-faint: #5d6078;
+    --lamp: #8a5f12;
+    --lamp-fg: #ffffff;
+    --lamp-soft: rgb(138 95 18 / 0.1);
+    --dusk: #5a47b8;
+    --dusk-soft: rgb(90 71 184 / 0.09);
+    --danger: #b3261e;
+    --danger-soft: rgb(179 38 30 / 0.08);
+    --success: #19683a;
+    --focus: #8a5f12;
+    --mood-1: #3f58b0;
+    --mood-2: #7470c4;
+    --mood-3: #a39cb8;
+    --mood-4: #c08a2a;
+    --mood-5: #d9730f;
+    --shadow-card: 0 1px 2px rgb(26 32 54 / 0.06), 0 10px 28px -16px rgb(26 32 54 / 0.22);
+    --star-glow: rgb(138 95 18 / 0.35);
+  }
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+html {
+  background: var(--ink);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--ink);
+  font-size: var(--text-base);
+  line-height: 1.55;
+}
+
+/* Long-form writing & reading: serif, generous leading, ~68ch measure. */
+.prose-journal {
+  font-family: var(--font-serif);
+  font-size: 1.1875rem;
+  line-height: 1.72;
+  max-width: 68ch;
+  font-optical-sizing: auto;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--lamp-soft);
+  color: var(--fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

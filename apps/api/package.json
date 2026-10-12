@@ -1,0 +1,46 @@
+{
+  "name": "@solace/api",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "node build.mjs",
+    "start": "node --enable-source-maps dist/server.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^2.28.0",
+    "@solace/shared": "*",
+    "@supabase/supabase-js": "^2.117.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "drizzle-orm": "^0.45.4",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "file-type": "^22.1.1",
+    "helmet": "^8.3.0",
+    "jose": "^6.2.12",
+    "multer": "^2.0.2",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0",
+    "postgres": "^3.4.9",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.3",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
+    "pino-pretty": "^13.0.0",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15"
+  }
+}
