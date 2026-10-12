@@ -1,0 +1,38 @@
+# Render blueprint for the Solace API (the web app deploys to Vercel from apps/web).
+# Migrations run at the start of each deploy, before the server boots; they are
+# idempotent and Solace runs a single API instance.
+services:
+  - type: web
+    name: solace-api
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build -w @solace/api
+    startCommand: node apps/api/src/db/migrate.ts && npm run start -w @solace/api
+    healthCheckPath: /api/healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: '1'
+      - key: RUN_WORKER
+        value: 'true'
+      - key: DATABASE_URL
+        sync: false # Supabase → Connect → Session pooler URI (IPv4-compatible)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false # e.g. https://solace.vercel.app (comma-separate extra origins)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_CHAT_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_EMBED_MODEL
+        value: gemini-embedding-001
+      - key: AI_DAILY_QUOTA
+        value: '200'

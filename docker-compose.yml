@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: solace
       POSTGRES_DB: solace
     ports:
-      - '54330:5432'
+      - '55432:5432'
     volumes:
       - solace-db:/var/lib/postgresql/data
     healthcheck:

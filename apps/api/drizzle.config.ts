@@ -4,6 +4,6 @@ export default defineConfig({
   dialect: 'postgresql',
   schema: './src/db/schema.ts',
   out: './drizzle',
-  dbCredentials: { url: process.env.DATABASE_URL ?? 'postgres://solace:solace@localhost:54330/solace' },
+  dbCredentials: { url: process.env.DATABASE_URL ?? 'postgres://solace:solace@localhost:55432/solace' },
   strict: true,
 });

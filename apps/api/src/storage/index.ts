@@ -1,15 +1,32 @@
-// Owned by the platform layer. STUB — replaced in Phase 1 (agent A).
 /** Private object storage (Supabase bucket in prod/dev; in-memory in tests). */
-export async function putObject(_path: string, _bytes: Buffer, _mime: string): Promise<void> {
-  throw new Error('not implemented');
+import { config, isTest } from '../config';
+import { createMemoryStore } from './memory-store';
+import { createSupabaseStore } from './supabase-store';
+
+const store = isTest ? createMemoryStore() : createSupabaseStore(config.STORAGE_BUCKET);
+
+export async function putObject(path: string, bytes: Buffer, mime: string): Promise<void> {
+  await store.put(path, bytes, mime);
 }
-export async function getObject(_path: string): Promise<Buffer> {
-  throw new Error('not implemented');
+
+export async function getObject(path: string): Promise<Buffer> {
+  return store.get(path);
 }
-export async function deleteObjects(_paths: string[]): Promise<void> {
-  throw new Error('not implemented');
+
+export async function deleteObjects(paths: string[]): Promise<void> {
+  if (paths.length) await store.remove(paths);
 }
+
 /** Short-lived signed read URLs, in the same order as `paths`. */
-export async function signUrls(_paths: string[], _expiresInSec = 3600): Promise<string[]> {
-  throw new Error('not implemented');
+export async function signUrls(paths: string[], expiresInSec = 3600): Promise<string[]> {
+  return paths.length ? store.sign(paths, expiresInSec) : [];
+}
+
+export async function listObjects(prefix: string): Promise<string[]> {
+  return store.list(prefix);
+}
+
+/** Delete everything under a folder, e.g. `${userId}/` on account deletion. */
+export async function deletePrefix(prefix: string): Promise<void> {
+  await deleteObjects(await store.list(prefix));
 }

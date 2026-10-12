@@ -8,8 +8,11 @@ declare module 'express-serve-static-core' {
     auth?: AuthContext;
     /** Optional bring-your-own Gemini key from the `x-gemini-key` header. Never log it. */
     geminiKey?: string;
-    /** Request id, echoed in error bodies and logs. */
-    id?: string;
+    /**
+     * Request id, echoed in error bodies and logs (set first thing by the request-id
+     * middleware). Required, to stay compatible with pino-http's `IncomingMessage.id`.
+     */
+    id: string;
   }
 }
 
