@@ -5,7 +5,8 @@
  */
 import { fileTypeFromBuffer } from 'file-type';
 import sharp from 'sharp';
-import { badRequest } from '../http/errors';
+import { HttpError, badRequest } from '../http/errors';
+import { logger } from '../logger';
 
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 const MAX_SIDE = 2560;
@@ -31,9 +32,15 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
       .webp({ quality: 82 })
       .toBuffer({ resolveWithObject: true });
     return { bytes: data, mime: 'image/webp', width: info.width, height: info.height };
-  } catch {
-    throw badRequest("We couldn't read that photo. Try a JPEG or PNG.", {
-      file: 'Unreadable image',
-    });
+  } catch (err) {
+    // Only a decode failure is the user's file; anything else (e.g. out of memory) is ours.
+    const message = err instanceof Error ? err.message : String(err);
+    if (/unsupported|corrupt|bad|invalid|premature|decode|pixel limit|heif/i.test(message)) {
+      throw badRequest("We couldn't read that photo. Try a JPEG or PNG.", {
+        file: 'Unreadable image',
+      });
+    }
+    logger.error({ err }, 'image processing failed');
+    throw new HttpError(503, 'Photo processing is busy right now. Try again in a moment.');
   }
 }
