@@ -5,6 +5,7 @@
  */
 import type { z } from 'zod';
 import * as c from './contract';
+import * as u from './usage';
 
 type Def = {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -19,6 +20,7 @@ export const routes = {
   health: { method: 'GET', path: '/healthz', response: c.health },
 
   getMe: { method: 'GET', path: '/me', response: c.profile },
+  getUsage: { method: 'GET', path: '/me/usage', response: u.aiUsage },
   updateMe: { method: 'PATCH', path: '/me', body: c.updateProfileInput, response: c.profile },
   exportMe: { method: 'GET', path: '/me/export', query: c.exportQuery, response: 'file' },
   deleteMe: { method: 'DELETE', path: '/me', body: c.deleteAccountInput, response: null },

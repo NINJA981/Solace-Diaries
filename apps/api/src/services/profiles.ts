@@ -23,6 +23,13 @@ export function toProfile(row: ProfileRow): Profile {
     onboardingDone: row.onboardingDone,
     aiStyle: row.aiStyle,
     reminderHour: row.reminderHour,
+    world: row.world,
+    soundEnabled: row.soundEnabled,
+    hapticsEnabled: row.hapticsEnabled,
+    companionName: row.companionName,
+    mode: row.mode,
+    ageConfirmed: row.ageBand !== null,
+    consentStatus: row.consentStatus,
     createdAt: row.createdAt.toISOString(),
   };
 }

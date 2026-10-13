@@ -109,6 +109,17 @@ export const cursorPage = <T extends z.ZodTypeAny>(item: T) =>
 export const aiStyle = z.enum(['gentle', 'direct', 'curious', 'stoic']);
 export type AiStyle = z.infer<typeof aiStyle>;
 
+/** Theme worlds: whole looks (type, colour, shape, motion, sound, voice). Anyone may pick any. */
+export const WORLDS = ['lamplight', 'jelly', 'scrapbook', 'chrome'] as const;
+export const world = z.enum(WORLDS);
+export type World = z.infer<typeof world>;
+
+/** Adult (18+) or teen (13–17, needs parental consent); under-13s can't have an account. */
+export const accountMode = z.enum(['adult', 'teen']);
+export type AccountMode = z.infer<typeof accountMode>;
+export const consentStatus = z.enum(['not_required', 'pending', 'granted', 'revoked']);
+export type ConsentStatus = z.infer<typeof consentStatus>;
+
 export const profile = z.object({
   id: uuid,
   email: z.string().email(),
@@ -118,6 +129,16 @@ export const profile = z.object({
   aiStyle,
   /** Local hour 0-23 for a gentle in-app reminder, or null when off. */
   reminderHour: z.number().int().min(0).max(23).nullable(),
+  world,
+  /** UI sounds and haptics are opt-in. */
+  soundEnabled: z.boolean(),
+  hapticsEnabled: z.boolean(),
+  /** The companion's name; empty means the world's default name. */
+  companionName: z.string(),
+  mode: accountMode,
+  /** False until the person has confirmed their age (required before using the app). */
+  ageConfirmed: z.boolean(),
+  consentStatus,
   createdAt: timestamp,
 });
 export type Profile = z.infer<typeof profile>;
@@ -129,6 +150,10 @@ export const updateProfileInput = z
     onboardingDone: z.boolean(),
     aiStyle,
     reminderHour: z.number().int().min(0).max(23).nullable(),
+    world,
+    soundEnabled: z.boolean(),
+    hapticsEnabled: z.boolean(),
+    companionName: z.string().trim().max(24),
   })
   .partial();
 export type UpdateProfileInput = z.infer<typeof updateProfileInput>;

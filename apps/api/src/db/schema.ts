@@ -47,6 +47,20 @@ export const profiles = pgTable('profiles', {
     .notNull()
     .default('gentle'),
   reminderHour: smallint('reminder_hour'),
+  world: text('world', { enum: ['lamplight', 'jelly', 'scrapbook', 'chrome'] })
+    .notNull()
+    .default('lamplight'),
+  soundEnabled: boolean('sound_enabled').notNull().default(false),
+  hapticsEnabled: boolean('haptics_enabled').notNull().default(false),
+  companionName: text('companion_name').notNull().default(''),
+  mode: text('mode', { enum: ['adult', 'teen'] })
+    .notNull()
+    .default('adult'),
+  /** '13-15' | '16-17' | '18+'; null until the age gate is answered. Never store a birth date. */
+  ageBand: text('age_band', { enum: ['13-15', '16-17', '18+'] }),
+  consentStatus: text('consent_status', { enum: ['not_required', 'pending', 'granted', 'revoked'] })
+    .notNull()
+    .default('not_required'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }).enableRLS();
