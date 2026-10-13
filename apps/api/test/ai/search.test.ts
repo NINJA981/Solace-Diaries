@@ -4,7 +4,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { config } from '../../src/config';
 import { db } from '../../src/db/client';
 import { aiUsage } from '../../src/db/schema';
-import { RECENCY_WEIGHT, rrf, withRecency } from '../../src/services/search';
+import { RECENCY_WEIGHT, rrf, withinBand, withRecency } from '../../src/services/search';
 import { resetDb, testApi, type TestUser } from '../helpers';
 import { installFakeAi, type FakeAi } from './fake-ai';
 import { seedEnriched, seedUser } from './seed';
@@ -28,6 +28,13 @@ async function search(user: TestUser, params: Record<string, string>) {
 }
 
 describe('ranking math', () => {
+  it('keeps only vector hits close to the best match (calibrated on real Gemini scores)', () => {
+    // Real gemini-embedding-001 scores: relevant ≈ 0.67–0.75, loosely related ≈ 0.6.
+    expect(withinBand(0.734, 0.734, 0.08)).toBe(true);
+    expect(withinBand(0.677, 0.751, 0.08)).toBe(true);
+    expect(withinBand(0.62, 0.751, 0.08)).toBe(false);
+  });
+
   it('fuses ranks with RRF', () => {
     const s = rrf([
       ['a', 'b'],

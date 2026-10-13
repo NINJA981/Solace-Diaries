@@ -47,6 +47,16 @@ const schema = z.object({
    * jobs wait for the next UTC day instead of failing.
    */
   ENRICH_DAILY_QUOTA: z.coerce.number().int().min(0).default(150),
+  /**
+   * Retrieval thresholds, calibrated for gemini-embedding-001 at 768 dims, whose cosine
+   * scores sit high: unrelated journal text lands around 0.55–0.62, relevant around 0.62+.
+   * Re-calibrate if GEMINI_EMBED_MODEL changes.
+   */
+  SEARCH_MIN_SIMILARITY: z.coerce.number().min(0).max(1).default(0.6),
+  /** Also drop vector hits more than this far below the query's best match. */
+  SEARCH_RELATIVE_BAND: z.coerce.number().min(0).max(1).default(0.08),
+  /** A new memory this similar to an existing one reinforces it instead of duplicating. */
+  MEMORY_DEDUPE_SIMILARITY: z.coerce.number().min(0).max(1).default(0.93),
   /** Hard timeout for a single Gemini call. */
   AI_TIMEOUT_MS: z.coerce.number().int().default(45_000),
 

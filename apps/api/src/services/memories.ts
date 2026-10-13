@@ -3,6 +3,7 @@
  * isolation, similarity de-dup) and the user-facing CRUD. Every statement is scoped by
  * user_id; ids the model returns are opaque handles we minted and map back ourselves.
  */
+import { config } from '../config';
 import { and, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { MEMORY_KINDS, type Memory, type MemoryKind, type UpdateMemoryInput } from '@solace/shared';
@@ -18,7 +19,7 @@ import { consumeAiQuota } from './quota';
 /** Existing memories shown to the model per extraction — never the whole history. */
 export const MEMORY_CONTEXT_LIMIT = 15;
 /** A "new" memory this close to an existing one reinforces it instead. */
-export const DEDUPE_SIMILARITY = 0.9;
+export const dedupeSimilarity = () => config.MEMORY_DEDUPE_SIMILARITY;
 const MAX_OPS = 8;
 
 type MemoryRow = typeof memories.$inferSelect;
@@ -172,7 +173,7 @@ async function applyOp(
 ): Promise<boolean> {
   switch (op.op) {
     case 'create': {
-      const [nearest] = await similarMemories(userId, vector!, 1, DEDUPE_SIMILARITY);
+      const [nearest] = await similarMemories(userId, vector!, 1, dedupeSimilarity());
       if (nearest) return reinforce(userId, entryId, nearest.id);
       return db.transaction(async (tx) => {
         const [row] = await tx

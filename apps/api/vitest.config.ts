@@ -18,6 +18,10 @@ export default defineConfig({
       LOG_LEVEL: 'silent',
       RUN_WORKER: 'false',
       GEMINI_API_KEY: '',
+      // The test embedder scores unrelated text near 0, unlike real Gemini embeddings.
+      SEARCH_MIN_SIMILARITY: '0.35',
+      SEARCH_RELATIVE_BAND: '1',
+      MEMORY_DEDUPE_SIMILARITY: '0.9',
     },
     fileParallelism: false,
     testTimeout: 20_000,

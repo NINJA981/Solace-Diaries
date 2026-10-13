@@ -9,6 +9,7 @@ import { daysBetween, ERROR_CODES } from '@solace/shared';
 import { AiUnavailableError } from '../ai/errors';
 import { embedModel, embedText, type AiOptions } from '../ai/gemini';
 import { HttpError } from '../http/errors';
+import { config } from '../config';
 import { db } from '../db/client';
 import { entries } from '../db/schema';
 import { excerptOf, toEntrySummary } from './entry-dto';
@@ -20,8 +21,8 @@ export const VECTOR_TOP_K = 40;
 export const HNSW_EF_SEARCH = 80;
 /** Standard RRF constant: dampens the advantage of the very top ranks. */
 export const RRF_K = 60;
-/** Cosine similarity below which a chunk is considered unrelated. */
-export const MIN_SIMILARITY = 0.35;
+/** Cosine similarity below which a chunk is considered unrelated (see config). */
+export const minSimilarity = () => config.SEARCH_MIN_SIMILARITY;
 /** Recency can add at most this fraction of a hit's fused score. */
 export const RECENCY_WEIGHT = 0.05;
 export const RECENCY_HALF_LIFE_DAYS = 180;
@@ -85,8 +86,14 @@ export async function vectorChunks(
       content: r.content,
       similarity: Number(r.similarity),
     }))
-    .filter((r) => r.similarity >= MIN_SIMILARITY)
-    .sort((a, b) => b.similarity - a.similarity);
+    .filter((r) => r.similarity >= minSimilarity())
+    .sort((a, b) => b.similarity - a.similarity)
+    .filter((r, _, sorted) => withinBand(r.similarity, sorted[0]!.similarity));
+}
+
+/** Keep only hits close to the best one: real embeddings put weak matches just over the floor. */
+export function withinBand(similarity: number, best: number, band = config.SEARCH_RELATIVE_BAND): boolean {
+  return best - similarity <= band;
 }
 
 /** Full-text matches using web-search syntax ("quoted phrases", -exclusions, or). */

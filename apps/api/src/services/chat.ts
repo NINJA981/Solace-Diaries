@@ -22,7 +22,7 @@ import { HttpError, badRequest, notFound } from '../http/errors';
 import { logger } from '../logger';
 import { excerptOf } from './entry-dto';
 import { similarMemories, type ScoredMemory } from './memories';
-import { MIN_SIMILARITY, rrf, vectorChunks, type ChunkHit } from './search';
+import { minSimilarity, rrf, vectorChunks, type ChunkHit } from './search';
 
 export const CHAT_CHUNKS = 8;
 export const MAX_CHUNKS_PER_ENTRY = 2;
@@ -240,7 +240,7 @@ async function retrieve(
   const [vec, kw, memories] = await Promise.all([
     vectorChunks(userId, vector),
     keywordChunks(userId, question),
-    similarMemories(userId, vector, CHAT_MEMORIES, MIN_SIMILARITY),
+    similarMemories(userId, vector, CHAT_MEMORIES, minSimilarity()),
   ]);
   const chunks = selectChunks(vec, kw);
   if (chunks.length === 0) return { citations: [], passages: [], memories };

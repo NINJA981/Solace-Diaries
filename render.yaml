@@ -6,7 +6,7 @@ services:
     name: solace-api
     runtime: node
     plan: free
-    region: oregon
+    region: singapore # next to the Supabase project (ap-southeast-1)
     buildCommand: npm ci --include=dev && npm run build -w @solace/api
     startCommand: node apps/api/src/db/migrate.ts && npm run start -w @solace/api
     healthCheckPath: /api/healthz
@@ -38,3 +38,10 @@ services:
         value: '200'
       - key: ENRICH_DAILY_QUOTA
         value: '150'
+      # Retrieval thresholds calibrated for gemini-embedding-001 (768 dims).
+      - key: SEARCH_MIN_SIMILARITY
+        value: '0.6'
+      - key: SEARCH_RELATIVE_BAND
+        value: '0.08'
+      - key: MEMORY_DEDUPE_SIMILARITY
+        value: '0.93'
