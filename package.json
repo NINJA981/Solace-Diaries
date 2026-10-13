@@ -4,10 +4,17 @@
   "private": true,
   "description": "A private AI journal with semantic memory and grounded reflection.",
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
-  "engines": { "node": ">=22" },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "npm run db:up && concurrently -n api,web -c yellow,cyan \"npm:dev -w @solace/api\" \"npm:dev -w @solace/web\"",
+    "supabase:start": "npx -y supabase@2.120.0 start",
+    "supabase:stop": "npx -y supabase@2.120.0 stop",
+    "dev": "concurrently -n api,web -c yellow,cyan \"npm:dev -w @solace/api\" \"npm:dev -w @solace/web\"",
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate -w @solace/api",
