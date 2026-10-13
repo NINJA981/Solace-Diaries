@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { config } from '@/lib/config';
 import { buttonClasses } from '@/components/ui/Button';
 import { PublicFooter, PublicHeader } from './PublicChrome';
 import { RememberingScene } from './RememberingScene';
@@ -20,15 +21,28 @@ const STEPS = [
   },
 ];
 
+const TRAINING_PROMISE =
+  config.aiTier === 'paid'
+    ? {
+        title: 'Never used for training',
+        body: 'Solace doesn’t train AI on your journal, and neither does Google: we use the paid Gemini API, which keeps your words out of training. We never sell or share them.',
+      }
+    : {
+        title: 'Never sold, never trained on by us',
+        body: 'Solace doesn’t train AI on your journal and never sells or shares it. While we’re on Google’s free Gemini tier, Google may use AI requests to improve its products.',
+      };
+
+const PROCESSOR_PROMISE =
+  config.aiTier === 'paid'
+    ? 'AI features run on Google’s paid Gemini API. Only the text each request needs is sent there to be processed.'
+    : 'AI features run on Google’s Gemini API, on its free tier for now. Only the text each request needs is sent, and Google may use it to improve its products.';
+
 const PROMISES = [
   {
     title: 'Encrypted at rest',
     body: 'Entries live in an encrypted database tied to your account. Nobody else sees them in the app.',
   },
-  {
-    title: 'Never used for training',
-    body: 'Solace doesn’t train AI on your journal, and neither does Google: we use the paid Gemini API, which keeps your words out of training. We never sell or share them.',
-  },
+  TRAINING_PROMISE,
   {
     title: 'Private photos',
     body: 'Photos are stored privately and shown through links that expire after an hour.',
@@ -43,7 +57,7 @@ const PROMISES = [
   },
   {
     title: 'Who processes your words',
-    body: 'AI features run on Google’s paid Gemini API. Only the text each request needs is sent there to be processed.',
+    body: PROCESSOR_PROMISE,
   },
 ];
 

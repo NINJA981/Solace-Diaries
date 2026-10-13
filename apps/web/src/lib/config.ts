@@ -23,6 +23,11 @@ export const config = {
   supabaseAnonKey: rawSupabaseKey || 'missing-anon-key',
   /** False in dev when Supabase env is missing: auth screens explain instead of failing. */
   supabaseConfigured: Boolean(rawSupabaseUrl && rawSupabaseKey),
+  /**
+   * Which Gemini API tier the server key is on. It decides what we may promise about AI
+   * data use, so it defaults to 'free' (the cautious claim) unless VITE_AI_TIER=paid.
+   */
+  aiTier: (import.meta.env.VITE_AI_TIER === 'paid' ? 'paid' : 'free') as 'free' | 'paid',
 } as const;
 
 /** Throws a ConfigError describing every missing value. Only enforced in production builds. */

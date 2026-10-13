@@ -1,3 +1,4 @@
+import { config } from '@/lib/config';
 import { LegalLayout, LegalSection } from './LegalLayout';
 
 export default function PrivacyPage() {
@@ -37,7 +38,7 @@ export default function PrivacyPage() {
       <LegalSection title="How we use it">
         <p>
           Only to run Solace for you: storing and syncing your journal, searching it, and powering the AI features you
-          use. We don’t sell your data, share it with advertisers, or use your journal to train AI models.
+          use. We don’t sell your data, share it with advertisers, or use your journal to train AI models ourselves.
         </p>
       </LegalSection>
 
@@ -48,10 +49,19 @@ export default function PrivacyPage() {
           memories. When you ask Reflect a question or open your weekly letter, the question and the relevant passages from
           your entries are sent too.
         </p>
-        <p>
-          Solace uses Google’s paid Gemini API. Under those terms, Google doesn’t use your prompts or the responses to
-          improve its products. So neither Solace nor Google trains AI on your journal.
-        </p>
+        {config.aiTier === 'paid' ? (
+          <p>
+            Solace uses Google’s paid Gemini API. Under those terms, Google doesn’t use your prompts or the responses to
+            improve its products. So neither Solace nor Google trains AI on your journal.
+          </p>
+        ) : (
+          <p>
+            Solace currently uses the free tier of Google’s Gemini API. Under Google’s terms for unpaid services, Google
+            may use the prompts and responses to improve its products, and human reviewers may read them. Solace itself
+            doesn’t train AI on your journal. Until Solace moves to the paid API, under which Google doesn’t use them,
+            leave out anything you wouldn’t want a reviewer to read.
+          </p>
+        )}
         <p>
           If you add your own Gemini key in Settings, it stays in your browser and is sent with each request. We never
           store or log it. Requests made with your key fall under Google’s terms for that key: on the free tier, Google
