@@ -28,12 +28,25 @@ const schema = z.object({
   WEB_ORIGIN: z
     .string()
     .min(1)
-    .transform((s) => s.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean)),
+    .transform((s) =>
+      s
+        .split(',')
+        .map((o) => o.trim().replace(/\/+$/, ''))
+        .filter(Boolean),
+    ),
 
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_CHAT_MODEL: z.string().default('gemini-2.5-flash'),
   GEMINI_EMBED_MODEL: z.string().default('gemini-embedding-001'),
   AI_DAILY_QUOTA: z.coerce.number().int().min(0).default(200),
+  /**
+   * Background enrichment runs (entry analysis, photo descriptions) per user per UTC day,
+   * always on the server key. They count in the same ai_usage.calls counter as interactive
+   * calls, but only run while that counter is below this lower ceiling, so interactive
+   * features keep AI_DAILY_QUOTA - ENRICH_DAILY_QUOTA calls in reserve. When it is spent,
+   * jobs wait for the next UTC day instead of failing.
+   */
+  ENRICH_DAILY_QUOTA: z.coerce.number().int().min(0).default(150),
   /** Hard timeout for a single Gemini call. */
   AI_TIMEOUT_MS: z.coerce.number().int().default(45_000),
 

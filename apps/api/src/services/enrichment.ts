@@ -11,12 +11,13 @@ import { DATA_POLICY, dataBlock, sanitize } from '../ai/untrusted';
 import { db } from '../db/client';
 import { attachments, entries, entryChunks } from '../db/schema';
 import { enqueue } from '../jobs/queue';
-import { JOB, PermanentJobError } from '../jobs/types';
+import { DeferJobError, JOB, PermanentJobError } from '../jobs/types';
 import { logger } from '../logger';
 import { getObject } from '../storage/index';
 import { chunkEntry, type Chunk } from './chunker';
 import { extractGraph } from './graph';
 import { extractMemories } from './memories';
+import { consumeEnrichmentBudget, nextUtcDay } from './quota';
 
 /** Below this many words there is nothing meaningful to analyze or embed. */
 export const MIN_WORDS_FOR_AI = 4;
@@ -30,6 +31,18 @@ const enrichPayload = z.object({
   version: z.number().int(),
 });
 const describePayload = z.object({ attachmentId: z.string().uuid(), userId: z.string().uuid() });
+
+/**
+ * Background AI runs on the server key, so each one spends from the user's daily
+ * enrichment budget. When it is spent the job waits for the next UTC day (DeferJobError:
+ * no failure, no retry backoff) and the entry simply stays 'pending' until then.
+ */
+async function spendBudgetOrDefer(userId: string, what: Record<string, string>): Promise<void> {
+  if (await consumeEnrichmentBudget(userId)) return;
+  const until = nextUtcDay();
+  logger.info({ ...what, until: until.toISOString() }, 'enrichment budget spent; deferring');
+  throw new DeferJobError(until, 'Daily enrichment budget spent');
+}
 
 function parsePayload<S extends z.ZodType>(schema: S, payload: unknown): z.output<S> {
   const parsed = schema.safeParse(payload);
@@ -197,13 +210,24 @@ export async function enrichEntry(payload: unknown, signal?: AbortSignal): Promi
   if (!row) throw new PermanentJobError('Entry no longer exists');
   // Always enrich the entry as it is now: the payload's version may lag behind the row.
 
+  const words = countWords(`${row.title} ${row.body} ${row.attachmentText}`);
+  const needsAi = words >= MIN_WORDS_FOR_AI;
+  if (needsAi) {
+    try {
+      await spendBudgetOrDefer(row.userId, { entryId: row.id });
+    } catch (err) {
+      // A crash may have left it 'processing'; waiting for the budget is 'pending'.
+      await setStatus(row.userId, row.id, row.version, 'processing', 'pending');
+      throw err;
+    }
+  }
+
   await setStatus(row.userId, row.id, row.version, row.enrichmentStatus, 'processing');
   const ai: AiOptions = { userId: row.userId, signal };
   let committed: boolean;
   let vectors: number[][] = [];
   try {
-    const words = countWords(`${row.title} ${row.body} ${row.attachmentText}`);
-    if (words < MIN_WORDS_FOR_AI) {
+    if (!needsAi) {
       committed = await commit(row, null, [], []);
     } else {
       const analysis = await analyzeEntry(row, ai);
@@ -261,7 +285,10 @@ export async function markEnrichmentFailed(payload: unknown): Promise<void> {
       and(
         eq(entries.id, entryId),
         eq(entries.userId, userId),
-        sql`(${entries.enrichedVersion} is null or ${entries.enrichedVersion} < ${entries.version})`,
+        // Untouched only when the current version is already enriched and ready (a later job
+        // succeeded). A re-run of an enriched version (e.g. after a photo change) that died
+        // shows 'failed' too, rather than a 'pending'/'processing' that never resolves.
+        sql`(${entries.enrichmentStatus} <> 'ready' or ${entries.enrichedVersion} is null or ${entries.enrichedVersion} < ${entries.version})`,
       ),
     );
 }
@@ -280,6 +307,7 @@ export async function describeAttachment(payload: unknown, signal?: AbortSignal)
     .where(and(eq(attachments.id, p.attachmentId), eq(attachments.userId, p.userId)));
   if (!att) throw new PermanentJobError('Attachment no longer exists');
   if (att.description) return;
+  await spendBudgetOrDefer(p.userId, { attachmentId: att.id });
 
   const bytes = await getObject(att.storagePath);
   const text = await generateText(

@@ -3,7 +3,16 @@ import { and, eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { entryPage, entry as entrySchema, localDate } from '@solace/shared';
 import { db } from '../src/db/client';
-import { entries, jobs, prompts } from '../src/db/schema';
+import {
+  entries,
+  graphEdges,
+  graphNodeSources,
+  graphNodes,
+  jobs,
+  memories,
+  memorySources,
+  prompts,
+} from '../src/db/schema';
 import { JOB } from '../src/jobs/types';
 import { createTestUser, resetDb, testApi, type TestUser } from './helpers';
 
@@ -80,6 +89,29 @@ describe('create', () => {
       .set(intruder.headers)
       .send({ id, body: 'mine now' });
     expect(stolen.status).toBe(409);
+  });
+
+  it('signals a fresh create vs an existing row (201/200 and X-Entry-Created)', async () => {
+    const user = await createTestUser();
+    const id = randomUUID();
+    const fresh = await api.post('/api/entries').set(user.headers).send({ id, body: 'first' });
+    expect(fresh.status).toBe(201);
+    expect(fresh.headers['x-entry-created']).toBe('true');
+
+    // A retry with different text gets the stored row back, flagged as not created.
+    const retry = await api.post('/api/entries').set(user.headers).send({ id, body: 'second' });
+    expect(retry.status).toBe(200);
+    expect(retry.headers['x-entry-created']).toBe('false');
+    expect(retry.body.body).toBe('first');
+  });
+
+  it('rejects impossible dates with 400, not a database error', async () => {
+    const user = await createTestUser();
+    for (const entryDate of ['2024-02-31', '2024-13-01']) {
+      const res = await api.post('/api/entries').set(user.headers).send({ entryDate, body: 'x' });
+      expect(res.status, entryDate).toBe(400);
+      expect(res.body.fields).toHaveProperty('entryDate');
+    }
   });
 
   it('marks an owned prompt answered and ignores a foreign prompt', async () => {
@@ -224,7 +256,8 @@ describe('isolation', () => {
     expect(
       (await api.patch(path).set(intruder.headers).set('If-Match', '1').send({ body: 'x' })).status,
     ).toBe(404);
-    expect((await api.delete(path).set(intruder.headers)).status).toBe(404);
+    // Deletes are idempotent and never reveal whether the id exists (see 'delete' below).
+    expect((await api.delete(path).set(intruder.headers)).status).toBe(204);
     expect((await api.post(`${path}/enrich`).set(intruder.headers)).status).toBe(404);
     expect(
       (
@@ -307,6 +340,19 @@ describe('list', () => {
       'base64url',
     );
     expect((await api.get(`/api/entries?cursor=${forged}`).set(user.headers)).status).toBe(400);
+    // Well-formed but impossible dates/times must be a 400 too, not a Postgres error.
+    const cursor = (c: unknown[]) => Buffer.from(JSON.stringify(c)).toString('base64url');
+    for (const bad of [
+      ['2024-02-31', '2024-01-01 10:00:00.123456+00', randomUUID()],
+      ['2024-01-01', '2024-13-45 10:00:00+00', randomUUID()],
+      ['2024-01-01', '2024-01-01 25:61:00+00', randomUUID()],
+    ]) {
+      const res = await api.get(`/api/entries?cursor=${cursor(bad)}`).set(user.headers);
+      expect(res.status, JSON.stringify(bad)).toBe(400);
+    }
+    const ok = ['2024-01-01', '2024-01-01 10:00:00.123456+05:30', randomUUID()];
+    expect((await api.get(`/api/entries?cursor=${cursor(ok)}`).set(user.headers)).status).toBe(200);
+    expect((await api.get('/api/entries?from=2024-02-31').set(user.headers)).status).toBe(400);
     expect((await api.get('/api/entries?limit=500').set(user.headers)).status).toBe(400);
   });
 });
@@ -318,6 +364,68 @@ describe('delete and retry', () => {
     expect((await api.delete(`/api/entries/${e.id}`).set(user.headers)).status).toBe(204);
     expect((await api.get(`/api/entries/${e.id}`).set(user.headers)).status).toBe(404);
     expect(await enrichJobs(e.id)).toHaveLength(0);
+  });
+
+  it('is idempotent: a missing, already deleted or foreign id answers 204', async () => {
+    const user = await createTestUser();
+    const e = await create(user, { body: 'twice' });
+    expect((await api.delete(`/api/entries/${e.id}`).set(user.headers)).status).toBe(204);
+    expect((await api.delete(`/api/entries/${e.id}`).set(user.headers)).status).toBe(204);
+    expect((await api.delete(`/api/entries/${randomUUID()}`).set(user.headers)).status).toBe(204);
+
+    const other = await createTestUser();
+    const theirs = await create(other, { body: 'not yours' });
+    expect((await api.delete(`/api/entries/${theirs.id}`).set(user.headers)).status).toBe(204);
+    expect((await api.get(`/api/entries/${theirs.id}`).set(other.headers)).status).toBe(200);
+  });
+
+  it('forgets memories and graph nodes that only this entry supported', async () => {
+    const user = await createTestUser();
+    const gone = await create(user, { body: 'the entry being deleted' });
+    const kept = await create(user, { body: 'another entry' });
+
+    const [onlyGone, shared, edited] = await db
+      .insert(memories)
+      .values([
+        { userId: user.id, kind: 'fact', content: 'only from the deleted entry' },
+        { userId: user.id, kind: 'habit', content: 'from both entries', salience: 2 },
+        { userId: user.id, kind: 'goal', content: 'user edited', userEdited: true },
+      ])
+      .returning();
+    await db.insert(memorySources).values([
+      { memoryId: onlyGone!.id, entryId: gone.id },
+      { memoryId: shared!.id, entryId: gone.id },
+      { memoryId: shared!.id, entryId: kept.id },
+      { memoryId: edited!.id, entryId: gone.id },
+    ]);
+
+    const node = (name: string, weight: number) => ({
+      userId: user.id,
+      name,
+      key: name.toLowerCase(),
+      kind: 'person' as const,
+      weight,
+    });
+    const [solo, both, other] = await db
+      .insert(graphNodes)
+      .values([node('Solo', 1), node('Both', 2), node('Other', 1)])
+      .returning();
+    await db.insert(graphNodeSources).values([
+      { nodeId: solo!.id, entryId: gone.id },
+      { nodeId: both!.id, entryId: gone.id },
+      { nodeId: both!.id, entryId: kept.id },
+      { nodeId: other!.id, entryId: kept.id },
+    ]);
+    const [a, b] = [solo!.id, both!.id].sort();
+    await db.insert(graphEdges).values({ userId: user.id, source: a!, target: b! });
+
+    expect((await api.delete(`/api/entries/${gone.id}`).set(user.headers)).status).toBe(204);
+
+    const left = await db.select().from(memories).where(eq(memories.userId, user.id));
+    expect(left.map((m) => m.content).sort()).toEqual(['from both entries', 'user edited']);
+    const nodes = await db.select().from(graphNodes).where(eq(graphNodes.userId, user.id));
+    expect(Object.fromEntries(nodes.map((n) => [n.name, n.weight]))).toEqual({ Both: 1, Other: 1 });
+    expect(await db.select().from(graphEdges).where(eq(graphEdges.userId, user.id))).toEqual([]);
   });
 
   it('re-queues enrichment only for failed entries', async () => {

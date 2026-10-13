@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../src/db/client';
 import { chatMessages, chatThreads, memories, memorySources } from '../src/db/schema';
+import { forgetProfile, setAuthUserLookup } from '../src/services/profiles';
 import { listObjects } from '../src/storage';
 import { createTestUser, pngBytes, resetDb, testApi, type TestUser } from './helpers';
 
@@ -10,15 +11,12 @@ const api = testApi();
 beforeEach(resetDb);
 
 async function seedJournal(user: TestUser) {
-  const older = await api
-    .post('/api/entries')
-    .set(user.headers)
-    .send({
-      title: 'First steps',
-      body: 'Started journaling.',
-      entryDate: '2026-01-01',
-      mood: 'hopeful',
-    });
+  const older = await api.post('/api/entries').set(user.headers).send({
+    title: 'First steps',
+    body: 'Started journaling.',
+    entryDate: '2026-01-01',
+    mood: 'hopeful',
+  });
   const newer = await api
     .post('/api/entries')
     .set(user.headers)
@@ -60,16 +58,13 @@ async function seedJournal(user: TestUser) {
 describe('profile', () => {
   it('updates profile fields and validates the timezone', async () => {
     const user = await createTestUser();
-    const ok = await api
-      .patch('/api/me')
-      .set(user.headers)
-      .send({
-        displayName: '  Ada ',
-        timezone: 'Asia/Kolkata',
-        onboardingDone: true,
-        reminderHour: 21,
-        aiStyle: 'curious',
-      });
+    const ok = await api.patch('/api/me').set(user.headers).send({
+      displayName: '  Ada ',
+      timezone: 'Asia/Kolkata',
+      onboardingDone: true,
+      reminderHour: 21,
+      aiStyle: 'curious',
+    });
     expect(ok.status).toBe(200);
     expect(ok.body).toMatchObject({
       displayName: 'Ada',
@@ -193,5 +188,51 @@ describe('delete account', () => {
     expect(jobsLeft!.n).toBe(0);
     expect(await listObjects(`${user.id}/`)).toHaveLength(0);
     expect(await listObjects(`${other.id}/`)).toHaveLength(1);
+  });
+});
+
+describe('deleted accounts stay deleted', () => {
+  afterEach(() => setAuthUserLookup());
+
+  it('an access token issued before deletion gets 401 and never recreates the profile', async () => {
+    const user = await createTestUser();
+    await seedJournal(user);
+    // Supabase's view of the world: once deleted, the auth user is gone.
+    const deleted = new Set<string>();
+    setAuthUserLookup(async (id) => !deleted.has(id));
+
+    const res = await api.delete('/api/me').set(user.headers).send({ confirmEmail: user.email });
+    expect(res.status).toBe(204);
+    deleted.add(user.id);
+
+    // The same (still unexpired) token, on any route.
+    for (const path of ['/api/me', '/api/entries']) {
+      const again = await api.get(path).set(user.headers);
+      expect(again.status, path).toBe(401);
+      expect(again.body.code).toBe('unauthorized');
+    }
+    const write = await api.post('/api/entries').set(user.headers).send({ body: 'back?' });
+    expect(write.status).toBe(401);
+    const [row] = await db.execute<{ n: number }>(
+      sql`select count(*)::int as n from profiles where id = ${user.id}`,
+    );
+    expect(row!.n).toBe(0);
+  });
+
+  it('answers 503 when the auth admin API is unreachable for a new user', async () => {
+    const user = await createTestUser();
+    setAuthUserLookup(async () => {
+      throw new Error('ECONNREFUSED');
+    });
+    const res = await api.get('/api/me').set(user.headers);
+    expect(res.status).toBe(503);
+    // Existing profiles never need the lookup.
+    setAuthUserLookup();
+    expect((await api.get('/api/me').set(user.headers)).status).toBe(200);
+    setAuthUserLookup(async () => {
+      throw new Error('ECONNREFUSED');
+    });
+    forgetProfile(user.id);
+    expect((await api.get('/api/me').set(user.headers)).status).toBe(200);
   });
 });

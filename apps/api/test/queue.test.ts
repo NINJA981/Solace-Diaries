@@ -1,9 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../src/db/client';
 import { jobs } from '../src/db/schema';
 import { enqueue } from '../src/jobs/queue';
-import { JOB, PermanentJobError, type JobHandler } from '../src/jobs/types';
+import { DeferJobError, JOB, PermanentJobError, type JobHandler } from '../src/jobs/types';
 import {
   backoffMs,
   claimJob,
@@ -117,6 +118,60 @@ describe('claim', () => {
   });
 });
 
+describe('fair claiming', () => {
+  it("one user's backlog doesn't block another user's job", async () => {
+    const [heavy, light] = [randomUUID(), randomUUID()];
+    for (let i = 0; i < 20; i++) {
+      await enqueue(db, JOB.enrichEntry, { userId: heavy, n: i });
+    }
+    await db.execute(
+      sql`update jobs set run_after = now() - interval '1 minute' + (payload->>'n')::int * interval '1 second'`,
+    );
+    await enqueue(db, JOB.enrichEntry, { userId: light, n: 'light' });
+
+    const first = await claimOrFail();
+    expect(first.payload.userId).toBe(heavy);
+    // Heavy already has a job running, so the newer job of another user goes next…
+    const second = await claimOrFail();
+    expect(second.payload).toEqual({ userId: light, n: 'light' });
+    // …and nothing else is claimable until one of them finishes.
+    expect(await claimJob()).toBeNull();
+
+    // Jobs without a userId are never held back.
+    await enqueue(db, JOB.enrichEntry, { n: 'system' });
+    expect((await claimOrFail()).payload).toEqual({ n: 'system' });
+
+    await runJob(first, opts(ok));
+    const next = await claimOrFail();
+    expect(next.payload.userId).toBe(heavy);
+    expect(next.payload.n).toBe(1); // still oldest first within the user
+  });
+});
+
+describe('deferral', () => {
+  it('requeues until the given time without counting the attempt or failing', async () => {
+    const until = new Date(Date.now() + 3_600_000);
+    const onJobDead = vi.fn();
+    await enqueue(db, JOB.enrichEntry, { userId: randomUUID() }, { maxAttempts: 1 });
+    const job = await claimOrFail();
+    const outcome = await runJob(
+      job,
+      opts(
+        async () => {
+          throw new DeferJobError(until, 'budget spent');
+        },
+        { onJobDead },
+      ),
+    );
+    expect(outcome).toBe('deferred');
+    const row = await jobById(job.id);
+    expect(row).toMatchObject({ status: 'queued', attempts: 0, lockedAt: null });
+    expect(row.runAfter.getTime()).toBe(until.getTime());
+    expect(onJobDead).not.toHaveBeenCalled();
+    expect(await claimJob()).toBeNull();
+  });
+});
+
 describe('failures', () => {
   it('retries with exponential backoff and records the error', async () => {
     await enqueue(db, JOB.enrichEntry, {});
@@ -223,6 +278,21 @@ describe('maintenance', () => {
     );
     expect(await purgeOldJobs()).toBe(1);
     expect(await allJobs()).toHaveLength(1);
+  });
+
+  it('calls onJobDead for stale jobs it dead-letters, and only for those', async () => {
+    const onJobDead = vi.fn();
+    await enqueue(db, JOB.enrichEntry, { n: 'last-try' }, { maxAttempts: 1 });
+    await enqueue(db, JOB.enrichEntry, { n: 'has-retries' }, { maxAttempts: 3 });
+    await claimOrFail();
+    await claimOrFail();
+    await db.update(jobs).set({ lockedAt: new Date(Date.now() - 11 * 60_000) });
+
+    expect(await reapStaleJobs(undefined, onJobDead)).toBe(2);
+    expect(onJobDead).toHaveBeenCalledExactlyOnceWith(JOB.enrichEntry, { n: 'last-try' });
+    const rows = await allJobs();
+    expect(rows.find((r) => r.payload.n === 'last-try')!.status).toBe('dead');
+    expect(rows.find((r) => r.payload.n === 'has-retries')!.status).toBe('queued');
   });
 });
 

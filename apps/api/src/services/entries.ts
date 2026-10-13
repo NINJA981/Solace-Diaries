@@ -34,7 +34,16 @@ import {
   type UpdateEntryInput,
 } from '@solace/shared';
 import { db, type DbOrTx, type Tx } from '../db/client';
-import { attachments, entries, jobs, prompts } from '../db/schema';
+import {
+  attachments,
+  entries,
+  graphNodeSources,
+  graphNodes,
+  jobs,
+  memories,
+  memorySources,
+  prompts,
+} from '../db/schema';
 import { badRequest, conflict, HttpError, notFound } from '../http/errors';
 import { enqueue } from '../jobs/queue';
 import { JOB } from '../jobs/types';
@@ -90,8 +99,14 @@ async function withAttachments(row: EntryRow): Promise<Entry> {
  * Opaque keyset cursor over (entry_date, created_at, id). created_at travels as Postgres
  * text so its microseconds survive the round trip (a JS Date would truncate them).
  */
-const pgTimestamp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?[+-]\d{2}(:\d{2})?$/;
-const cursorShape = z.tuple([isoDate, z.string().regex(pgTimestamp), uuid]);
+const pgTimestamp =
+  /^\d{4}-\d{2}-\d{2} ([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d{1,6})?[+-](0\d|1[0-5])(:[0-5]\d)?$/;
+/** Every part is range-checked, so a tampered cursor is a 400, never a Postgres error (500). */
+const cursorTimestamp = z
+  .string()
+  .regex(pgTimestamp)
+  .refine((ts) => isoDate.safeParse(ts.slice(0, 10)).success, 'Not a real date');
+const cursorShape = z.tuple([isoDate, cursorTimestamp, uuid]);
 type Cursor = z.infer<typeof cursorShape>;
 
 const encodeCursor = (c: Cursor) => Buffer.from(JSON.stringify(c)).toString('base64url');
@@ -319,6 +334,12 @@ export async function updateEntry(
   return withAttachments(row);
 }
 
+/**
+ * Delete an entry and everything derived from it. Idempotent by design: an id that doesn't
+ * exist, was already deleted, or belongs to someone else is a silent no-op (the route
+ * answers 204 in every case), so client retries are safe and nothing leaks about whether
+ * another user's id exists.
+ */
 export async function deleteEntry(userId: string, id: string): Promise<void> {
   const paths = await db.transaction(async (tx) => {
     // Lock the entry so a concurrent upload can't add an object we would miss.
@@ -327,17 +348,55 @@ export async function deleteEntry(userId: string, id: string): Promise<void> {
       .from(entries)
       .where(ownEntry(userId, id))
       .for('update');
-    if (!locked) throw entryNotFound();
+    if (!locked) return [];
     const atts = await tx
       .select({ id: attachments.id, path: attachments.storagePath })
       .from(attachments)
       .where(eq(attachments.entryId, id));
+    await forgetDerivedData(tx, userId, id);
     await tx.delete(entries).where(ownEntry(userId, id));
     const keys = [`enrich:${id}`, ...atts.map((a) => `describe:${a.id}`)];
     await tx.delete(jobs).where(and(inArray(jobs.dedupeKey, keys), eq(jobs.status, 'queued')));
     return atts.map((a) => a.path);
   });
   await removeObjectsQuietly(paths);
+}
+
+/**
+ * Remove what the AI learned only from this entry, before the entry row (and by cascade its
+ * chunks, attachments, memory_sources and graph_node_sources links) goes:
+ * - memories whose sole source is this entry, unless the user edited them;
+ * - graph nodes: one unit of weight off each node the entry contributed to, and nodes no
+ *   other entry supports are deleted (their edges cascade).
+ */
+async function forgetDerivedData(tx: Tx, userId: string, entryId: string): Promise<void> {
+  await tx.delete(memories).where(
+    and(
+      eq(memories.userId, userId),
+      eq(memories.userEdited, false),
+      sql`exists (select 1 from ${memorySources} s
+                    where s.memory_id = ${memories.id} and s.entry_id = ${entryId})`,
+      sql`not exists (select 1 from ${memorySources} s
+                        where s.memory_id = ${memories.id} and s.entry_id <> ${entryId})`,
+    ),
+  );
+
+  const linked = tx
+    .select({ id: graphNodeSources.nodeId })
+    .from(graphNodeSources)
+    .where(eq(graphNodeSources.entryId, entryId));
+  await tx.delete(graphNodes).where(
+    and(
+      eq(graphNodes.userId, userId),
+      inArray(graphNodes.id, linked),
+      sql`not exists (select 1 from ${graphNodeSources} s
+                        where s.node_id = ${graphNodes.id} and s.entry_id <> ${entryId})`,
+    ),
+  );
+  await tx
+    .update(graphNodes)
+    .set({ weight: sql`greatest(${graphNodes.weight} - 1, 1)` })
+    .where(and(eq(graphNodes.userId, userId), inArray(graphNodes.id, linked)));
 }
 
 /** Re-queue enrichment after a failure. Any other status is left alone (idempotent retry). */
@@ -442,14 +501,18 @@ export async function deleteAttachment(
       .returning({ path: attachments.storagePath, description: attachments.description });
     if (!row) throw notFound('Photo not found');
     if (row.description) {
-      // Keep keyword search from matching a photo that no longer exists.
-      await tx
+      // Keep keyword search from matching a photo that no longer exists, and re-enrich so the
+      // chunks (meaning search, Reflect) and the summary forget its description too.
+      const [entry] = await tx
         .update(entries)
         .set({
           attachmentText: sql`coalesce((select string_agg(a.description, E'\n' order by a.created_at)
             from attachments a where a.entry_id = ${entryId} and a.description is not null), '')`,
+          enrichmentStatus: 'pending',
         })
-        .where(ownEntry(userId, entryId));
+        .where(ownEntry(userId, entryId))
+        .returning({ id: entries.id, userId: entries.userId, version: entries.version });
+      if (entry) await enqueueEnrichment(tx, entry);
     }
     await tx
       .delete(jobs)

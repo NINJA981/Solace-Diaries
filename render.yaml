@@ -36,3 +36,5 @@ services:
         value: gemini-embedding-001
       - key: AI_DAILY_QUOTA
         value: '200'
+      - key: ENRICH_DAILY_QUOTA
+        value: '150'

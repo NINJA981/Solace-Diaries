@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { attachment as attachmentSchema, LIMITS } from '@solace/shared';
 import { db } from '../src/db/client';
-import { attachments, jobs } from '../src/db/schema';
+import { attachments, entries, jobs } from '../src/db/schema';
 import { JOB } from '../src/jobs/types';
 import { getObject, listObjects } from '../src/storage';
 import { createTestUser, pngBytes, resetDb, testApi, type TestUser } from './helpers';
@@ -135,6 +135,36 @@ describe('delete', () => {
     ).toBe(204);
     expect(await db.select().from(attachments)).toHaveLength(0);
     await expect(getObject(path)).rejects.toThrow();
+  });
+
+  it('re-enriches the entry when a described photo goes, so derived text forgets it', async () => {
+    const user = await createTestUser();
+    const entryId = await newEntry(user);
+    const att = (await upload(user, entryId, await pngBytes(), 'p.png')).body;
+    await db
+      .update(attachments)
+      .set({ description: 'A red lighthouse.' })
+      .where(eq(attachments.id, att.id));
+    await db
+      .update(entries)
+      .set({ attachmentText: 'A red lighthouse.', enrichmentStatus: 'ready', enrichedVersion: 1 })
+      .where(eq(entries.id, entryId));
+    await db.delete(jobs);
+
+    const res = await api.delete(`/api/entries/${entryId}/attachments/${att.id}`).set(user.headers);
+    expect(res.status).toBe(204);
+    const [entry] = await db.select().from(entries).where(eq(entries.id, entryId));
+    expect(entry).toMatchObject({ attachmentText: '', enrichmentStatus: 'pending' });
+    const queued = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.dedupeKey, `enrich:${entryId}`));
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({
+      type: JOB.enrichEntry,
+      status: 'queued',
+      payload: { entryId, userId: user.id, version: 1 },
+    });
   });
 
   it('deleting an entry removes its photos from storage', async () => {

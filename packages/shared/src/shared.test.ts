@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, countWords, createSseParser, daysBetween, encodeSse, localDate, weekStart } from './index';
+import {
+  addDays,
+  countWords,
+  createSseParser,
+  daysBetween,
+  encodeSse,
+  isoDate,
+  localDate,
+  weekStart,
+} from './index';
 
 describe('time helpers', () => {
   it('computes local dates across the date line', () => {
@@ -34,5 +43,29 @@ describe('sse', () => {
     const a = push(wire.slice(0, 10));
     const b = push(wire.slice(10));
     expect([...a, ...b].map((e) => JSON.parse(e.data).text)).toEqual(['hel', 'lo']);
+  });
+});
+
+describe('isoDate', () => {
+  it('accepts real calendar dates, including leap days and early years', () => {
+    for (const d of ['2024-02-29', '2026-12-31', '2026-01-01', '0001-01-01', '0099-06-15']) {
+      expect(isoDate.safeParse(d).success, d).toBe(true);
+    }
+  });
+
+  it('rejects impossible or malformed dates', () => {
+    for (const d of [
+      '2024-02-31',
+      '2023-02-29',
+      '2024-13-01',
+      '2024-00-10',
+      '2024-04-31',
+      '2024-01-00',
+      '0000-01-01',
+      '2024-1-01',
+      '2024-01-01T00:00:00Z',
+    ]) {
+      expect(isoDate.safeParse(d).success, d).toBe(false);
+    }
   });
 });

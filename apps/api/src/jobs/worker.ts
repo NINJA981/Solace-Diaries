@@ -8,7 +8,7 @@ import { config } from '../config';
 import { db } from '../db/client';
 import { logger } from '../logger';
 import * as registry from './handlers/index';
-import { PermanentJobError, type JobHandler } from './types';
+import { DeferJobError, PermanentJobError, type JobHandler } from './types';
 import { idleWait, notifyWorker } from './wake';
 
 export { notifyWorker };
@@ -31,7 +31,7 @@ export type WorkerOptions = {
   timeoutMs?: number;
 };
 
-export type JobOutcome = 'done' | 'retry' | 'dead' | 'released';
+export type JobOutcome = 'done' | 'retry' | 'dead' | 'released' | 'deferred';
 
 const JOB_TIMEOUT_MS = 2 * 60_000;
 const BACKOFF_BASE_MS = 5_000;
@@ -43,6 +43,13 @@ const DRAIN_MS = 20_000;
 
 // ── queue primitives (exported for tests) ──────────────────────────────
 
+/**
+ * Claim the oldest due job, fairly across users: a job is skipped while another job for
+ * the same `payload.userId` is running, so one user's backlog can't occupy every worker
+ * slot and starve everyone else. Jobs without a userId are never held back.
+ * (Best effort under a race: two claimers in the same instant can each start a job for
+ * one user. That only costs a little fairness, never correctness.)
+ */
 export async function claimJob(): Promise<ClaimedJob | null> {
   const rows = await db.execute<{
     id: string;
@@ -53,8 +60,12 @@ export async function claimJob(): Promise<ClaimedJob | null> {
   }>(sql`
     update jobs set status = 'running', locked_at = now(), updated_at = now(), attempts = attempts + 1
     where id = (
-      select id from jobs where status = 'queued' and run_after <= now()
-      order by run_after for update skip locked limit 1)
+      select j.id from jobs j
+      where j.status = 'queued' and j.run_after <= now()
+        and not exists (
+          select 1 from jobs r
+          where r.status = 'running' and r.payload->>'userId' = j.payload->>'userId')
+      order by j.run_after for update of j skip locked limit 1)
     returning id, type, payload, attempts, max_attempts`);
   const row = rows[0];
   return row
@@ -97,6 +108,15 @@ async function markFailed(
     where id = ${id} and status = 'running'`);
 }
 
+/** Requeue until `until` without counting the attempt (the handler asked to wait). */
+async function defer(id: string, until: Date, reason: string): Promise<void> {
+  await db.execute(sql`
+    update jobs set status = 'queued', attempts = greatest(attempts - 1, 0),
+      run_after = greatest(run_after, ${until.toISOString()}::timestamptz),
+      last_error = ${reason.slice(0, ERROR_MAX)}, locked_at = null, updated_at = now()
+    where id = ${id} and status = 'running'`);
+}
+
 /** Hand a job back untouched (shutdown interrupted it); the attempt doesn't count. */
 async function release(id: string): Promise<void> {
   await db.execute(sql`
@@ -104,15 +124,39 @@ async function release(id: string): Promise<void> {
     where id = ${id} and status = 'running'`);
 }
 
-/** Jobs left 'running' by a crashed process go back to the queue (or die if out of attempts). */
-export async function reapStaleJobs(staleAfterMs = 10 * 60_000): Promise<number> {
-  const rows = await db.execute(sql`
+/**
+ * Jobs left 'running' by a crashed process go back to the queue, or die if out of attempts.
+ * Newly dead jobs get the same `onJobDead` hook as in-process failures (so their entry is
+ * marked failed instead of staying 'processing' forever).
+ */
+export async function reapStaleJobs(
+  staleAfterMs = 10 * 60_000,
+  onJobDead?: OnJobDead,
+): Promise<number> {
+  const rows = await db.execute<{
+    id: string;
+    type: string;
+    payload: Record<string, unknown>;
+    status: string;
+  }>(sql`
     update jobs set
       status = case when attempts >= max_attempts then 'dead' else 'queued' end,
       last_error = coalesce(last_error, 'Worker stopped while running this job'),
       locked_at = null, run_after = now(), updated_at = now()
     where status = 'running' and locked_at < now() - ${staleAfterMs} * interval '1 millisecond'
-    returning id`);
+    returning id, type, payload, status`);
+  for (const row of rows) {
+    if (row.status !== 'dead') continue;
+    logger.error({ jobId: row.id, jobType: row.type }, 'stale job dead-lettered');
+    try {
+      await onJobDead?.(row.type, row.payload);
+    } catch (hookErr) {
+      logger.error(
+        { jobId: row.id, error: errorText(hookErr).slice(0, 300) },
+        'onJobDead hook failed',
+      );
+    }
+  }
   return rows.length;
 }
 
@@ -156,6 +200,11 @@ export async function runJob(
     if (shutdown.aborted) {
       await release(job.id);
       return 'released';
+    }
+    if (err instanceof DeferJobError) {
+      await defer(job.id, err.until, errorText(err));
+      log.info({ until: err.until.toISOString(), reason: err.message }, 'job deferred');
+      return 'deferred';
     }
     const dead = err instanceof PermanentJobError || job.attempts >= job.maxAttempts;
     const text = timeout.aborted ? 'Job timed out' : errorText(err);
@@ -220,7 +269,7 @@ export function createWorker(opts: WorkerOptions): Worker {
   return {
     start() {
       if (loops.length) return;
-      maintain(() => reapStaleJobs(), 'reaped stale', 60_000);
+      maintain(() => reapStaleJobs(undefined, opts.onJobDead), 'reaped stale', 60_000);
       maintain(purgeOldJobs, 'purged done', 60 * 60_000);
       const n = opts.concurrency ?? config.WORKER_CONCURRENCY;
       loops = Array.from({ length: n }, () => loop());

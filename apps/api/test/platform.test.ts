@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import express from 'express';
 import supertest from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { exportJWK, generateKeyPair, SignJWT, type JWK } from 'jose';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db } from '../src/db/client';
 import { profiles } from '../src/db/schema';
+import { configureJwks, ISSUER } from '../src/auth/verify-token';
 import { errorHandler } from '../src/middleware/errors';
 import { createTestUser, resetDb, testApi, tokenFor } from './helpers';
 
@@ -98,6 +100,17 @@ describe('http hardening', () => {
       .set('Access-Control-Request-Headers', 'authorization,if-match,content-type');
     expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     expect(ok.headers['access-control-allow-headers']).toMatch(/if-match/i);
+
+    // The web app reads these from cross-origin responses (export filename, create retries).
+    const user = await createTestUser();
+    const exposed = await api
+      .get('/api/me')
+      .set(user.headers)
+      .set('Origin', 'http://localhost:5173');
+    const list = exposed.headers['access-control-expose-headers']!.toLowerCase().split(/,\s*/);
+    expect(list).toEqual(
+      expect.arrayContaining(['content-disposition', 'x-entry-created', 'etag', 'x-request-id']),
+    );
 
     const evil = await api
       .options('/api/entries')
@@ -195,5 +208,99 @@ describe('rate limits', () => {
     await api.get('/api/search?q=hi').set(user.headers);
     expect((await api.get('/api/search?q=hi').set(user.headers)).status).toBe(429);
     expect((await api.get('/api/search?q=hi&mode=keyword').set(user.headers)).status).not.toBe(429);
+  });
+});
+
+describe('token issuer', () => {
+  const api = testApi();
+
+  it('accepts only tokens issued by this Supabase project', async () => {
+    const id = randomUUID();
+    const sign = (issuer?: string) => {
+      const now = Math.floor(Date.now() / 1000);
+      const jwt = new SignJWT({ email: 'a@example.test', role: 'authenticated' })
+        .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+        .setSubject(id)
+        .setAudience('authenticated')
+        .setIssuedAt(now)
+        .setExpirationTime(now + 600);
+      if (issuer) jwt.setIssuer(issuer);
+      return jwt.sign(new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET!));
+    };
+    expect(ISSUER).toBe('http://127.0.0.1:55321/auth/v1');
+    for (const iss of [undefined, 'https://evil.example/auth/v1', 'http://127.0.0.1:55321']) {
+      const res = await api.get('/api/me').set('Authorization', `Bearer ${await sign(iss)}`);
+      expect(res.status, String(iss)).toBe(401);
+    }
+    const ok = await api.get('/api/me').set('Authorization', `Bearer ${await sign(ISSUER)}`);
+    expect(ok.status).toBe(200);
+  });
+});
+
+describe('JWKS (asymmetric keys)', () => {
+  const api = testApi();
+  const kid = 'key-1';
+  let keys: Awaited<ReturnType<typeof generateKeyPair>>;
+  let jwk: JWK;
+
+  beforeAll(async () => {
+    keys = await generateKeyPair('ES256', { extractable: true });
+    jwk = { ...(await exportJWK(keys.publicKey)), kid, alg: 'ES256', use: 'sig' };
+  });
+  afterEach(() => configureJwks());
+
+  async function es256Token(opts: { kid?: string; key?: typeof keys.privateKey } = {}) {
+    const now = Math.floor(Date.now() / 1000);
+    return new SignJWT({ email: 'k@example.test', role: 'authenticated' })
+      .setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid: opts.kid ?? kid })
+      .setSubject(randomUUID())
+      .setAudience('authenticated')
+      .setIssuer(ISSUER)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 600)
+      .sign(opts.key ?? keys.privateKey);
+  }
+  const call = async (token: string) => api.get('/api/me').set('Authorization', `Bearer ${token}`);
+  const serve = (body: unknown, status = 200) =>
+    configureJwks(async () => new Response(JSON.stringify(body), { status }));
+
+  it('verifies a token against the project key set', async () => {
+    serve({ keys: [jwk] });
+    expect((await call(await es256Token())).status).toBe(200);
+  });
+
+  it('answers 401 for a bad signature or an unknown key id', async () => {
+    serve({ keys: [jwk] });
+    const other = await generateKeyPair('ES256');
+    expect((await call(await es256Token({ key: other.privateKey }))).status).toBe(401);
+    expect((await call(await es256Token({ kid: 'rotated-away' }))).status).toBe(401);
+  });
+
+  it('answers 503, not 401, whenever the key set cannot be fetched', async () => {
+    const token = await es256Token();
+    const outages: Array<[string, () => Promise<Response>]> = [
+      ['HTTP 500', async () => new Response('oops', { status: 500 })],
+      ['HTTP 404', async () => new Response('{}', { status: 404 })],
+      ['not JSON', async () => new Response('<html>', { status: 200 })],
+      ['malformed set', async () => new Response('{"keys": 5}', { status: 200 })],
+      [
+        'network error',
+        async () => {
+          throw new TypeError('fetch failed');
+        },
+      ],
+      [
+        'timeout',
+        async () => {
+          throw new DOMException('The operation timed out.', 'TimeoutError');
+        },
+      ],
+    ];
+    for (const [name, fetchImpl] of outages) {
+      configureJwks(fetchImpl);
+      const res = await call(token);
+      expect(res.status, name).toBe(503);
+      expect(res.body.code, name).toBe('internal_error');
+    }
   });
 });

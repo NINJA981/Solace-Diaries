@@ -353,7 +353,10 @@ export const aiUsage = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
     day: date('day', { mode: 'string' }).notNull(),
+    /** Interactive calls (search, Reflect, insights), capped by AI_DAILY_QUOTA. */
     calls: integer('calls').notNull().default(0),
+    /** Background enrichment runs, capped separately by ENRICH_DAILY_QUOTA. */
+    enrichRuns: integer('enrich_runs').notNull().default(0),
     tokens: integer('tokens').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })],

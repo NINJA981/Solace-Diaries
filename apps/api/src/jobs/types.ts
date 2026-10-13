@@ -16,3 +16,18 @@ export type JobHandler = (payload: Record<string, unknown>, ctx: JobContext) => 
 
 /** Throw this to fail a job permanently (no retries), e.g. the entry was deleted. */
 export class PermanentJobError extends Error {}
+
+/**
+ * Throw this to put a job back in the queue until `until` without counting the attempt
+ * (e.g. the user's daily enrichment budget is spent). Not a failure: no retry backoff,
+ * no dead-lettering.
+ */
+export class DeferJobError extends Error {
+  constructor(
+    readonly until: Date,
+    message = 'Deferred',
+  ) {
+    super(message);
+    this.name = 'DeferJobError';
+  }
+}

@@ -51,7 +51,9 @@ export function createApp(opts: AppOptions = {}): Express {
       origin: config.WEB_ORIGIN,
       methods: ['GET', 'POST', 'PATCH', 'DELETE'],
       allowedHeaders: ['Authorization', 'Content-Type', 'If-Match', 'x-gemini-key'],
-      exposedHeaders: ['X-Request-Id', 'ETag'],
+      // Content-Disposition carries the export filename; X-Entry-Created tells a create
+      // retry whether its body was stored or an existing row came back.
+      exposedHeaders: ['X-Request-Id', 'ETag', 'Content-Disposition', 'X-Entry-Created'],
       maxAge: 600,
     }),
   );

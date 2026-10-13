@@ -14,6 +14,17 @@ export function supabaseAdmin(): SupabaseClient {
   return client;
 }
 
+/**
+ * Does the Supabase auth user still exist? false only on a definite "not found"; any other
+ * failure (network, 5xx, misconfiguration) throws so the caller can answer 503.
+ */
+export async function authUserExists(userId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin().auth.admin.getUserById(userId);
+  if (!error) return Boolean(data.user);
+  if (error.status === 404) return false;
+  throw error;
+}
+
 /** Remove the Supabase auth user (final step of account deletion). */
 export async function deleteAuthUser(userId: string): Promise<void> {
   const { error } = await supabaseAdmin().auth.admin.deleteUser(userId);

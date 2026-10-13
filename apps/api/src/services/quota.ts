@@ -25,6 +25,27 @@ export async function consumeAiQuota(
   if (rows.length === 0) throw quotaExceeded();
 }
 
+/**
+ * Count one background enrichment run (entry analysis or photo description) against the
+ * user's day. Kept on its own counter so heavy Reflect/search use never stops new entries
+ * from being analysed, and vice versa. Returns false, without counting, when spent.
+ */
+export async function consumeEnrichmentBudget(userId: string): Promise<boolean> {
+  const limit = config.ENRICH_DAILY_QUOTA;
+  if (limit === 0) return false;
+  const rows = await db.execute(sql`
+    insert into ai_usage (user_id, day, enrich_runs) values (${userId}, ${TODAY}, 1)
+    on conflict (user_id, day) do update set enrich_runs = ai_usage.enrich_runs + 1
+    where ai_usage.enrich_runs < ${limit}
+    returning enrich_runs`);
+  return rows.length > 0;
+}
+
+/** Midnight UTC at the start of the next UTC day (when daily budgets reset). */
+export function nextUtcDay(now = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+}
+
 export async function recordTokens(userId: string, tokens: number): Promise<void> {
   const n = Math.max(0, Math.round(tokens));
   if (n === 0) return;

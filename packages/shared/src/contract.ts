@@ -28,7 +28,21 @@ export const LIMITS = {
   pageSizeMax: 50,
 } as const;
 
-export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
+/** True for a real calendar date (no 2024-02-31, no month 13, no year 0, which Postgres lacks). */
+function isRealDate(value: string): boolean {
+  const [y, m, d] = value.split('-').map(Number) as [number, number, number];
+  if (y < 1) return false;
+  // Round-trip through a UTC date: impossible days/months roll over and no longer match.
+  // setUTCFullYear (unlike Date.UTC's year argument) treats years 0-99 literally.
+  const date = new Date(Date.UTC(2000, 0, 1));
+  date.setUTCFullYear(y, m - 1, d);
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+export const isoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+  .refine(isRealDate, 'Not a real calendar date');
 export const timestamp = z.string().datetime({ offset: true });
 export const uuid = z.string().uuid();
 /** IANA timezone, validated server-side with Intl. */
@@ -160,7 +174,9 @@ export const entrySummary = entry
   .extend({ excerpt: z.string(), attachmentCount: z.number().int() });
 export type EntrySummary = z.infer<typeof entrySummary>;
 
-const tagList = z.array(z.string().trim().toLowerCase().min(1).max(LIMITS.tagMax)).max(LIMITS.tagsMax);
+const tagList = z
+  .array(z.string().trim().toLowerCase().min(1).max(LIMITS.tagMax))
+  .max(LIMITS.tagsMax);
 
 export const createEntryInput = z.object({
   /** Client-generated id so offline-created drafts are idempotent on retry. */
@@ -222,7 +238,10 @@ export const searchHit = z.object({
   score: z.number(),
   matchedBy: z.array(z.enum(['meaning', 'keyword'])),
 });
-export const searchResult = z.object({ hits: z.array(searchHit), mode: z.enum(['hybrid', 'keyword']) });
+export const searchResult = z.object({
+  hits: z.array(searchHit),
+  mode: z.enum(['hybrid', 'keyword']),
+});
 export type SearchHit = z.infer<typeof searchHit>;
 export type SearchResult = z.infer<typeof searchResult>;
 
@@ -344,7 +363,15 @@ export type WeeklyLetterResponse = z.infer<typeof weeklyLetterResponse>;
 
 // ───────────────────────── memories ─────────────────────────
 
-export const MEMORY_KINDS = ['person', 'place', 'goal', 'habit', 'pattern', 'fact', 'feeling'] as const;
+export const MEMORY_KINDS = [
+  'person',
+  'place',
+  'goal',
+  'habit',
+  'pattern',
+  'fact',
+  'feeling',
+] as const;
 export const memoryKind = z.enum(MEMORY_KINDS);
 export type MemoryKind = z.infer<typeof memoryKind>;
 

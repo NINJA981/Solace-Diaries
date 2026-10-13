@@ -1,7 +1,18 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../../src/db/client';
-import { attachments, entries, entryChunks, graphNodes, jobs, memories } from '../../src/db/schema';
+import {
+  aiUsage,
+  attachments,
+  entries,
+  entryChunks,
+  graphNodes,
+  jobs,
+  memories,
+} from '../../src/db/schema';
+import { enqueue } from '../../src/jobs/queue';
+import { claimJob, runJob } from '../../src/jobs/worker';
+import { consumeAiQuota, nextUtcDay } from '../../src/services/quota';
 import { handlers, onJobDead } from '../../src/jobs/handlers/index';
 import { JOB, PermanentJobError } from '../../src/jobs/types';
 import { putObject } from '../../src/storage/index';
@@ -260,5 +271,78 @@ describe('describeAttachment', () => {
     await expect(
       handlers[JOB.describeAttachment]!({ attachmentId: att!.id, userId: other.id }, ctx),
     ).rejects.toBeInstanceOf(PermanentJobError);
+  });
+});
+
+describe('daily enrichment budget', () => {
+  const usage = async (userId: string) =>
+    (await db.select().from(aiUsage).where(eq(aiUsage.userId, userId)))[0]?.enrichRuns ?? 0;
+  const spendAll = (userId: string) =>
+    db.insert(aiUsage).values({
+      userId,
+      day: new Date().toISOString().slice(0, 10),
+      enrichRuns: config.ENRICH_DAILY_QUOTA,
+    });
+  const worker = { handlers, onJobDead };
+
+  it('counts one run per enrichment, and none for text too short to analyze', async () => {
+    const user = await seedUser();
+    const e = await seedEntry(user.id, { body: LONG_BODY });
+    await enrich({ entryId: e.id, userId: user.id, version: 1 });
+    expect(await usage(user.id)).toBe(1);
+    const short = await seedEntry(user.id, { body: 'ok' });
+    await enrich({ entryId: short.id, userId: user.id, version: 1 });
+    expect(await usage(user.id)).toBe(1);
+  });
+
+  it('reschedules to the next UTC day instead of running the AI, leaving the entry pending', async () => {
+    const user = await seedUser();
+    const e = await seedEntry(user.id, { body: LONG_BODY });
+    await spendAll(user.id);
+    await enqueue(db, JOB.enrichEntry, { entryId: e.id, userId: user.id, version: 1 });
+
+    const job = (await claimJob())!;
+    expect(await runJob(job, worker)).toBe('deferred');
+
+    expect(fake.calls('analysis')).toHaveLength(0);
+    const [row] = await db.select().from(jobs).where(eq(jobs.id, job.id));
+    expect(row).toMatchObject({ status: 'queued', attempts: 0 });
+    expect(row!.runAfter.getTime()).toBe(nextUtcDay().getTime());
+    expect(row!.runAfter.toISOString()).toMatch(/T00:00:00\.000Z$/);
+    expect(await reload(e.id)).toMatchObject({ enrichmentStatus: 'pending', summary: null });
+    expect(await usage(user.id)).toBe(config.ENRICH_DAILY_QUOTA); // never overshoots
+  });
+
+  it('also defers photo descriptions', async () => {
+    const user = await seedUser();
+    const e = await seedEntry(user.id, { body: 'Beach day with the dog.' });
+    const [att] = await db
+      .insert(attachments)
+      .values({ entryId: e.id, userId: user.id, storagePath: 'p', mime: 'image/png', bytes: 1 })
+      .returning();
+    await spendAll(user.id);
+    await enqueue(db, JOB.describeAttachment, { attachmentId: att!.id, userId: user.id });
+    expect(await runJob((await claimJob())!, worker)).toBe('deferred');
+    expect(fake.calls('photo')).toHaveLength(0);
+  });
+
+  it('keeps enrichment and chat/search budgets independent', async () => {
+    const user = await seedUser();
+    await spendAll(user.id);
+    // A spent enrichment budget leaves the interactive budget untouched…
+    await expect(consumeAiQuota(user.id, { usingOwnKey: false })).resolves.toBeUndefined();
+    const [row] = await db.select().from(aiUsage).where(eq(aiUsage.userId, user.id));
+    expect(row).toMatchObject({ calls: 1, enrichRuns: config.ENRICH_DAILY_QUOTA });
+
+    // …and heavy Reflect/search use never pauses analysis of new entries.
+    const other = await seedUser();
+    await db.insert(aiUsage).values({
+      userId: other.id,
+      day: new Date().toISOString().slice(0, 10),
+      calls: config.AI_DAILY_QUOTA,
+    });
+    const e = await seedEntry(other.id, { body: LONG_BODY });
+    await enrich({ entryId: e.id, userId: other.id, version: 1 });
+    expect(await reload(e.id)).toMatchObject({ enrichmentStatus: 'ready' });
   });
 });

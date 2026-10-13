@@ -50,9 +50,12 @@ entriesRouter.post(routes.createEntry.path, async (req, res) => {
     authOf(req).userId,
     parseBody(req, createEntryInput),
   );
+  // 201 + `X-Entry-Created: true` for a new row. A repeated client id answers 200 + `false`
+  // with the row as stored, which may differ from this request's body (offline retry).
   res
     .status(created ? 201 : 200)
     .setHeader('ETag', versionTag(entry))
+    .setHeader('X-Entry-Created', String(created))
     .json(entry);
 });
 
@@ -73,6 +76,8 @@ entriesRouter.patch(routes.updateEntry.path, async (req, res) => {
   res.setHeader('ETag', versionTag(entry)).json(entry);
 });
 
+// Idempotent: 204 whether the entry was deleted now, was already gone, or never was ours,
+// so a client can safely retry a delete and nothing leaks about other users' ids.
 entriesRouter.delete(routes.deleteEntry.path, async (req, res) => {
   await deleteEntry(authOf(req).userId, uuidParam(req));
   res.status(204).end();

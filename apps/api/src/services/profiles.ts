@@ -1,8 +1,16 @@
 import { eq, sql } from 'drizzle-orm';
-import { isValidTimezone, type Profile, type UpdateProfileInput } from '@solace/shared';
+import {
+  ERROR_CODES,
+  isValidTimezone,
+  type Profile,
+  type UpdateProfileInput,
+} from '@solace/shared';
+import { authUserExists } from '../auth/supabase-admin';
+import { config, isTest } from '../config';
 import { db } from '../db/client';
 import { profiles } from '../db/schema';
-import { badRequest, notFound } from '../http/errors';
+import { badRequest, HttpError, notFound, unauthorized } from '../http/errors';
+import { logger } from '../logger';
 
 type ProfileRow = typeof profiles.$inferSelect;
 
@@ -25,9 +33,38 @@ export function toProfile(row: ProfileRow): Profile {
 const known = new Map<string, string>();
 const KNOWN_MAX = 10_000;
 
+export type AuthUserLookup = (userId: string) => Promise<boolean>;
+
+let lookupOverride: AuthUserLookup | undefined;
+
+/** Test seam: replace the Supabase "does this auth user exist?" check (undefined restores it). */
+export function setAuthUserLookup(fn?: AuthUserLookup): void {
+  lookupOverride = fn;
+}
+
+async function authUserStillExists(userId: string): Promise<boolean> {
+  // Tests have no Supabase; local dev without a service key can't ask (prod requires one).
+  if (!lookupOverride && (isTest || !config.SUPABASE_SERVICE_ROLE_KEY)) return true;
+  try {
+    return await (lookupOverride ?? authUserExists)(userId);
+  } catch (err) {
+    logger.error({ err }, 'could not confirm the auth user exists');
+    throw new HttpError(
+      503,
+      'Sign-in is temporarily unavailable. Try again shortly.',
+      ERROR_CODES.internal,
+    );
+  }
+}
+
 /**
  * Make sure the caller has a profile row (created on first API call) and that its email
  * follows the auth user's current email. Cached so steady-state requests skip the DB.
+ *
+ * Creating a row needs one more check: an access token stays valid for up to an hour after
+ * its account is deleted, and must not bring the account back. So before inserting, ask
+ * Supabase whether the auth user still exists (only on this rare path: a brand-new user or
+ * a deleted one). Gone → 401; can't tell → 503.
  */
 export async function ensureProfile(userId: string, email: string): Promise<void> {
   if (known.get(userId) === email) {
@@ -35,14 +72,25 @@ export async function ensureProfile(userId: string, email: string): Promise<void
     known.set(userId, email);
     return;
   }
-  await db
-    .insert(profiles)
-    .values({ id: userId, email })
-    .onConflictDoUpdate({
-      target: profiles.id,
-      set: { email },
-      setWhere: sql`${profiles.email} is distinct from ${email} and ${email} <> ''`,
-    });
+  const [existing] = await db
+    .select({ email: profiles.email })
+    .from(profiles)
+    .where(eq(profiles.id, userId));
+  if (existing) {
+    if (email && existing.email !== email) {
+      await db.update(profiles).set({ email }).where(eq(profiles.id, userId));
+    }
+  } else {
+    if (!(await authUserStillExists(userId))) throw unauthorized();
+    await db
+      .insert(profiles)
+      .values({ id: userId, email })
+      .onConflictDoUpdate({
+        target: profiles.id,
+        set: { email },
+        setWhere: sql`${profiles.email} is distinct from ${email} and ${email} <> ''`,
+      });
+  }
   known.set(userId, email);
   if (known.size > KNOWN_MAX) known.delete(known.keys().next().value!);
 }

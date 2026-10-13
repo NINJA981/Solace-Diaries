@@ -1,0 +1,1 @@
+ALTER TABLE "ai_usage" ADD COLUMN "enrich_runs" integer DEFAULT 0 NOT NULL;
