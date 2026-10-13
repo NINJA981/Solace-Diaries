@@ -77,3 +77,15 @@ export function loadTodayPointer(userId: string): Promise<TodayPointer | undefin
 export function saveTodayPointer(userId: string, p: TodayPointer): Promise<void> {
   return rawSet(`today:${userId}`, p).catch(() => undefined);
 }
+
+/**
+ * Remove everything stored on this device for a user: drafts (the offline queue) and the
+ * Today pointer. Other users' data is left alone.
+ */
+export async function clearUserDrafts(userId: string): Promise<void> {
+  const prefix = `draft:${userId}:`;
+  const keys = new Set<string>([`today:${userId}`]);
+  for (const [k] of await rawEntries()) if (typeof k === 'string' && k.startsWith(prefix)) keys.add(k);
+  for (const k of memory.keys()) if (k.startsWith(prefix)) keys.add(k);
+  await Promise.all([...keys].map((k) => rawDel(k)));
+}

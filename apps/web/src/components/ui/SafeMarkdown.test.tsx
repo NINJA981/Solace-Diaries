@@ -40,6 +40,21 @@ describe('SafeMarkdown', () => {
     expect(container.textContent).toContain('bad');
     expect(container.innerHTML).not.toContain('javascript:');
   });
+
+  it('with allowLink, renders rejected links (inline, reference, autolink) as plain text', () => {
+    const allowLink = (href: string) => href.startsWith('https://solace.invalid/cite/');
+    const { container } = render(
+      <SafeMarkdown allowLink={allowLink}>
+        {'Source [1](https://solace.invalid/cite/1). [Click here](https://evil.example/?q=secret) ' +
+          '[ref][x] <https://evil.example/auto>\n\n[x]: https://evil.example/ref'}
+      </SafeMarkdown>,
+    );
+    const links = Array.from(container.querySelectorAll('a'));
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['https://solace.invalid/cite/1']);
+    expect(container.innerHTML).not.toContain('evil.example/?q');
+    expect(container.textContent).toContain('Click here');
+    expect(container.textContent).toContain('ref');
+  });
 });
 
 describe('safeUrl', () => {

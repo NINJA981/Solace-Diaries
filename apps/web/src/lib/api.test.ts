@@ -134,6 +134,70 @@ describe('typed route calls', () => {
     expect((init!.body as FormData).get('file')).toBeInstanceOf(Blob);
     expect((init!.headers as Record<string, string>)['content-type']).toBeUndefined();
   });
+
+  const entry = {
+    id: UUID,
+    title: '',
+    body: 'hello',
+    entryDate: '2026-10-13',
+    mood: null,
+    moodSource: null,
+    tags: [],
+    summary: null,
+    wordCount: 1,
+    version: 1,
+    enrichmentStatus: 'pending',
+    attachments: [],
+    createdAt: profile.createdAt,
+    updatedAt: profile.createdAt,
+  };
+
+  it('surfaces the raw response (status, X-Entry-Created) through onResponse', async () => {
+    fetchMock.mockResolvedValueOnce(json(entry, 200, { 'x-entry-created': 'false' }));
+    let seen: Response | undefined;
+    const result = await api.createEntry({
+      body: { id: UUID, body: 'hello', entryDate: '2026-10-13' },
+      onResponse: (res) => (seen = res),
+    });
+    expect(result.id).toBe(UUID);
+    expect(seen?.status).toBe(200);
+    expect(seen?.headers.get('x-entry-created')).toBe('false');
+  });
+
+  it('uses keepalive for small autosave bodies only', async () => {
+    fetchMock.mockImplementation(async () => json(entry));
+    await api.updateEntry({ params: { id: UUID }, body: { body: 'short' }, headers: { 'If-Match': '1' }, keepalive: true });
+    expect(fetchMock.mock.calls[0]![1]!.keepalive).toBe(true);
+
+    await api.updateEntry({ params: { id: UUID }, body: { body: 'x'.repeat(70_000) }, headers: { 'If-Match': '1' }, keepalive: true });
+    expect(fetchMock.mock.calls[1]![1]!.keepalive).toBeUndefined();
+
+    await api.updateEntry({ params: { id: UUID }, body: { body: 'normal autosave' }, headers: { 'If-Match': '1' } });
+    expect(fetchMock.mock.calls[2]![1]!.keepalive).toBeUndefined();
+  });
+});
+
+describe('exportMe', () => {
+  beforeEach(() => {
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: () => 'blob:x', revokeObjectURL: () => {} }));
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  it('names the file from Content-Disposition when present', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('# Journal', { headers: { 'content-disposition': 'attachment; filename="solace-export-2026-10-13.md"' } }),
+    );
+    await expect(api.exportMe({ query: { format: 'markdown' } })).resolves.toEqual({ filename: 'solace-export-2026-10-13.md' });
+  });
+
+  it('falls back to .md for markdown and .json for JSON', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('# Journal'));
+    const md = await api.exportMe({ query: { format: 'markdown' } });
+    expect(md.filename).toMatch(/^solace-export-\d{4}-\d{2}-\d{2}\.md$/);
+    fetchMock.mockResolvedValueOnce(new Response('{}'));
+    const js = await api.exportMe({ query: { format: 'json' } });
+    expect(js.filename).toMatch(/\.json$/);
+  });
 });
 
 // ───────────────────────── SSE ─────────────────────────

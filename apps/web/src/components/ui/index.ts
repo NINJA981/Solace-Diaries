@@ -11,7 +11,7 @@
 //   Skeleton      { className } ; Spinner { label?: string }
 //   EmptyState    { title, description?, action?: ReactNode, icon?: ReactNode }
 //   Card          { as?, className, children }
-//   SafeMarkdown  { children: string } — react-markdown with images, raw HTML and non-http(s)/mailto links stripped
+//   SafeMarkdown  { children: string; allowLink?: (href) => boolean } — react-markdown with images, raw HTML and non-http(s)/mailto links stripped; links rejected by `allowLink` render as plain text
 //   MoodDot       { mood: Mood | null, size?: number } — uses --mood-N tokens
 //   toast(message, opts?: { tone?: 'default'|'success'|'danger', action?: { label, onClick }, duration?, id? }); toast.dismiss(id)
 //   VisuallyHidden
@@ -23,5 +23,5 @@ export { Tabs, type TabItem, type TabsProps } from './Tabs';
 export { Card, Chip, EmptyState, Skeleton, VisuallyHidden, type ChipProps, type ChipTone } from './feedback';
 export { Spinner } from './Spinner';
 export { MoodDot, moodLevel } from './MoodDot';
-export { SafeMarkdown, safeUrl } from './SafeMarkdown';
+export { SafeMarkdown, safeUrl, type LinkPolicy } from './SafeMarkdown';
 export { toast, Toaster, type ToastOptions, type ToastTone } from './toast';

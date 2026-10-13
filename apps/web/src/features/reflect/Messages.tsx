@@ -5,7 +5,7 @@ import { RotateCcw } from 'lucide-react';
 import type { Citation } from '@solace/shared';
 import { SafeMarkdown } from '@/components/ui';
 import { formatDay } from '../journal-core/format';
-import { citationFromHref, citedNumbers, linkCitations, stableStreamText } from './citations';
+import { citationFromHref, citedNumbers, isCitationLink, linkCitations, stableStreamText } from './citations';
 import '../journal-core/journal.css';
 
 export function UserBubble({ content, pending }: { content: string; pending?: boolean }) {
@@ -78,6 +78,7 @@ export const Answer = memo(function Answer({ content, citations, streaming, part
         <div ref={ref} onClick={openCitation} onAuxClick={openCitation} className={clsx(partial && 'opacity-75')}>
           {md ? (
             <SafeMarkdown
+              allowLink={isCitationLink}
               className={clsx('solace-answer font-serif text-[1.06rem] leading-[1.7] text-fg', streaming && 'solace-streaming')}
             >
               {md}

@@ -123,12 +123,13 @@ export function useEntryEditor(id: string, opts: Options) {
     if (engine && query.data && query.data.id === engine.id) engine.adoptServer(query.data);
   }, [engine, query.data]);
 
-  // Leaving the page or hiding the tab flushes immediately (the draft is already local).
+  // Leaving the page or hiding the tab flushes immediately (the draft is already local), with
+  // keepalive so a small write can finish after the page is gone.
   useEffect(() => {
     const onHide = () => {
-      if (document.visibilityState === 'hidden') flushAllEngines();
+      if (document.visibilityState === 'hidden') flushAllEngines({ keepalive: true });
     };
-    const onPageHide = () => flushAllEngines();
+    const onPageHide = () => flushAllEngines({ keepalive: true });
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('pagehide', onPageHide);
     return () => {

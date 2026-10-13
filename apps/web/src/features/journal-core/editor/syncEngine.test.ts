@@ -24,8 +24,8 @@ function entryFrom(id: string, f: Partial<Entry> & { version: number }): Entry {
 }
 
 type Call =
-  | { kind: 'create'; input: CreateEntryInput }
-  | { kind: 'update'; patch: UpdateEntryInput; version: number }
+  | { kind: 'create'; input: CreateEntryInput; keepalive?: boolean }
+  | { kind: 'update'; patch: UpdateEntryInput; version: number; keepalive?: boolean }
   | { kind: 'get' };
 
 /** In-memory server with optional manual gating of responses. */
@@ -34,11 +34,14 @@ function fakeServer() {
   const calls: Call[] = [];
   let gate: Promise<void> | null = null;
   let failNext: unknown[] = [];
+  let lose = 0;
   const transport: Transport = {
-    async create(input) {
-      calls.push({ kind: 'create', input });
+    async create(input, opts) {
+      calls.push(opts?.keepalive ? { kind: 'create', input, keepalive: true } : { kind: 'create', input });
       if (gate) await gate;
       if (failNext.length) throw failNext.shift();
+      // Like the API: an id that already exists returns the stored row (200), untouched.
+      const created = !current;
       if (!current) {
         current = entryFrom(input.id!, {
           version: 1,
@@ -49,10 +52,15 @@ function fakeServer() {
           moodSource: input.mood ? 'user' : null,
         });
       }
-      return current;
+      if (lose > 0) {
+        // The write landed but the response never arrived.
+        lose--;
+        throw new TypeError('Failed to fetch');
+      }
+      return { entry: current, created };
     },
-    async update(_id, patch, version) {
-      calls.push({ kind: 'update', patch, version });
+    async update(_id, patch, version, opts) {
+      calls.push(opts?.keepalive ? { kind: 'update', patch, version, keepalive: true } : { kind: 'update', patch, version });
       if (gate) await gate;
       if (failNext.length) throw failNext.shift();
       if (!current) throw { status: 404, code: 'not_found', message: 'gone' };
@@ -90,6 +98,10 @@ function fakeServer() {
     failWith(...errs: unknown[]) {
       failNext = errs;
     },
+    /** The next `n` creates reach the server but their responses are lost. */
+    loseResponses(n: number) {
+      lose = n;
+    },
   };
 }
 
@@ -116,8 +128,7 @@ describe('EntrySync', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  function setup(draft = newDraft()) {
-    const server = fakeServer();
+  function setup(draft = newDraft(), server = fakeServer()) {
     const store = memoryStore();
     const engine = new EntrySync(draft, {
       transport: server.transport,
@@ -351,5 +362,163 @@ describe('EntrySync', () => {
       kind: 'create',
       input: { promptId: '22222222-2222-4222-8222-222222222222' },
     });
+  });
+  describe('a create that returns an existing row is not an acknowledgement', () => {
+    it('lost-response retry: the server holds our older text → rebase and PATCH the newer text', async () => {
+      const { server, store, engine } = setup();
+      server.loseResponses(1);
+      engine.edit({ body: 'first thoughts' });
+      await engine.flush();
+      expect(engine.getSnapshot().status).toBe('retrying');
+      expect(server.entry?.body).toBe('first thoughts');
+
+      engine.edit({ body: 'first thoughts, and then a lot more' });
+      await engine.flush();
+      expect(server.calls.map((c) => c.kind)).toEqual(['create', 'create', 'update']);
+      expect(server.calls[2]).toEqual({ kind: 'update', patch: { body: 'first thoughts, and then a lot more' }, version: 1 });
+      expect(server.entry?.body).toBe('first thoughts, and then a lot more');
+      const snap = engine.getSnapshot();
+      expect(snap).toMatchObject({ status: 'saved', dirty: false, version: 2 });
+      expect(snap.fields.body).toBe('first thoughts, and then a lot more');
+      expect(store.data.has(ID)).toBe(false);
+    });
+
+    it('recognises its own earlier text after a reload (history travels with the device draft)', async () => {
+      const first = setup();
+      first.server.loseResponses(1);
+      first.engine.edit({ body: 'before the crash' });
+      await first.engine.flush();
+      first.engine.edit({ body: 'before the crash, after' });
+      await vi.advanceTimersByTimeAsync(300); // persisted locally; the tab then dies
+      first.engine.dispose();
+
+      const saved = first.store.data.get(ID)!;
+      const second = setup(saved, first.server);
+      await second.engine.flush();
+      expect(first.server.entry?.body).toBe('before the crash, after');
+      expect(second.engine.getSnapshot().status).toBe('saved');
+    });
+
+    it('two Today tabs sharing one id: the second creator keeps its text and gets a conflict', async () => {
+      const server = fakeServer();
+      const tabA = setup(newDraft(), server);
+      const tabB = setup(newDraft(), server);
+      tabA.engine.edit({ body: 'written in tab A' });
+      await tabA.engine.flush();
+      tabB.engine.edit({ body: 'written in tab B' });
+      await tabB.engine.flush();
+
+      const snap = tabB.engine.getSnapshot();
+      expect(snap.status).toBe('conflict');
+      expect(snap.conflict).toMatchObject({ kind: 'diverged', server: { body: 'written in tab A' } });
+      expect(snap.fields.body).toBe('written in tab B');
+      expect(snap.dirty).toBe(true);
+      expect(tabB.store.data.get(ID)?.fields.body).toBe('written in tab B');
+      expect(server.entry?.body).toBe('written in tab A');
+
+      await tabB.engine.resolveConflict('mine');
+      expect(server.calls.at(-1)).toEqual({ kind: 'update', patch: { body: 'written in tab B' }, version: 1 });
+      expect(server.entry?.body).toBe('written in tab B');
+      expect(tabB.engine.getSnapshot().status).toBe('saved');
+    });
+
+    it('"use the other version" after a create conflict adopts the existing row', async () => {
+      const server = fakeServer();
+      const tabA = setup(newDraft(), server);
+      const tabB = setup(newDraft(), server);
+      tabA.engine.edit({ body: 'A' });
+      await tabA.engine.flush();
+      tabB.engine.edit({ body: 'B' });
+      await tabB.engine.flush();
+      await tabB.engine.resolveConflict('theirs');
+      expect(tabB.engine.getSnapshot()).toMatchObject({ status: 'saved', version: 1, dirty: false });
+      expect(tabB.engine.getSnapshot().fields.body).toBe('A');
+      expect(tabB.store.data.has(ID)).toBe(false);
+    });
+
+    it('an existing row with exactly our text is a plain acknowledgement', async () => {
+      const server = fakeServer();
+      const tabA = setup(newDraft(), server);
+      const tabB = setup(newDraft(), server);
+      tabA.engine.edit({ body: 'same words' });
+      await tabA.engine.flush();
+      tabB.engine.edit({ body: 'same words' });
+      await tabB.engine.flush();
+      expect(tabB.engine.getSnapshot()).toMatchObject({ status: 'saved', version: 1, conflict: null });
+      expect(server.calls.map((c) => c.kind)).toEqual(['create', 'create']);
+    });
+
+    it('with no local text to lose (photo upload), the existing row is adopted', async () => {
+      const server = fakeServer();
+      const tabA = setup(newDraft(), server);
+      const tabB = setup(newDraft(), server);
+      tabA.engine.edit({ body: 'already here' });
+      await tabA.engine.flush();
+      expect(await tabB.engine.ensureCreated()).toBe(true);
+      expect(tabB.engine.getSnapshot()).toMatchObject({ status: 'saved', conflict: null });
+      expect(tabB.engine.getSnapshot().fields.body).toBe('already here');
+    });
+
+    it('reports the entry as created to the cache only once the rebased text is saved', async () => {
+      const server = fakeServer();
+      const saved: Array<[string, boolean]> = [];
+      const engine = new EntrySync(newDraft(), {
+        transport: server.transport,
+        store: memoryStore(),
+        isOnline: () => online,
+        retryDelaysMs: [1000],
+        onSaved: (e, created) => saved.push([e.body, created]),
+      });
+      server.loseResponses(1);
+      engine.edit({ body: 'one' });
+      await engine.flush();
+      engine.edit({ body: 'one two' });
+      await engine.flush();
+      expect(saved).toEqual([['one two', true]]);
+    });
+  });
+
+  it('409 where the server holds our own earlier text (a stale snapshot flushed elsewhere) rebases', async () => {
+    const { server, engine } = setup();
+    engine.edit({ body: 'a' });
+    await engine.flush();
+    engine.edit({ body: 'a b' });
+    await vi.advanceTimersByTimeAsync(300); // persisted on the device
+    // Another tab flushed that device snapshot first.
+    server.entry = { ...server.entry!, version: 2, body: 'a b' };
+    engine.edit({ body: 'a b c' });
+    await engine.flush();
+    expect(server.calls.at(-1)).toEqual({ kind: 'update', patch: { body: 'a b c' }, version: 2 });
+    expect(server.entry?.body).toBe('a b c');
+    expect(engine.getSnapshot().status).toBe('saved');
+  });
+
+  it('flush({ keepalive }) marks the request so it survives the page closing', async () => {
+    const { server, engine } = setup();
+    engine.edit({ body: 'closing the tab' });
+    await engine.flush({ keepalive: true });
+    expect(server.calls[0]).toMatchObject({ kind: 'create', keepalive: true });
+    engine.edit({ body: 'closing the tab now' });
+    await engine.flush();
+    expect(server.calls[1]).not.toHaveProperty('keepalive');
+  });
+
+  it('dispose + settle: an in-flight first POST lands with no follow-up write or draft, and the engine says it may exist', async () => {
+    const { server, store, engine } = setup();
+    expect(engine.mayExistOnServer()).toBe(false);
+    engine.edit({ body: 'about to delete' });
+    const release = server.hold();
+    void engine.flush();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(engine.mayExistOnServer()).toBe(true);
+    engine.edit({ body: 'about to delete!' });
+    store.data.clear();
+    engine.dispose();
+    const settled = engine.settle();
+    release();
+    await settled;
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(server.calls).toHaveLength(1);
+    expect(store.data.size).toBe(0);
   });
 });

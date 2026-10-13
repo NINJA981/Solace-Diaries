@@ -135,14 +135,26 @@ type SendInit = {
   headers?: Record<string, string>;
   body?: BodyInit;
   signal?: AbortSignal;
+  /** Let the request outlive the page. Browsers cap keepalive bodies at 64 KB in total. */
+  keepalive?: boolean;
 };
 
+/** Largest JSON body sent with `keepalive` (the browser's 64 KB budget is shared). */
+export const KEEPALIVE_MAX_BYTES = 60 * 1024;
+
 /** fetch with auth, network-failure mapping and error parsing. Resolves only with ok responses. */
-export async function send({ method, url, headers, body, signal }: SendInit): Promise<Response> {
+export async function send({ method, url, headers, body, signal, keepalive }: SendInit): Promise<Response> {
   const auth = await authHeaders();
   let res: Response;
   try {
-    res = await fetch(url, { method, headers: { ...auth, ...headers }, body, signal, credentials: 'omit' });
+    res = await fetch(url, {
+      method,
+      headers: { ...auth, ...headers },
+      body,
+      signal,
+      credentials: 'omit',
+      ...(keepalive ? { keepalive: true } : {}),
+    });
   } catch (error) {
     if (signal?.aborted || isAbortError(error)) throw error;
     throw new ApiRequestError(0, OFFLINE_MESSAGE, 'network_error');
@@ -180,9 +192,16 @@ type BodyOpt<N extends RouteName> = Routes[N] extends { body: infer B extends z.
   ? { body: z.input<B> }
   : { body?: undefined };
 
-export type CallOptions<N extends RouteName> = ParamsOpt<N> &
-  QueryOpt<N> &
-  BodyOpt<N> & { headers?: Record<string, string>; signal?: AbortSignal };
+type ExtraOpts = {
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+  /** Request `keepalive` (autosave on pagehide); applied only to JSON bodies under 60 KB. */
+  keepalive?: boolean;
+  /** Sees the successful Response (status, headers) before the body is parsed. */
+  onResponse?: (res: Response) => void;
+};
+
+export type CallOptions<N extends RouteName> = ParamsOpt<N> & QueryOpt<N> & BodyOpt<N> & ExtraOpts;
 
 export type RouteResult<N extends RouteName> =
   ResponseKind<N> extends z.ZodType ? z.output<ResponseKind<N>> : void;
@@ -200,12 +219,10 @@ export type Api = { [N in JsonRoute]: RouteFn<N> } & {
   exportMe(opts?: CallOptions<'exportMe'>): Promise<{ filename: string }>;
 };
 
-type LooseOpts = {
+type LooseOpts = ExtraOpts & {
   params?: Record<string, string>;
   query?: Record<string, unknown>;
   body?: unknown;
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
 };
 
 /** Dev builds validate every response against the contract and log drift loudly. */
@@ -228,6 +245,7 @@ async function readJson(res: Response): Promise<unknown> {
 async function callRoute(name: RouteName, opts: LooseOpts = {}): Promise<unknown> {
   const route = routes[name];
   const hasBody = opts.body !== undefined;
+  const body = hasBody ? JSON.stringify(opts.body) : undefined;
   const res = await send({
     method: route.method,
     url: apiUrl(fillPath(route.path, opts.params), opts.query),
@@ -236,9 +254,12 @@ async function callRoute(name: RouteName, opts: LooseOpts = {}): Promise<unknown
       ...(hasBody ? { 'content-type': 'application/json' } : {}),
       ...opts.headers,
     },
-    body: hasBody ? JSON.stringify(opts.body) : undefined,
+    body,
     signal: opts.signal,
+    // Larger bodies would exceed the browser's keepalive budget and fail outright.
+    keepalive: !!opts.keepalive && new Blob([body ?? '']).size < KEEPALIVE_MAX_BYTES,
   });
+  opts.onResponse?.(res);
   const response = route.response;
   if (response === null || res.status === 204) return undefined;
   if (typeof response === 'string') return res;
@@ -282,7 +303,8 @@ async function exportMe(opts: LooseOpts = {}): Promise<{ filename: string }> {
   });
   const format = (opts.query?.format as string | undefined) ?? 'json';
   const day = new Date().toISOString().slice(0, 10);
-  const fallback = `solace-export-${day}.${format === 'markdown' ? 'zip' : 'json'}`;
+  // The server names the file via Content-Disposition (exposed by CORS); this is a fallback.
+  const fallback = `solace-export-${day}.${format === 'markdown' ? 'md' : 'json'}`;
   const filename = filenameFrom(res, fallback);
   saveBlob(await res.blob(), filename);
   return { filename };

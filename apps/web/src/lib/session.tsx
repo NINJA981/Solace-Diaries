@@ -12,16 +12,27 @@ import type { Session } from '@supabase/supabase-js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { setUnauthorizedHandler } from './auth-events';
+import { clearDeviceData, syncBeforeSignOut } from './device-data';
 import { getSupabase } from './supabase-lazy';
 
 export type SessionStatus = 'loading' | 'signed-in' | 'signed-out';
+
+/**
+ * Why the session ends, which decides what this browser forgets:
+ *  - 'user' (default): sync unsaved drafts (bounded), then clear the BYOK key and this
+ *    person's drafts/queue, so the next account on a shared browser starts clean.
+ *  - 'deleted': the account is gone; clear everything without trying to sync.
+ *  - 'expired': a 401 ended the session. Clear the BYOK key but keep the drafts (scoped to
+ *    this user, never sent to another account) so words typed before expiry sync on sign-in.
+ */
+export type SignOutReason = 'user' | 'deleted' | 'expired';
 
 export type SessionValue = {
   status: SessionStatus;
   userId: string | null;
   email: string | null;
   /** `scope: 'global'` signs out every device (Settings → Account). */
-  signOut(opts?: { scope?: 'local' | 'global' }): Promise<void>;
+  signOut(opts?: { scope?: 'local' | 'global'; reason?: SignOutReason }): Promise<void>;
 };
 
 export const ME_QUERY_KEY = ['me'] as const;
@@ -84,11 +95,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const signOut = useCallback(
-    async (opts?: { scope?: 'local' | 'global' }) => {
+    async (opts?: { scope?: 'local' | 'global'; reason?: SignOutReason }) => {
+      const reason = opts?.reason ?? 'user';
       const supabase = await getSupabase();
-      const { error } = await supabase.auth.signOut({ scope: opts?.scope ?? 'local' });
-      // A failed global sign-out (network) still ends this device's session.
-      if (error) await supabase.auth.signOut({ scope: 'local' });
+      let userId: string | null = null;
+      try {
+        userId = (await supabase.auth.getSession()).data.session?.user.id ?? null;
+      } catch {
+        /* no session to read */
+      }
+      // Still signed in: give unsaved words a short chance to reach the server first.
+      if (reason === 'user' && userId) await syncBeforeSignOut(userId);
+      try {
+        const { error } = await supabase.auth.signOut({ scope: opts?.scope ?? 'local' });
+        // A failed global sign-out (network) still ends this device's session.
+        if (error) await supabase.auth.signOut({ scope: 'local' });
+      } finally {
+        // Never discard unsynced writing on a normal sign-out; only a deleted account loses it.
+        await clearDeviceData(reason === 'expired' ? null : userId, {
+          keepUnsyncedDrafts: reason === 'user',
+        });
+      }
       queryClient.clear();
       setState({ status: 'signed-out', session: null });
     },
@@ -98,7 +125,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Any 401 from the API ends the local session; the route guard sends the person to
   // /login?next=<where they were>.
   useEffect(() => {
-    setUnauthorizedHandler(() => signOut({ scope: 'local' }));
+    setUnauthorizedHandler(() => signOut({ scope: 'local', reason: 'expired' }));
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 

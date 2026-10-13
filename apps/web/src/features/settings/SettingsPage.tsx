@@ -438,7 +438,8 @@ function DangerSection() {
           await api.deleteMe({ body: { confirmEmail: email } });
           // Leave the guarded area first so the sign-out doesn't bounce through /login.
           navigate('/', { replace: true });
-          await signOut({ scope: 'local' }).catch(() => {});
+          // 'deleted' also clears the BYOK key and this account's drafts/queue from this browser.
+          await signOut({ scope: 'local', reason: 'deleted' }).catch(() => {});
           toast('Your account and journal have been deleted. Thank you for writing with Solace.', { duration: 9000 });
         }}
       >

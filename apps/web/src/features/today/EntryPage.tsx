@@ -7,7 +7,7 @@ import { errorMessage } from '@/lib/api';
 import { useSession, useTimezone } from '@/lib/session';
 import { Editor } from '../journal-core/editor/Editor';
 import { EditorSkeleton } from '../journal-core/editor/EditorSkeleton';
-import { discardEntryLocally } from '../journal-core/editor/registry';
+import { deleteEntryEverywhere } from '../journal-core/editor/registry';
 import { useEngineSelector, useEntryEditor } from '../journal-core/editor/useEntryEditor';
 import { useDraftSync } from '../journal-core/editor/useDraftSync';
 import { InlineError } from '../journal-core/EntryCard';
@@ -26,21 +26,23 @@ export default function EntryPage() {
 
   const editor = useEntryEditor(id, { fetchServer: true, allowMissing: false, entryDate: today });
   const { load } = editor;
-  const isCreated = useEngineSelector(editor.engine, (s) => s.version !== null) === true;
   const entryDate = useEngineSelector(editor.engine, (s) => s.fields.entryDate);
 
   const deleteEntry = async () => {
     if (!userId) return;
-    const exists = isCreated;
     try {
-      if (exists) await del.mutateAsync(id);
-      // Stop autosave without a final flush so nothing can recreate the entry.
-      await discardEntryLocally(userId, id);
+      // Stops autosave and drops the device draft first, waits out a first save that is
+      // still in flight, then sends the (idempotent) DELETE, so nothing can recreate it.
+      await deleteEntryEverywhere(userId, id, (entryId) => del.mutateAsync(entryId));
       setConfirming(false);
       navigate('/app/journal');
       toast('Entry deleted');
     } catch (err) {
-      toast(errorMessage(err), { tone: 'danger' });
+      // Autosave is already stopped here, so don't leave a dead editor on screen: the entry
+      // (as last saved) is still in the journal, where deleting can be tried again.
+      setConfirming(false);
+      navigate('/app/journal');
+      toast(`Couldn’t delete the entry. ${errorMessage(err)}`, { tone: 'danger' });
     }
   };
 

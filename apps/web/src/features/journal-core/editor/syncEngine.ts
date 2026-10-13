@@ -8,8 +8,13 @@
  *    flight; edits made meanwhile coalesce into one follow-up write of the latest state.
  *  - First write is POST with the client-generated id (idempotent on retry); later writes
  *    are PATCH with `If-Match: <version>` and only the changed fields.
+ *  - A POST answered with an already-existing row (`created: false`) is NOT an ack: the row
+ *    may hold an older attempt of ours (lost response) or another tab's text (two Today tabs,
+ *    a stale device snapshot flushed elsewhere). Same text → ack. The server holds a text
+ *    this editor produced earlier (`history`) → rebase and PATCH ours. Otherwise → conflict.
  *  - 409 version_conflict → fetch the server copy. If its title/body equal what we last
- *    synced (e.g. enrichment bumped the version), rebase onto the new version and retry.
+ *    synced (e.g. enrichment bumped the version) or an earlier text of ours, rebase onto the
+ *    new version and retry.
  *    Otherwise stop and surface a conflict; the user chooses — nothing is dropped silently.
  *  - Offline / 5xx / 429 → keep the draft, back off and retry; flush again on `online`.
  *
@@ -45,6 +50,13 @@ export type Draft = {
   version: number | null;
   /** Daily prompt answered by this entry (sent on create only). */
   promptId?: string;
+  /**
+   * Hashes of title+body versions this editor produced (sent or saved on the device), newest
+   * last. A server copy matching one of them is our own ancestor, so it is safe to overwrite.
+   */
+  history?: string[];
+  /** A create was attempted, so the entry may exist server-side even with `version: null`. */
+  posted?: boolean;
   /** Epoch ms of the last local edit. */
   updatedAt: number;
 };
@@ -61,9 +73,15 @@ export type SyncStatus =
 
 export type Conflict = { kind: 'diverged'; server: Entry } | { kind: 'deleted' };
 
+export type WriteOptions = {
+  /** Let the request outlive the page (pagehide flush). The transport decides if it fits. */
+  keepalive?: boolean;
+};
+
 export interface Transport {
-  create(input: CreateEntryInput): Promise<Entry>;
-  update(id: string, patch: UpdateEntryInput, version: number): Promise<Entry>;
+  /** `created: false` means the id already existed and `entry` is the stored row, not ours. */
+  create(input: CreateEntryInput, opts?: WriteOptions): Promise<{ entry: Entry; created: boolean }>;
+  update(id: string, patch: UpdateEntryInput, version: number, opts?: WriteOptions): Promise<Entry>;
   /** Resolves null on 404. */
   get(id: string): Promise<Entry | null>;
 }
@@ -149,6 +167,13 @@ function moodChanged(local: EntryFields, base: EntryFields): boolean {
   return local.moodSource === 'user' && base.moodSource !== 'user';
 }
 
+/**
+ * Known limitation (accepted): only title/body are conflict-checked. Metadata (mood, tags,
+ * entry date) is sent with the same `If-Match`, but a rebase takes the server's metadata for
+ * fields untouched locally and resends the rest, and metadata edits don't bump anything we can
+ * compare against. So concurrent mood/tag/date edits from two tabs or devices are
+ * last-writer-wins.
+ */
 export function diffFields(local: EntryFields, base: EntryFields): UpdateEntryInput {
   const patch: UpdateEntryInput = {};
   if (local.title !== base.title) patch.title = local.title;
@@ -169,6 +194,26 @@ const defaultTimers: Timers = {
 };
 
 const MAX_REBASES = 3;
+const HISTORY_MAX = 50;
+
+function sameText(a: Pick<EntryFields, 'title' | 'body'>, b: Pick<EntryFields, 'title' | 'body'>): boolean {
+  return a.title === b.title && a.body === b.body;
+}
+
+/** Small non-cryptographic hash (cyrb53) of an entry's title and body. */
+export function textHash(f: Pick<EntryFields, 'title' | 'body'>): string {
+  const str = `${f.title}\u0000${f.body}`;
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
 
 export class EntrySync {
   private draft: Draft;
@@ -182,6 +227,9 @@ export class EntrySync {
   private inFlight: Promise<void> | null = null;
   private rerun = false;
   private forceCreate = false;
+  private keepaliveNext = false;
+  /** Our create bumped into an existing row; report "created" to the cache with the next ack. */
+  private announceCreated = false;
   private rebases = 0;
   private attempt = 0;
   private serverTimer: unknown = null;
@@ -238,6 +286,16 @@ export class EntrySync {
     return this.inFlight !== null;
   }
 
+  /** Resolves once the current request (if any) has finished. Never rejects. */
+  settle(): Promise<void> {
+    return this.inFlight ? this.inFlight.catch(() => undefined) : Promise.resolve();
+  }
+
+  /** False only when no create was ever attempted for this entry. */
+  mayExistOnServer(): boolean {
+    return this.draft.version !== null || this.draft.posted === true;
+  }
+
   /** Apply a local edit. Choosing a mood marks it as the user's own. */
   edit(patch: Partial<EntryFields>): void {
     if (this.disposed) return;
@@ -263,8 +321,12 @@ export class EntrySync {
     this.scheduleLocal();
   }
 
-  /** Persist locally and sync now (Ctrl+S, blur, visibility change, route change). */
-  async flush(): Promise<void> {
+  /**
+   * Persist locally and sync now (Ctrl+S, blur, visibility change, route change).
+   * `keepalive` lets the write outlive the page (pagehide, tab hidden).
+   */
+  async flush(opts?: WriteOptions): Promise<void> {
+    if (opts?.keepalive) this.keepaliveNext = true;
     this.clearTimer('localTimer');
     this.clearTimer('serverTimer');
     await this.persistLocal();
@@ -352,6 +414,7 @@ export class EntrySync {
     }
     const server = fieldsFromEntry(c.server);
     if (choice === 'mine') {
+      // Also covers a row our create bumped into (version was null): PATCH over it.
       this.draft = { ...this.draft, version: c.server.version, synced: server };
       this.status = this.isDirty() ? 'pending' : 'saved';
       this.emit();
@@ -361,6 +424,10 @@ export class EntrySync {
       this.status = 'saved';
       this.emit();
       await this.safeStore(() => this.deps.store.remove(this.draft.id));
+      if (this.announceCreated) {
+        this.announceCreated = false;
+        this.deps.onSaved?.(c.server, true);
+      }
     }
   }
 
@@ -401,17 +468,24 @@ export class EntrySync {
 
     this.setStatus('saving');
     const sent = fields;
-    const created = version === null;
+    const isCreate = version === null;
+    const opts: WriteOptions | undefined = this.keepaliveNext ? { keepalive: true } : undefined;
+    this.keepaliveNext = false;
+    this.remember(sent);
     let entry: Entry;
+    let fresh = true;
     try {
-      if (created) {
+      if (isCreate) {
+        this.draft = { ...this.draft, posted: true };
         const input: CreateEntryInput = { id, title: sent.title, body: sent.body, entryDate: sent.entryDate };
         if (sent.moodSource === 'user' && sent.mood) input.mood = sent.mood;
         if (sent.tags.length) input.tags = sent.tags;
         if (promptId) input.promptId = promptId;
-        entry = await this.deps.transport.create(input);
+        const res = await this.deps.transport.create(input, opts);
+        entry = res.entry;
+        fresh = res.created;
       } else {
-        entry = await this.deps.transport.update(id, diffFields(sent, synced!), version);
+        entry = await this.deps.transport.update(id, diffFields(sent, synced!), version, opts);
       }
     } catch (err) {
       return this.handleError(err);
@@ -419,8 +493,14 @@ export class EntrySync {
     if (this.disposed) return false;
 
     this.attempt = 0;
-    this.rebases = 0;
     this.forceCreate = false;
+    if (isCreate && !fresh) {
+      const verdict = await this.reconcileExisting(entry, sent);
+      if (verdict !== 'ack') return verdict === 'rebased';
+    }
+    this.rebases = 0;
+    const created = isCreate || this.announceCreated;
+    this.announceCreated = false;
     const server = fieldsFromEntry(entry);
     // If nothing changed while the request was in flight, adopt the server's normalized
     // copy (e.g. lowercased tags) so the next diff is empty.
@@ -443,6 +523,44 @@ export class EntrySync {
     this.emit();
     this.deps.onSaved?.(entry, created);
     return true;
+  }
+
+  /**
+   * Our POST found the id already taken; `entry` is whatever the server holds. Decide whether
+   * that is an ack of what's on screen, our own earlier text (rebase, then PATCH ours with
+   * If-Match), or someone else's words (conflict). Never adopts server text over local text.
+   */
+  private async reconcileExisting(entry: Entry, sent: EntryFields): Promise<'ack' | 'rebased' | 'conflict'> {
+    const server = fieldsFromEntry(entry);
+    const local = this.draft.fields;
+    // e.g. ensureCreated() before a photo upload, with no words typed yet.
+    const nothingToLose = !sent.title && !sent.body && !local.title && !local.body;
+    if (sameText(server, sent) || sameText(server, local) || nothingToLose) return 'ack';
+    this.announceCreated = true;
+    if ((this.draft.history ?? []).includes(textHash(server))) {
+      // Our own earlier attempt landed (lost response, or a device snapshot another tab flushed).
+      this.draft = {
+        ...this.draft,
+        version: entry.version,
+        synced: server,
+        fields: { ...this.mergeMeta(local, sent, server), title: local.title, body: local.body },
+      };
+      this.rerun = true;
+      this.afterLocalChange();
+      return 'rebased';
+    }
+    this.conflict = { kind: 'diverged', server: entry };
+    this.setStatus('conflict');
+    await this.persistLocal();
+    return 'conflict';
+  }
+
+  /** Record a text version this editor produced (sent, or saved on the device). */
+  private remember(f: EntryFields): void {
+    const h = textHash(f);
+    const history = this.draft.history ?? [];
+    if (history[history.length - 1] === h) return;
+    this.draft = { ...this.draft, history: [...history.filter((x) => x !== h), h].slice(-HISTORY_MAX) };
   }
 
   private async handleError(err: unknown): Promise<boolean> {
@@ -485,20 +603,24 @@ export class EntrySync {
     const s = fieldsFromEntry(server);
     const { synced, fields } = this.draft;
     const base = synced;
-    const sameAsBase = base !== null && s.title === base.title && s.body === base.body;
-    const sameAsMine = s.title === fields.title && s.body === fields.body;
-    if ((sameAsBase || sameAsMine) && this.rebases < MAX_REBASES) {
+    const sameAsBase = base !== null && sameText(s, base);
+    const sameAsMine = sameText(s, fields);
+    // A text this editor produced earlier, e.g. a device snapshot another tab flushed first.
+    const ownEarlier = (this.draft.history ?? []).includes(textHash(s));
+    if ((sameAsBase || sameAsMine || ownEarlier) && this.rebases < MAX_REBASES) {
       this.rebases++;
+      const merged = this.mergeMeta(fields, base ?? s, s);
       this.draft = {
         ...this.draft,
         version: server.version,
         synced: s,
-        fields: this.mergeMeta(fields, base ?? s, s),
+        // Never let the rebase pull server text over ours.
+        fields: { ...merged, title: fields.title, body: fields.body },
       };
       this.rerun = true;
       return true;
     }
-    if (sameAsBase || sameAsMine) return this.backoff('retrying', new Error('Version kept changing'));
+    if (sameAsBase || sameAsMine || ownEarlier) return this.backoff('retrying', new Error('Version kept changing'));
     this.conflict = { kind: 'diverged', server };
     this.setStatus('conflict');
     await this.persistLocal();
@@ -558,6 +680,7 @@ export class EntrySync {
     this.clearTimer('localTimer');
     if (this.disposed) return;
     if (this.isDirty() || this.conflict) {
+      this.remember(this.draft.fields);
       const d = this.draft;
       await this.safeStore(() => this.deps.store.save(d));
     }

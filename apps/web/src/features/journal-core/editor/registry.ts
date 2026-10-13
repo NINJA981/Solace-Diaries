@@ -5,13 +5,36 @@
  */
 import type { Entry } from '@solace/shared';
 import { api, ApiRequestError } from '@/lib/api';
-import { createDraftStore } from './draftStore';
+import { clearUserDrafts, createDraftStore } from './draftStore';
 import { EntrySync, type Draft, type DraftStore, type EngineDeps, type Transport } from './syncEngine';
 
+/** The API answers a create with 201 + `X-Entry-Created: true`, or 200 + `false` for an existing id. */
+function wasCreated(res: Response): boolean {
+  const header = res.headers.get('x-entry-created');
+  if (header === 'true') return true;
+  if (header === 'false') return false;
+  return res.status === 201;
+}
+
 export const apiTransport: Transport = {
-  create: (input) => api.createEntry({ body: input }) as Promise<Entry>,
-  update: (id, patch, version) =>
-    api.updateEntry({ params: { id }, body: patch, headers: { 'If-Match': String(version) } }) as Promise<Entry>,
+  create: async (input, opts) => {
+    let created = false;
+    const entry = (await api.createEntry({
+      body: input,
+      keepalive: opts?.keepalive,
+      onResponse: (res) => {
+        created = wasCreated(res);
+      },
+    })) as Entry;
+    return { entry, created };
+  },
+  update: (id, patch, version, opts) =>
+    api.updateEntry({
+      params: { id },
+      body: patch,
+      headers: { 'If-Match': String(version) },
+      keepalive: opts?.keepalive,
+    }) as Promise<Entry>,
   get: async (id) => {
     try {
       return (await api.getEntry({ params: { id } })) as Entry;
@@ -25,6 +48,8 @@ export const apiTransport: Transport = {
 type Slot = { engine: EntrySync; refs: number; userId: string };
 const slots = new Map<string, Slot>();
 const storeCache = new Map<string, DraftStore>();
+/** Entries deleted in this session: the background flusher must never re-create them. */
+const discarded = new Set<string>();
 let savedListener: ((entry: Entry, created: boolean) => void) | null = null;
 
 export function draftStoreFor(userId: string): DraftStore {
@@ -96,6 +121,7 @@ export async function flushPendingDrafts(userId: string): Promise<Draft[]> {
   }
   await Promise.all(
     drafts.map(async (d) => {
+      if (discarded.has(d.id)) return;
       const open = slots.get(d.id);
       if (open) {
         await open.engine.sync();
@@ -121,24 +147,81 @@ export function syncAllEngines(): void {
   for (const { engine } of slots.values()) void engine.sync();
 }
 
-/** Flush every live engine right now (pagehide). Best effort: the draft is already local. */
-export function flushAllEngines(): void {
-  for (const { engine } of slots.values()) void engine.flush();
+/**
+ * Flush every live engine right now (pagehide, tab hidden). Best effort: the draft is already
+ * local. `keepalive` lets small writes finish after the page is gone.
+ */
+export function flushAllEngines(opts?: { keepalive?: boolean }): void {
+  for (const { engine } of slots.values()) void engine.flush(opts);
 }
 
 /**
- * Throw away an entry's local state (it is being deleted): stop its engine without the
- * final flush and drop the device draft.
+ * Delete an entry for good, in an order that can't resurrect it:
+ *  1. block the background flusher and stop the engine (no timers, retries or follow-ups),
+ *  2. drop the device draft (the offline queue item),
+ *  3. let any in-flight POST/PATCH land, so the DELETE can't overtake a first save,
+ *  4. DELETE on the server whenever a create may have reached it (the API's DELETE is
+ *     idempotent, so a row that never landed is fine).
+ * If the DELETE fails it throws; calling again retries just the DELETE.
  */
-export async function discardEntryLocally(userId: string, id: string): Promise<void> {
+export async function deleteEntryEverywhere(
+  userId: string,
+  id: string,
+  deleteOnServer: (id: string) => Promise<void>,
+): Promise<void> {
+  discarded.add(id);
   const slot = slots.get(id);
   if (slot) {
-    slot.engine.dispose();
     slots.delete(id);
+    slot.engine.dispose();
   }
   try {
     await draftStoreFor(userId).remove(id);
   } catch {
     /* storage unavailable */
   }
+  if (slot) await slot.engine.settle();
+  if (slot && !slot.engine.mayExistOnServer()) return;
+  try {
+    await deleteOnServer(id);
+  } catch (err) {
+    // Nothing local is left to resurrect it; let a retry (or a later visit) work normally.
+    discarded.delete(id);
+    throw err;
+  }
+}
+
+/**
+ * Forget everything this device holds for a user (sign-out, account deletion): stop their
+ * engines without a final write, then clear their drafts, offline queue and Today pointer.
+ */
+export async function forgetUserOnDevice(
+  userId: string,
+  opts: { keepUnsyncedDrafts?: boolean } = {},
+): Promise<void> {
+  for (const [id, slot] of slots) {
+    if (slot.userId !== userId) continue;
+    slots.delete(id);
+    slot.engine.dispose();
+  }
+  // Synced drafts are already gone (an acknowledged save removes its draft), so whatever is
+  // left is text the server never received; keep it unless the account itself is gone.
+  if (opts.keepUnsyncedDrafts) return;
+  try {
+    await clearUserDrafts(userId);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Best-effort sync of everything unsaved for a user, bounded by `timeoutMs` (used before an
+ * explicit sign-out, while the session is still valid).
+ */
+export async function flushUserDrafts(userId: string, timeoutMs = 4000): Promise<void> {
+  const work = (async () => {
+    await Promise.all([...slots.values()].filter((s) => s.userId === userId).map((s) => s.engine.flush()));
+    await flushPendingDrafts(userId);
+  })().catch(() => undefined);
+  await Promise.race([work, new Promise((r) => setTimeout(r, timeoutMs))]);
 }
