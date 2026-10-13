@@ -95,6 +95,8 @@ export const entries = pgTable(
     /** Concatenated photo descriptions, kept here so the generated tsvector can index them. */
     attachmentText: text('attachment_text').notNull().default(''),
     promptId: uuid('prompt_id'),
+    /** A wordless entry: chosen colour, texture and optional doodle (SVG path data), or null. */
+    wordless: jsonb('wordless').$type<{ color: string; texture: string; doodle?: string } | null>(),
     search: tsvector('search').generatedAlwaysAs(
       sql`setweight(to_tsvector('english', coalesce(title, '')), 'A') || setweight(to_tsvector('english', coalesce(body, '')), 'B') || setweight(to_tsvector('english', coalesce(attachment_text, '')), 'C')`,
     ),
@@ -267,6 +269,10 @@ export const chatThreads = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
     title: text('title').notNull().default('New reflection'),
+    /** Guided reflection script for this thread; 'open' is a free conversation. */
+    mode: text('mode', { enum: ['open', 'gratitude', 'reframe', 'unsent_letter', 'sunday_review'] })
+      .notNull()
+      .default('open'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -374,4 +380,157 @@ export const aiUsage = pgTable(
     tokens: integer('tokens').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] })],
+).enableRLS();
+
+// ───────────────────────── v3: time & memory ─────────────────────────
+
+/** Letters to future you, sealed until unlock_at. The body never leaves the server while sealed. */
+export const capsules = pgTable(
+  'capsules',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    unlockAt: timestamp('unlock_at', { withTimezone: true }).notNull(),
+    openedAt: timestamp('opened_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('capsules_user_unlock_idx').on(t.userId, t.unlockAt)],
+).enableRLS();
+
+// ───────────────────────── v3: AI magic ─────────────────────────
+
+/** Monthly letters written in the person's own voice from older entries. */
+export const pastLetters = pgTable(
+  'past_letters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    /** YYYY-MM the letter was written for; one per month. */
+    month: text('month').notNull(),
+    content: text('content').notNull(),
+    citations: jsonb('citations').$type<Citation[]>().notNull().default(sql`'[]'::jsonb`),
+    replyEntryId: uuid('reply_entry_id').references(() => entries.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('past_letters_user_month_uq').on(t.userId, t.month)],
+).enableRLS();
+
+/** Named eras of a life, detected from entry summaries by a batch job. */
+export const chapters = pgTable(
+  'chapters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    fromDate: date('from_date', { mode: 'string' }).notNull(),
+    toDate: date('to_date', { mode: 'string' }),
+    /** Theme colour role: mood-1..mood-5, accent or ai. */
+    color: text('color').notNull(),
+    cast: text('cast').array().notNull().default(sql`'{}'::text[]`),
+    keyEntryIds: uuid('key_entry_ids').array().notNull().default(sql`'{}'::uuid[]`),
+    /** Latest entry updated_at the chapters were built from, to detect staleness. */
+    sourceWatermark: timestamp('source_watermark', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('chapters_user_from_idx').on(t.userId, t.fromDate)],
+).enableRLS();
+
+/** Weekly, cited observations of change ("In March you wrote X; lately Y"). */
+export const growthNotes = pgTable(
+  'growth_notes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    weekStart: date('week_start', { mode: 'string' }).notNull(),
+    text: text('text').notNull(),
+    citations: jsonb('citations').$type<Citation[]>().notNull().default(sql`'[]'::jsonb`),
+    createdAt: createdAt(),
+  },
+  (t) => [index('growth_notes_user_week_idx').on(t.userId, t.weekStart)],
+).enableRLS();
+
+// ───────────────────────── v3: habits & growth ─────────────────────────
+
+export const intentions = pgTable(
+  'intentions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    kind: text('kind', { enum: ['habit', 'goal'] }).notNull(),
+    cadence: text('cadence', { enum: ['daily', 'weekly', 'none'] })
+      .notNull()
+      .default('none'),
+    status: text('status', { enum: ['active', 'paused', 'done'] })
+      .notNull()
+      .default('active'),
+    source: text('source', { enum: ['user', 'detected'] })
+      .notNull()
+      .default('user'),
+    memoryId: uuid('memory_id').references(() => memories.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('intentions_user_status_idx').on(t.userId, t.status)],
+).enableRLS();
+
+export const intentionCheckins = pgTable(
+  'intention_checkins',
+  {
+    intentionId: uuid('intention_id')
+      .notNull()
+      .references(() => intentions.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).notNull(),
+    note: text('note'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.intentionId, t.date] }),
+    index('intention_checkins_user_idx').on(t.userId),
+  ],
+).enableRLS();
+
+// ───────────────────────── v3: teen mode ─────────────────────────
+
+/**
+ * Parental consent for 13–17 accounts. Stores hashes only: the parent's email and the
+ * one-time link token are never kept in clear text.
+ */
+export const parentalConsents = pgTable(
+  'parental_consents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    parentEmailHash: text('parent_email_hash').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    status: text('status', { enum: ['pending', 'granted', 'denied', 'revoked'] })
+      .notNull()
+      .default('pending'),
+    policyVersion: text('policy_version').notNull(),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('parental_consents_token_uq').on(t.tokenHash),
+    index('parental_consents_user_idx').on(t.userId),
+  ],
 ).enableRLS();

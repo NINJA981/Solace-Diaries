@@ -6,6 +6,7 @@
 import type { z } from 'zod';
 import * as c from './contract';
 import * as u from './usage';
+import * as v from './v3';
 
 type Def = {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -56,6 +57,45 @@ export const routes = {
 
   todayPrompt: { method: 'GET', path: '/prompts/today', query: c.statsQuery, response: c.todayPromptResponse },
   dismissPrompt: { method: 'POST', path: '/prompts/:id/dismiss', response: c.dailyPrompt },
+
+  // ── v3: time & memory ──
+  listCapsules: { method: 'GET', path: '/capsules', response: v.capsuleList },
+  createCapsule: { method: 'POST', path: '/capsules', body: v.createCapsuleInput, response: v.capsule },
+  /** Only works once unlockAt has passed; returns the opened capsule with its body. */
+  openCapsule: { method: 'POST', path: '/capsules/:id/open', response: v.capsule },
+  deleteCapsule: { method: 'DELETE', path: '/capsules/:id', response: null },
+  resurface: { method: 'GET', path: '/resurface', query: c.statsQuery, response: v.resurfaceResponse },
+  unwrapped: { method: 'GET', path: '/unwrapped', query: v.unwrappedQuery, response: v.unwrapped },
+
+  // ── v3: AI magic (budget-aware) ──
+  listLetters: { method: 'GET', path: '/letters', response: v.pastLetterList },
+  /** Writes this month's letter from your past self (idempotent per month; spends AI budget). */
+  writeLetter: { method: 'POST', path: '/letters', query: c.statsQuery, response: v.pastLetter },
+  replyToLetter: { method: 'POST', path: '/letters/:id/reply', body: v.replyToLetterInput, response: c.entry },
+  listChapters: { method: 'GET', path: '/chapters', response: v.chapterList },
+  /** Queues a chapter refresh (batch job); returns the current list immediately. */
+  refreshChapters: { method: 'POST', path: '/chapters/refresh', response: v.chapterList },
+  listGrowthNotes: { method: 'GET', path: '/growth', response: v.growthNoteList },
+
+  // ── v3: habits & growth ──
+  listIntentions: { method: 'GET', path: '/intentions', response: v.intentionList },
+  intentionSuggestions: { method: 'GET', path: '/intentions/suggestions', response: v.intentionSuggestions },
+  createIntention: { method: 'POST', path: '/intentions', body: v.createIntentionInput, response: v.intention },
+  updateIntention: { method: 'PATCH', path: '/intentions/:id', body: v.updateIntentionInput, response: v.intention },
+  deleteIntention: { method: 'DELETE', path: '/intentions/:id', response: null },
+  checkIn: { method: 'POST', path: '/intentions/:id/checkins', body: v.checkinInput, response: v.intention },
+  undoCheckIn: { method: 'DELETE', path: '/intentions/:id/checkins/:date', response: v.intention },
+  weeklyRitual: { method: 'POST', path: '/rituals/weekly', body: v.weeklyRitualInput, response: v.weeklyRitualResult },
+  companion: { method: 'GET', path: '/companion', query: c.statsQuery, response: v.companionResponse },
+  correlations: { method: 'GET', path: '/insights/correlations', query: c.statsQuery, response: v.correlationList },
+
+  // ── v3: teen mode ──
+  /** Age gate: sets the age band and mode; 403 `age_restricted` under 13. */
+  confirmAge: { method: 'POST', path: '/me/age', body: v.ageCheckInput, response: c.profile },
+  requestConsent: { method: 'POST', path: '/me/consent', body: v.consentRequestInput, response: v.consentRequestResult },
+  /** Public (no auth): the parent's consent page. */
+  viewConsent: { method: 'GET', path: '/consent/:token', response: v.consentView },
+  decideConsent: { method: 'POST', path: '/consent/:token', body: v.consentDecisionInput, response: v.consentView },
 } as const satisfies Record<string, Def>;
 
 export type RouteName = keyof typeof routes;
