@@ -1,0 +1,113 @@
+/* Journaling features: platform niceties with graceful fallbacks. */
+
+/* Auto-growing writing surface. Browsers without field-sizing get a JS fallback (Editor.tsx). */
+@layer components {
+  .journal-autogrow {
+    field-sizing: content;
+  }
+}
+
+/* The entry title morphs from a list card into the editor (View Transitions, progressive). */
+::view-transition-group(entry-title) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Long timelines: skip layout/paint for month groups far off-screen. */
+.journal-month-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 360px;
+}
+
+/* A calm caret in the writing surface. */
+.journal-caret {
+  caret-color: var(--lamp);
+}
+
+/* The writing surface shows focus with a quiet lamp-colored edge (its own border), not a box. */
+.journal-writing:focus-visible {
+  outline: none;
+}
+
+/* Streaming answer caret. */
+@keyframes solace-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+.solace-caret {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: var(--dusk);
+  animation: solace-caret 1.1s ease-in-out infinite;
+}
+
+/* While streaming, the caret sits at the end of the last block of the answer. */
+.solace-streaming > :last-child::after {
+  content: '';
+  display: inline-block;
+  width: 0.5ch;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: var(--dusk);
+  animation: solace-caret 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .solace-caret,
+  .solace-streaming > :last-child::after {
+    animation: none;
+  }
+}
+
+/* Citation markers inside SafeMarkdown answers (links to a reserved .invalid host). */
+.solace-answer a[href^='https://solace.invalid/cite/'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35em;
+  height: 1.35em;
+  margin-inline: 0.1em;
+  padding-inline: 0.3em;
+  border-radius: 999px;
+  background: var(--dusk-soft);
+  color: var(--dusk);
+  font-family: var(--font-sans);
+  font-size: 0.68em;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: super;
+  text-decoration: none;
+  position: relative;
+}
+.solace-answer a[href^='https://solace.invalid/cite/']::after {
+  /* Comfortable hit area without changing the visual size. */
+  content: '';
+  position: absolute;
+  inset: -0.6em -0.35em;
+}
+.solace-answer a[href^='https://solace.invalid/cite/']:hover {
+  background: var(--dusk);
+  color: var(--ink);
+}

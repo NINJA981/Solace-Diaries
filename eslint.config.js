@@ -18,6 +18,14 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['apps/web/scripts/**/*.mjs', '**/build.mjs'],
+    languageOptions: { globals: { ...globals.node, document: 'readonly' } },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },

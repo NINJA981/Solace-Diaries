@@ -1,0 +1,9 @@
+# Solace
+
+> Solace is a private journal that remembers. You write entries; Solace notes the people, places, plans and moods in them, lets you ask questions answered only from your own entries (with every source linked), and shows gentle insights such as streaks, mood over time and a weekly letter.
+
+- [Home](/): what Solace does and how it handles your data
+- [Privacy](/privacy): what is stored, where, who processes it (Google Gemini API), export and deletion
+- [Terms](/terms): plain-language terms of use
+
+Journal content is private and requires an account; there is no public content to index.

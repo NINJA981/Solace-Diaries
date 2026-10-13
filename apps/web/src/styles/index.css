@@ -1,2 +1,232 @@
 @import "tailwindcss";
 @import "./tokens.css";
+
+/*
+ * Self-hosted variable fonts (no third-party font requests). The latin files are
+ * preloaded from index.html by the `preload-fonts` Vite plugin; latin-ext only downloads
+ * when a page actually uses those characters.
+ */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fonts/newsreader/newsreader-latin-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fonts/newsreader/newsreader-latin-ext-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fonts/newsreader/newsreader-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fonts/newsreader/newsreader-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fonts/instrument-sans/instrument-sans-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fonts/instrument-sans/instrument-sans-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Form-control boundary: ≥3:1 against the control fill in both themes (WCAG 1.4.11). */
+@theme {
+  --color-control-edge: color-mix(in oklab, var(--fg-faint) 80%, var(--sunken));
+}
+
+@layer base {
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Route changes move focus to the page heading; it shouldn't show a ring for that. */
+  [data-route-focus]:focus:not(:focus-visible) {
+    outline: none;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Markdown rendered by SafeMarkdown (weekly letters, Reflect answers). */
+.md {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.md > * + * {
+  margin-top: 0.75em;
+}
+.md :is(h1, h2, h3, h4) {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  line-height: 1.25;
+  margin-top: 1.2em;
+}
+.md h1 { font-size: 1.35em; }
+.md h2 { font-size: 1.2em; }
+.md :is(h3, h4) { font-size: 1.05em; }
+.md :is(ul, ol) {
+  padding-left: 1.25em;
+}
+.md ul { list-style: disc; }
+.md ol { list-style: decimal; }
+.md li + li { margin-top: 0.3em; }
+.md li::marker { color: var(--fg-faint); }
+.md strong { font-weight: 600; color: var(--fg); }
+.md em { font-style: italic; }
+.md a {
+  color: var(--lamp);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.md blockquote {
+  border-left: 2px solid var(--dusk);
+  padding-left: 1em;
+  color: var(--fg-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+.md code {
+  font-size: 0.9em;
+  background: var(--sunken);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* Command palette (cmdk) */
+[cmdk-group-heading] {
+  padding: 0.75rem 0.75rem 0.375rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--fg-faint);
+}
+[cmdk-item] {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-control);
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
+}
+[cmdk-item] svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+[cmdk-item][data-selected='true'] {
+  background: var(--sunken);
+  color: var(--fg);
+}
+[cmdk-item][data-selected='true'] svg {
+  color: var(--lamp);
+}
+[cmdk-empty] {
+  padding: 1.5rem 0.75rem;
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+/* Landing hero: ambient twinkle runs only while the scene is on screen. */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.85; }
+}
+@keyframes star-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+.remembering .dust-twinkle {
+  animation: twinkle 4.8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.remembering[data-phase='done'] .star {
+  animation: star-breathe 5.5s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.remembering[data-visible='true'] :is(.dust-twinkle, .star) {
+  animation-play-state: running;
+}
+
+/* Fallback fonts take the same x-height as our web fonts while those load (less shift). */
+html {
+  font-size-adjust: from-font;
+  interpolate-size: allow-keywords;
+}
+
+/* FAQ disclosure: animate open/close where supported (instant elsewhere). */
+details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition: block-size 260ms ease, content-visibility 260ms allow-discrete;
+}
+details[open]::details-content {
+  block-size: auto;
+}
+
+/* Route changes: a short cross-fade via React Router's `viewTransition` links. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  details::details-content {
+    transition: none;
+  }
+}

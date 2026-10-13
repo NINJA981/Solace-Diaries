@@ -3,10 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Solace — a journal that remembers</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131a2c" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f3f8" />
+    <script src="/theme-init.js"></script>
+    <title>Solace — a private journal that remembers</title>
+    <meta
+      name="description"
+      content="Solace is a private journal that remembers. Write freely, then ask your past a question and get answers drawn from your own entries, with every source linked."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Solace" />
+    <meta property="og:title" content="Solace — a private journal that remembers" />
+    <meta
+      property="og:description"
+      content="Write freely. Solace remembers the people, places and patterns in your entries, so you can ask your past a question."
+    />
+    <meta property="og:image" content="%VITE_SITE_URL%/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Solace wordmark beside a small constellation of stars on a deep indigo night." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Solace — a private journal that remembers" />
+    <meta
+      name="twitter:description"
+      content="Write freely. Solace remembers the people, places and patterns in your entries, so you can ask your past a question."
+    />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Solace",
+        "description": "A private journal that remembers. Write freely, then ask your past a question and get answers drawn from your own entries, with every source linked.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires JavaScript"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui, sans-serif">Solace needs JavaScript to run. Please enable it and reload.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
