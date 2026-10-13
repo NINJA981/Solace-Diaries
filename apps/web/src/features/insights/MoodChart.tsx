@@ -127,7 +127,7 @@ export const MoodChart = memo(function MoodChart({ trend }: { trend: WeekMood[] 
         onBlur={() => setActive(null)}
         className="relative rounded-control"
       >
-        <svg width={width} height={height} onPointerMove={onPointer} onPointerLeave={() => setActive(null)} aria-hidden="true" className="block touch-pan-y">
+        <svg width={width} height={height} onPointerMove={onPointer} onPointerLeave={() => setActive(null)} aria-hidden="true" className="block max-w-full touch-pan-y">
           {/* Valence scale: hairline grid, neutral baseline slightly stronger. */}
           {[2, 1, 0, -1, -2].map((s) => (
             <line

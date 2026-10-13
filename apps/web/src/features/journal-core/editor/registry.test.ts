@@ -76,10 +76,10 @@ vi.mock('@/lib/api', () => {
   return { api, ApiRequestError };
 });
 
-const { apiTransport, deleteEntryEverywhere, draftStoreFor, flushPendingDrafts, acquireEngine, releaseEngine, forgetUserOnDevice, peekEngine } =
+const { apiTransport, deleteEntryEverywhere, draftStoreFor, flushPendingDrafts, acquireEngine, releaseEngine, forgetUserOnDevice, peekEngine, rescueAllEngines } =
   await import('./registry');
 const { EntrySync, emptyFields, textHash } = await import('./syncEngine');
-const { loadTodayPointer, saveTodayPointer } = await import('./draftStore');
+const { loadTodayPointer, saveTodayPointer, rescueDraft } = await import('./draftStore');
 const { api } = await import('@/lib/api');
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -260,5 +260,59 @@ describe('forgetting a user on this device (sign-out, account deletion)', () => 
     expect(calls).toEqual([]);
     expect(await draftStoreFor('user-d').list()).toHaveLength(1);
     expect(await loadTodayPointer('user-d')).toBeDefined();
+  });
+});
+
+describe('last-moment rescue (the page goes away mid-sentence)', () => {
+  const rescueKey = (user: string, id: string) => `solace:rescue:${user}:${id}`;
+
+  it('keeps words typed just before unload, though the device draft never caught up', async () => {
+    const id = 'eeeeeeee-0000-4000-8000-000000000011';
+    const store = draftStoreFor('user-r');
+    const before = mk(id, 'first words', { updatedAt: 1 });
+    await store.save(before); // what reached IndexedDB earlier
+    const engine = acquireEngine('user-r', before);
+    engine.edit({ body: 'first words and the last ones' }); // the local debounce hasn't fired
+    rescueAllEngines(); // pagehide: synchronous
+    // The page dies here: its engines stop and no asynchronous write completes.
+    await forgetUserOnDevice('user-r', { keepUnsyncedDrafts: true });
+    expect(localStorage.getItem(rescueKey('user-r', id))).not.toBeNull();
+
+    // Next load: the rescued words win and move into the store.
+    const loaded = await store.load(id);
+    expect(loaded?.fields.body).toBe('first words and the last ones');
+    expect(localStorage.getItem(rescueKey('user-r', id))).toBeNull();
+    expect((await store.list()).map((d) => d.fields.body)).toEqual(['first words and the last ones']);
+    await store.remove(id);
+  });
+
+  it('never lets an older rescued copy override a newer device draft, and clears it on save', async () => {
+    const id = 'eeeeeeee-0000-4000-8000-000000000012';
+    const store = draftStoreFor('user-r');
+    rescueDraft('user-r', mk(id, 'old', { updatedAt: 5 }));
+    await store.save(mk(id, 'newer', { updatedAt: 10 }));
+    expect(localStorage.getItem(rescueKey('user-r', id))).toBeNull();
+
+    rescueDraft('user-r', mk(id, 'stale', { updatedAt: 7 }));
+    expect((await store.load(id))?.fields.body).toBe('newer');
+    expect(localStorage.getItem(rescueKey('user-r', id))).toBeNull();
+
+    // A save of an older state never drops a rescue holding a later edit.
+    rescueDraft('user-r', mk(id, 'latest', { updatedAt: 20 }));
+    await store.save(mk(id, 'newer', { updatedAt: 10 }));
+    expect(localStorage.getItem(rescueKey('user-r', id))).not.toBeNull();
+    expect((await store.load(id))?.fields.body).toBe('latest');
+    await store.remove(id);
+  });
+
+  it('only rescues engines with unsaved words, and forgetting the account erases rescued copies', async () => {
+    const id = 'eeeeeeee-0000-4000-8000-000000000013';
+    const engine = acquireEngine('user-s', mk(id, 'unsent'));
+    rescueAllEngines();
+    expect(localStorage.getItem(rescueKey('user-s', id))).not.toBeNull();
+    await forgetUserOnDevice('user-s');
+    expect(localStorage.getItem(rescueKey('user-s', id))).toBeNull();
+    expect(await draftStoreFor('user-s').list()).toEqual([]);
+    expect(engine.rescueDraft()).toBeNull(); // disposed
   });
 });

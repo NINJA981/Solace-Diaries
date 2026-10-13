@@ -333,6 +333,17 @@ export class EntrySync {
     await this.sync();
   }
 
+  /**
+   * The draft as it is right now, if it holds words the server hasn't acknowledged (else
+   * null), with its text remembered as our own. Synchronous, for a last-moment rescue when
+   * the page is going away and an IndexedDB write may never finish.
+   */
+  rescueDraft(): Draft | null {
+    if (this.disposed || !(this.isDirty() || this.conflict)) return null;
+    this.remember(this.draft.fields);
+    return this.draft;
+  }
+
   /** Make sure the entry exists server-side (needed before uploading photos). */
   async ensureCreated(): Promise<boolean> {
     if (this.draft.version !== null) return true;

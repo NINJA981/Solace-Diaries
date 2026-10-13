@@ -5,7 +5,7 @@
  */
 import type { Entry } from '@solace/shared';
 import { api, ApiRequestError } from '@/lib/api';
-import { clearUserDrafts, createDraftStore } from './draftStore';
+import { clearUserDrafts, createDraftStore, rescueDraft } from './draftStore';
 import { EntrySync, type Draft, type DraftStore, type EngineDeps, type Transport } from './syncEngine';
 
 /** The API answers a create with 201 + `X-Entry-Created: true`, or 200 + `false` for an existing id. */
@@ -153,6 +153,18 @@ export function syncAllEngines(): void {
  */
 export function flushAllEngines(opts?: { keepalive?: boolean }): void {
   for (const { engine } of slots.values()) void engine.flush(opts);
+}
+
+/**
+ * Synchronously stash every live engine's unsaved words (pagehide, tab hidden). IndexedDB
+ * writes and keepalive requests are asynchronous and may not finish once the page is going
+ * away; the next load adopts what was rescued here.
+ */
+export function rescueAllEngines(): void {
+  for (const { engine, userId } of slots.values()) {
+    const draft = engine.rescueDraft();
+    if (draft) rescueDraft(userId, draft);
+  }
 }
 
 /**

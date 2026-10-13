@@ -3,7 +3,7 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { Entry } from '@solace/shared';
 import { useSession } from '@/lib/session';
 import { invalidateEntryDerived, isNotFound, qk, useEntry } from '../queries';
-import { acquireEngine, draftStoreFor, flushAllEngines, releaseEngine, setSavedListener } from './registry';
+import { acquireEngine, draftStoreFor, flushAllEngines, releaseEngine, rescueAllEngines, setSavedListener } from './registry';
 import { emptyFields, fieldsFromEntry, type Draft, type EngineSnapshot, type EntrySync } from './syncEngine';
 
 let listInvalidateTimer: ReturnType<typeof setTimeout> | null = null;
@@ -123,13 +123,19 @@ export function useEntryEditor(id: string, opts: Options) {
     if (engine && query.data && query.data.id === engine.id) engine.adoptServer(query.data);
   }, [engine, query.data]);
 
-  // Leaving the page or hiding the tab flushes immediately (the draft is already local), with
-  // keepalive so a small write can finish after the page is gone.
+  // Leaving the page or hiding the tab stashes unsaved words synchronously, then flushes
+  // immediately, with keepalive so a small write can finish after the page is gone.
   useEffect(() => {
+    // The synchronous rescue comes first: the asynchronous writes may never finish.
     const onHide = () => {
-      if (document.visibilityState === 'hidden') flushAllEngines({ keepalive: true });
+      if (document.visibilityState !== 'hidden') return;
+      rescueAllEngines();
+      flushAllEngines({ keepalive: true });
     };
-    const onPageHide = () => flushAllEngines({ keepalive: true });
+    const onPageHide = () => {
+      rescueAllEngines();
+      flushAllEngines({ keepalive: true });
+    };
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('pagehide', onPageHide);
     return () => {
