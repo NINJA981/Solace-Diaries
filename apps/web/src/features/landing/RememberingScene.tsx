@@ -211,11 +211,8 @@ export function RememberingScene({ className }: { className?: string }) {
       ref={(el) => {
         if (el) words.current.set(id, el);
       }}
-      className={clsx(
-        'rounded-[4px] bg-[linear-gradient(var(--lamp-soft),var(--lamp-soft))] bg-no-repeat box-decoration-clone px-[2px] py-[1px]',
-        'transition-[background-size,color] duration-[900ms] ease-out',
-        lit.has(id) ? 'bg-[length:100%_100%] text-fg' : 'bg-[length:0%_100%]',
-      )}
+      // A lamp hairline with a soft glow under the phrase, drawn in as its star lights.
+      className={clsx('passage-mark', lit.has(id) && 'is-lit')}
     >
       {children}
     </span>
@@ -305,7 +302,7 @@ export function RememberingScene({ className }: { className?: string }) {
       </div>
 
       <div className="relative mt-5 sm:mt-7">
-        <p className="font-serif text-[0.95rem] text-fg-faint italic">Tuesday, 14 October</p>
+        <p className="font-serif text-[0.95rem] text-fg-faint italic">14 October</p>
         <blockquote className="mt-2 font-serif text-[1.1875rem] leading-[1.7] text-fg-muted sm:text-[1.3125rem]">
           <p>
             Walked down to {word('lake', 'the lake')} with {word('maya', 'Maya')} after work. First {word('run', 'run')}{' '}

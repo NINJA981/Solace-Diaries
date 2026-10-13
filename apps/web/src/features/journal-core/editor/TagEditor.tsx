@@ -1,5 +1,5 @@
 import { memo, useId, useState } from 'react';
-import { X } from 'lucide-react';
+import { Hash, X } from 'lucide-react';
 import { LIMITS } from '@solace/shared';
 
 export function normalizeTag(raw: string): string {
@@ -29,11 +29,14 @@ export const TagEditor = memo(function TagEditor({ tags, onChange }: { tags: str
   };
 
   return (
-    <div className="min-w-0">
-      <label htmlFor={id} className="mb-2 block text-sm font-medium text-fg-muted">
+    <div className="min-w-0 flex-1 basis-40">
+      <label htmlFor={id} className="sr-only">
         Tags
       </label>
       <ul className="flex flex-wrap items-center gap-2" aria-label="Tags on this entry">
+        <li aria-hidden="true" className="-mr-1 grid h-9 place-items-center pl-2 text-fg-faint max-sm:h-11">
+          <Hash className="size-4" />
+        </li>
         {tags.map((t) => (
           <li key={t}>
             <span className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-sunken pr-1 pl-3 text-sm text-fg">
@@ -52,7 +55,7 @@ export const TagEditor = memo(function TagEditor({ tags, onChange }: { tags: str
             </span>
           </li>
         ))}
-        <li className="min-w-[10rem] flex-1">
+        <li className="min-w-[8rem] flex-1">
           <input
             id={id}
             value={value}

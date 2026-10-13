@@ -84,7 +84,7 @@ function ToastView({ item }: { item: ToastItem }) {
       {item.action && (
         <button
           type="button"
-          className="h-8 shrink-0 rounded-control px-2.5 font-medium text-lamp hover:bg-lamp-soft"
+          className="h-8 shrink-0 rounded-control px-2.5 font-medium text-lamp hover:bg-lamp-soft max-sm:min-h-11"
           onClick={() => {
             item.action?.onClick();
             dismiss(item.id);
@@ -96,7 +96,7 @@ function ToastView({ item }: { item: ToastItem }) {
       <button
         type="button"
         aria-label="Dismiss notification"
-        className="grid size-8 shrink-0 place-items-center rounded-control text-fg-faint hover:bg-sunken hover:text-fg"
+        className="grid size-8 shrink-0 place-items-center rounded-control text-fg-faint hover:bg-sunken hover:text-fg max-sm:size-11"
         onClick={() => dismiss(item.id)}
       >
         <X className="size-4" aria-hidden="true" />

@@ -17,9 +17,10 @@ const variants: Record<ButtonVariant, string> = {
   danger: 'bg-danger text-ink hover:brightness-[1.06] active:brightness-95',
 };
 
+// Below `sm` every control is at least 44px tall (touch). min-* so callers' larger heights still win.
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm',
-  md: 'h-10 px-4 text-sm',
+  sm: 'h-8 px-3 text-sm max-sm:min-h-11',
+  md: 'h-10 px-4 text-sm max-sm:min-h-11',
 };
 
 export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', className?: string) {
@@ -76,6 +77,7 @@ export function IconButton({ label, icon, variant = 'ghost', size = 'md', classN
         base,
         variants[variant],
         size === 'sm' ? 'size-8' : 'size-10',
+        'max-sm:min-h-11 max-sm:min-w-11',
         '[&_svg]:size-[18px]',
         className,
       )}

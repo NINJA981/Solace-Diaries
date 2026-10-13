@@ -43,7 +43,8 @@ export function Timeline({ filters, today, empty }: Props) {
 
   if (q.isPending) {
     return (
-      <div className="space-y-3" aria-busy="true" aria-label="Loading entries">
+      <div className="space-y-3" role="status" aria-busy="true">
+        <span className="sr-only">Loading entries</span>
         {[0, 1, 2, 3].map((i) => (
           <EntryCardSkeleton key={i} />
         ))}

@@ -25,6 +25,8 @@ export default function JournalPage() {
   const onMode = useCallback((m: SearchMode) => update({ mode: m === 'keyword' ? 'keyword' : undefined }), [update]);
   const clearFilters = () => update({ mood: undefined, tag: undefined, from: undefined, to: undefined });
   const searching = q.trim().length > 0;
+  // Search and filters can't do anything for an empty journal; the empty state says what to do instead.
+  const nothingYet = stats.data?.totalEntries === 0 && !hasFilters && !searching;
   const calMonth = month ? `${month}-01` : monthStart(today);
 
   const emptyJournal = hasFilters ? (
@@ -53,9 +55,23 @@ export default function JournalPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-16 sm:px-8 sm:pt-10">
-      <h1 className="mb-6 font-serif text-3xl text-fg sm:text-4xl">Journal</h1>
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <h1 className="font-serif text-3xl text-fg sm:text-4xl">Journal</h1>
+        {!searching && !nothingYet && (
+          <Tabs
+            label="View"
+            idPrefix="journal-view"
+            value={view}
+            onValueChange={(v) => update({ view: (v as JournalView) === 'calendar' ? 'calendar' : undefined })}
+            items={[
+              { value: 'timeline', label: 'Timeline', controls: 'journal-panel' },
+              { value: 'calendar', label: 'Calendar', controls: 'journal-panel' },
+            ]}
+          />
+        )}
+      </header>
 
-      <div className="space-y-3">
+      <div className={nothingYet ? 'hidden' : 'space-y-3'}>
         <SearchBar q={q} mode={mode} onQuery={onQuery} onMode={onMode} />
         <Filters
           filters={filters}
@@ -72,19 +88,7 @@ export default function JournalPage() {
           <SearchResults q={q} mode={mode} filters={filters} today={today} onMode={onMode} />
         ) : (
           <>
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <Tabs
-                label="View"
-                idPrefix="journal-view"
-                value={view}
-                onValueChange={(v) => update({ view: (v as JournalView) === 'calendar' ? 'calendar' : undefined })}
-                items={[
-                  { value: 'timeline', label: 'Timeline', controls: 'journal-panel' },
-                  { value: 'calendar', label: 'Calendar', controls: 'journal-panel' },
-                ]}
-              />
-            </div>
-            <div id="journal-panel" role="tabpanel" aria-labelledby={`journal-view-${view}`}>
+            <div id="journal-panel" role="tabpanel" aria-labelledby={nothingYet ? undefined : `journal-view-${view}`}>
               {view === 'calendar' ? (
                 <CalendarView
                   month={calMonth}

@@ -15,7 +15,7 @@ export function RecentRail({ today, excludeId }: { today: string; excludeId?: st
         <h2 id="recent-heading" className="text-sm font-medium text-fg-muted">
           Recent
         </h2>
-        <Link to="/app/journal" className="text-xs text-fg-faint underline-offset-2 hover:text-fg hover:underline">
+        <Link to="/app/journal" className="-my-3 inline-flex min-h-11 items-center text-xs text-fg-faint underline-offset-2 hover:text-fg hover:underline sm:min-h-8">
           All entries
         </Link>
       </div>

@@ -39,7 +39,7 @@ export function Tabs({ value, onValueChange, items, label, className, idPrefix }
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={clsx('inline-flex items-center gap-1 rounded-control border border-line bg-sunken p-1', className)}
+      className={clsx('inline-flex items-center gap-1 rounded-control border border-line bg-sunken p-1 max-sm:p-0.5', className)}
     >
       {items.map((item) => {
         const selected = item.value === value;
@@ -59,7 +59,7 @@ export function Tabs({ value, onValueChange, items, label, className, idPrefix }
             disabled={item.disabled}
             onClick={() => onValueChange(item.value)}
             className={clsx(
-              'h-8 rounded-[6px] px-3 text-sm font-medium transition-colors disabled:opacity-50',
+              'h-8 rounded-[6px] px-3 text-sm font-medium transition-colors disabled:opacity-50 max-sm:min-h-11',
               selected ? 'bg-raised text-fg shadow-[var(--shadow-card)]' : 'text-fg-muted hover:text-fg',
             )}
           >

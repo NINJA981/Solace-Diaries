@@ -12,13 +12,13 @@ export function statusText(s: EngineSnapshot): string {
     case 'saved':
       return 'Saved';
     case 'offline':
-      return 'Offline — saved on this device';
+      return 'Offline. Saved on this device';
     case 'retrying':
-      return 'Couldn’t save — retrying';
+      return 'Couldn’t save. Retrying…';
     case 'conflict':
-      return 'Two versions — choose one';
+      return 'Two versions. Choose one';
     case 'failed':
-      return s.error ? `Couldn’t save — ${s.error}` : 'Couldn’t save';
+      return s.error ? `Couldn’t save. ${s.error}` : 'Couldn’t save';
   }
 }
 
@@ -43,7 +43,7 @@ export function SaveStatus({ snapshot, onResolve }: { snapshot: EngineSnapshot; 
         aria-live="polite"
         className={clsx(
           'inline-flex min-w-0 items-center gap-1.5',
-          s === 'retrying' || s === 'failed' || s === 'conflict' ? 'text-danger' : s === 'offline' ? 'text-lamp' : 'text-fg-faint',
+          s === 'retrying' || s === 'failed' || s === 'conflict' ? 'text-danger' : s === 'offline' ? 'text-fg-muted' : 'text-fg-faint',
         )}
       >
         {icon}
@@ -53,7 +53,7 @@ export function SaveStatus({ snapshot, onResolve }: { snapshot: EngineSnapshot; 
         <button
           type="button"
           onClick={onResolve}
-          className="relative font-medium text-lamp underline underline-offset-2 after:absolute after:-inset-3 after:content-['']"
+          className="relative font-medium text-lamp underline underline-offset-2 after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-['']"
         >
           Review
         </button>

@@ -53,6 +53,8 @@ export function CommandPalette() {
     if (open && !dialog.open) {
       returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       dialog.showModal?.();
+      // showModal() hands focus to the first focusable node (cmdk's root); the search field should have it.
+      dialog.querySelector<HTMLInputElement>('[cmdk-input]')?.focus();
     } else if (!open && dialog.open) {
       dialog.close?.();
       setSearch('');

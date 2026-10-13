@@ -105,7 +105,7 @@ export default function TodayPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-8 sm:pt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-14">
       <div className="min-w-0">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <header className="mb-6">
           <div>
             <h1 className="font-serif text-3xl text-fg sm:text-4xl">
               {greeting(hour)}
@@ -122,11 +122,6 @@ export default function TodayPage() {
               </p>
             )}
           </div>
-          {ready && hasText && (
-            <Button variant="ghost" size="sm" icon={<Plus className="size-4" aria-hidden="true" />} onClick={() => startNew()} className="max-sm:h-11">
-              New entry
-            </Button>
-          )}
         </header>
 
         <div className="space-y-4">
@@ -172,6 +167,18 @@ export default function TodayPage() {
               today={today}
               autoFocus={false}
               placeholder="Write anything. It saves as you go."
+              actions={
+                hasText ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<Plus className="size-4" aria-hidden="true" />}
+                    onClick={() => startNew()}
+                  >
+                    New entry
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <EditorSkeleton />

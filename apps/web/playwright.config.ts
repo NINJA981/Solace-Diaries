@@ -10,6 +10,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
+    // Optional: run on an installed browser (e.g. PW_CHANNEL=chrome) instead of Playwright's bundled one.
+    ...(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {}),
     baseURL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

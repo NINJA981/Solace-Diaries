@@ -18,7 +18,7 @@ export function AuthLayout({ title, intro, children, footer }: { title: string; 
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(50%_60%_at_50%_0%,var(--lamp-soft),transparent_70%)]"
       />
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-5 sm:px-8">
-        <Link to="/" aria-label="Solace home" className="rounded-control">
+        <Link to="/" aria-label="Solace home" className="-my-2 rounded-control py-2">
           <Wordmark />
         </Link>
       </header>
@@ -132,7 +132,7 @@ export function PasswordInput({ showStrength = false, value, ...rest }: InputPro
         onClick={() => setVisible((v) => !v)}
         aria-label="Show password"
         aria-pressed={visible}
-        className="absolute top-[1.85rem] right-1 grid size-8 place-items-center rounded-control text-fg-faint hover:text-fg"
+        className="absolute top-[1.85rem] right-1 grid size-8 place-items-center rounded-control text-fg-faint hover:text-fg max-sm:top-[1.71rem] max-sm:right-0 max-sm:size-11"
       >
         {visible ? <EyeOff aria-hidden="true" className="size-4" /> : <Eye aria-hidden="true" className="size-4" />}
       </button>

@@ -97,7 +97,7 @@ export function AccountMenu({ placement = 'bottom', showIdentity = false }: { pl
         onClick={() => setOpen((v) => !v)}
         className={clsx(
           'flex items-center gap-3 rounded-control text-left transition-colors hover:bg-sunken',
-          showIdentity ? 'w-full p-2' : 'p-1',
+          showIdentity ? 'w-full p-2' : 'p-1.5',
         )}
       >
         <Avatar name={name} />

@@ -32,6 +32,8 @@ export default function InsightsPage() {
   const graph = useGraph();
   const s = stats.data;
   const hasMoods = !!s?.moodTrend.some((w) => w.avgScore !== null);
+  // A brand-new journal gets one invitation, not a stack of empty sections.
+  const showDetail = !stats.isPending && !(s && s.totalEntries === 0);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-20 sm:px-8 sm:pt-10">
@@ -85,37 +87,41 @@ export default function InsightsPage() {
           </>
         ) : null}
 
-        <WeeklyLetter tz={tz} today={today} days={s?.days ?? []} />
+        {showDetail && (
+          <>
+            <WeeklyLetter tz={tz} today={today} days={s?.days ?? []} />
 
-        <Section
-          id="constellation"
-          title="Memory constellation"
-          intro="The people, places, goals and feelings that keep coming up in your entries, and how they connect."
-        >
-          {graph.isPending ? (
-            <div aria-hidden="true" className="h-72 animate-pulse rounded-card bg-sunken" />
-          ) : graph.isError ? (
-            <InlineError message="Couldn’t load the constellation." onRetry={() => void graph.refetch()} />
-          ) : graph.data.nodes.length < 3 ? (
-            <div className="rounded-card border border-line bg-sunken">
-              <EmptyState
-                icon={<Sparkles />}
-                title="Your sky is still forming"
-                description="After a few more entries, the things you write about most will appear here as stars."
-              />
-            </div>
-          ) : (
-            <Constellation graph={graph.data} />
-          )}
-        </Section>
+            <Section
+              id="constellation"
+              title="Memory constellation"
+              intro="The people, places, goals and feelings that keep coming up in your entries, and how they connect."
+            >
+              {graph.isPending ? (
+                <div aria-hidden="true" className="h-72 animate-pulse rounded-card bg-sunken" />
+              ) : graph.isError ? (
+                <InlineError message="Couldn’t load the constellation." onRetry={() => void graph.refetch()} />
+              ) : graph.data.nodes.length < 3 ? (
+                <div className="rounded-card border border-line bg-sunken">
+                  <EmptyState
+                    icon={<Sparkles />}
+                    title="Your sky is still forming"
+                    description="After a few more entries, the things you write about most will appear here as stars."
+                  />
+                </div>
+              ) : (
+                <Constellation graph={graph.data} />
+              )}
+            </Section>
 
-        <Section
-          id="memories"
-          title="What Solace remembers"
-          intro="Solace keeps short notes from your entries so its answers know your context. You’re in control: edit anything that’s off, archive what no longer fits, or delete it."
-        >
-          <Memories />
-        </Section>
+            <Section
+              id="memories"
+              title="What Solace remembers"
+              intro="Solace keeps short notes from your entries so its answers know your context. You’re in control: edit anything that’s off, archive what no longer fits, or delete it."
+            >
+              <Memories />
+            </Section>
+          </>
+        )}
       </div>
     </div>
   );

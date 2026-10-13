@@ -26,7 +26,7 @@ export function RouteError() {
       </h1>
       <p className="mt-3 text-fg-muted">
         {stale
-          ? 'A newer version is available. Reload to continue — anything you’ve written is saved.'
+          ? 'A newer version is available. Reload to continue; anything you’ve written is saved.'
           : 'Your writing is safe. Reloading usually fixes this; if it keeps happening, try again in a few minutes.'}
       </p>
       {!stale && import.meta.env.DEV && (

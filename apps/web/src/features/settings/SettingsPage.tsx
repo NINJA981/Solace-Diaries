@@ -251,6 +251,10 @@ function GeminiSection() {
           </div>
         </form>
       )}
+      <p className="mt-3 max-w-md text-xs leading-snug text-fg-muted">
+        With your own key, Google’s terms for that key apply. Free-tier keys may allow Google to use your requests to
+        improve its products.
+      </p>
     </Section>
   );
 }

@@ -26,13 +26,14 @@ export function Filters({ filters, tags, today, onChange, onClear, showDates = t
   const tagOptions = [...new Set([...(filters.tag ? [filters.tag] : []), ...tags])];
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
+    // One row; on narrow screens it scrolls sideways instead of stacking into a wall of controls.
+    <div className="flex items-end gap-2 [scrollbar-width:thin] max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 sm:flex-wrap">
       <Select
         aria-label="Mood"
         value={filters.mood ?? ''}
         onChange={(e) => onChange({ mood: e.target.value || undefined })}
         options={[{ value: '', label: 'Any mood' }, ...MOODS.map((m) => ({ value: m, label: moodLabel(m) }))]}
-        className="max-sm:h-11"
+        containerClassName="shrink-0"
       />
       <Select
         aria-label="Tag"
@@ -40,7 +41,7 @@ export function Filters({ filters, tags, today, onChange, onClear, showDates = t
         onChange={(e) => onChange({ tag: e.target.value || undefined })}
         options={[{ value: '', label: 'Any tag' }, ...tagOptions.map((t) => ({ value: t, label: t }))]}
         disabled={tagOptions.length === 0}
-        className="max-sm:h-11"
+        containerClassName="shrink-0"
       />
       {showDates && (
         <Select
@@ -58,11 +59,11 @@ export function Filters({ filters, tags, today, onChange, onClear, showDates = t
             { value: '365', label: 'Last year' },
             { value: 'custom', label: 'Custom dates' },
           ]}
-          className="max-sm:h-11"
+          containerClassName="shrink-0"
         />
       )}
       {showDates && preset === 'custom' && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <label htmlFor={fromId} className="sr-only">
             From
           </label>
@@ -95,7 +96,7 @@ export function Filters({ filters, tags, today, onChange, onClear, showDates = t
         <button
           type="button"
           onClick={onClear}
-          className="h-11 rounded-control px-3 text-sm text-fg-muted underline underline-offset-2 hover:text-fg sm:h-10"
+          className="h-11 shrink-0 rounded-control px-3 text-sm whitespace-nowrap text-fg-muted underline underline-offset-2 hover:text-fg sm:h-10"
         >
           Clear filters
         </button>

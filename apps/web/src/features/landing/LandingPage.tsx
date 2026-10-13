@@ -27,7 +27,7 @@ const PROMISES = [
   },
   {
     title: 'Never used for training',
-    body: 'We don’t train models on your journal, and we never sell or share it.',
+    body: 'Solace doesn’t train AI on your journal, and neither does Google: we use the paid Gemini API, which keeps your words out of training. We never sell or share them.',
   },
   {
     title: 'Private photos',
@@ -43,7 +43,7 @@ const PROMISES = [
   },
   {
     title: 'Who processes your words',
-    body: 'AI features run on Google’s Gemini API. The text needed for each request is sent there to be processed.',
+    body: 'AI features run on Google’s paid Gemini API. Only the text each request needs is sent there to be processed.',
   },
 ];
 
@@ -66,7 +66,7 @@ const FAQ = [
   },
   {
     q: 'Can I use my own Gemini API key?',
-    a: 'Yes, if you’d like to. Add it in Settings on a device; it’s kept in that browser only, sent along with your requests, and never stored in our database.',
+    a: 'Yes, if you’d like to. Add it in Settings on a device; it’s kept in that browser only, sent along with your requests, and never stored in our database. Google’s terms for your key then apply, and free-tier keys may let Google use requests to improve its products.',
   },
   {
     q: 'How do I leave?',
@@ -183,12 +183,15 @@ export default function LandingPage() {
         </section>
 
         {/* FAQ */}
+        {/* Same split as the privacy section: heading on the left edge, answers on the right. */}
         <section aria-labelledby="faq-title" className="border-t border-line">
-          <div className="mx-auto max-w-3xl px-5 py-20 sm:px-8 sm:py-28">
-            <h2 id="faq-title" className="font-serif text-3xl leading-tight font-normal text-fg sm:text-4xl">
-              Questions
-            </h2>
-            <div className="mt-10 divide-y divide-line border-y border-line">
+          <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+            <div className="max-w-md">
+              <h2 id="faq-title" className="font-serif text-3xl leading-tight font-normal text-fg sm:text-4xl">
+                Questions
+              </h2>
+            </div>
+            <div className="divide-y divide-line border-y border-line">
               {FAQ.map((item) => (
                 <details key={item.q} className="group">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-left font-medium text-fg [&::-webkit-details-marker]:hidden">

@@ -128,8 +128,11 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <div className="mt-2 text-right">
-            <Link to="/reset" className="text-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline">
+          <div className="mt-1 text-right">
+            <Link
+              to="/reset"
+              className="inline-flex min-h-11 items-center text-sm text-fg-muted underline-offset-4 hover:text-fg hover:underline sm:min-h-8"
+            >
               Forgot your password?
             </Link>
           </div>

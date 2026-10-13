@@ -4,7 +4,7 @@ import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
 type FieldProps = { label?: string; hint?: ReactNode; error?: string };
 
 const control =
-  'w-full rounded-control border border-control-edge bg-sunken text-fg placeholder:text-fg-faint ' +
+  'w-full rounded-control border border-control-edge bg-sunken text-fg placeholder:text-fg-faint max-sm:min-h-11 ' +
   'transition-[border-color,box-shadow] duration-150 ' +
   'hover:border-fg-muted focus:border-lamp focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus ' +
   'disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-danger';

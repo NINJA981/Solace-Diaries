@@ -18,68 +18,71 @@ function Rail() {
   const { pathname } = useLocation();
   const shortcut = isMac() ? '⌘K' : 'Ctrl K';
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-line bg-ink md:flex">
-      <div className="flex h-16 items-center px-5">
-        <Link to="/app/today" aria-label="Solace, go to Today" className="rounded-control">
-          <Wordmark />
-        </Link>
-      </div>
-      <div className="px-3">
-        <button
-          type="button"
-          onClick={openCommandPalette}
-          aria-label="Search or jump to a page"
-          aria-keyshortcuts="Control+K Meta+K"
-          className="flex h-9 w-full items-center gap-2.5 rounded-control border border-line bg-sunken px-3 text-sm text-fg-faint transition-colors hover:border-line-strong hover:text-fg-muted"
-        >
-          <Search aria-hidden="true" className="size-4" />
-          <span className="flex-1 text-left">Search</span>
-          <kbd className="font-sans text-xs">{shortcut}</kbd>
-        </button>
-      </div>
-      <nav aria-label="Main" className="mt-5 flex-1 px-3">
-        <ul className="flex flex-col gap-0.5">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(item, pathname);
-            const Icon = item.icon;
-            return (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  viewTransition
-                  onPointerEnter={() => prefetchPage(item.to)}
-                  onFocus={() => prefetchPage(item.to)}
-                  aria-current={active ? 'page' : undefined}
-                  className={clsx(
-                    'group flex h-10 items-center gap-3 rounded-control px-3 text-[0.9375rem] transition-colors',
-                    active ? 'bg-lamp-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
-                  )}
-                >
-                  <Icon aria-hidden="true" className={clsx('size-[18px]', active ? 'text-lamp' : 'text-fg-faint group-hover:text-fg-muted')} />
-                  {item.label}
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-      <div className="flex flex-col gap-1 border-t border-line p-3">
-        <NavLink
-          to="/app/settings"
-          viewTransition
-          onPointerEnter={() => prefetchPage('/app/settings')}
-          onFocus={() => prefetchPage('/app/settings')}
-          className={({ isActive: on }) =>
-            clsx(
-              'flex h-10 items-center gap-3 rounded-control px-3 text-sm transition-colors',
-              on ? 'bg-lamp-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
-            )
-          }
-        >
-          <Settings aria-hidden="true" className="size-[18px] text-fg-faint" />
-          Settings
-        </NavLink>
-        <AccountMenu placement="top" showIdentity />
+    // The column spans the whole document (so its edge runs the full page); the rail inside it stays put.
+    <aside className="relative z-30 hidden border-r border-line bg-ink md:block">
+      <div className="sticky top-0 flex h-dvh flex-col overflow-y-auto">
+        <div className="flex h-16 shrink-0 items-center px-5">
+          <Link to="/app/today" aria-label="Solace, go to Today" className="rounded-control">
+            <Wordmark />
+          </Link>
+        </div>
+        <div className="px-3">
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            aria-label="Search or jump to a page"
+            aria-keyshortcuts="Control+K Meta+K"
+            className="flex h-9 w-full items-center gap-2.5 rounded-control border border-line bg-sunken px-3 text-sm text-fg-faint transition-colors hover:border-line-strong hover:text-fg-muted"
+          >
+            <Search aria-hidden="true" className="size-4" />
+            <span className="flex-1 text-left">Search</span>
+            <kbd className="font-sans text-xs">{shortcut}</kbd>
+          </button>
+        </div>
+        <nav aria-label="Main" className="mt-5 flex-1 px-3">
+          <ul className="flex flex-col gap-0.5">
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(item, pathname);
+              const Icon = item.icon;
+              return (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    viewTransition
+                    onPointerEnter={() => prefetchPage(item.to)}
+                    onFocus={() => prefetchPage(item.to)}
+                    aria-current={active ? 'page' : undefined}
+                    className={clsx(
+                      'group flex h-10 items-center gap-3 rounded-control px-3 text-[0.9375rem] transition-colors',
+                      active ? 'bg-lamp-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
+                    )}
+                  >
+                    <Icon aria-hidden="true" className={clsx('size-[18px]', active ? 'text-lamp' : 'text-fg-faint group-hover:text-fg-muted')} />
+                    {item.label}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        <div className="flex flex-col gap-1 border-t border-line p-3">
+          <NavLink
+            to="/app/settings"
+            viewTransition
+            onPointerEnter={() => prefetchPage('/app/settings')}
+            onFocus={() => prefetchPage('/app/settings')}
+            className={({ isActive: on }) =>
+              clsx(
+                'flex h-10 items-center gap-3 rounded-control px-3 text-sm transition-colors',
+                on ? 'bg-lamp-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
+              )
+            }
+          >
+            <Settings aria-hidden="true" className="size-[18px] text-fg-faint" />
+            Settings
+          </NavLink>
+          <AccountMenu placement="top" showIdentity />
+        </div>
       </div>
     </aside>
   );
@@ -88,7 +91,7 @@ function Rail() {
 function MobileHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-ink/90 px-4 backdrop-blur-md md:hidden">
-      <Link to="/app/today" aria-label="Solace, go to Today" className="rounded-control">
+      <Link to="/app/today" aria-label="Solace, go to Today" className="-my-2 rounded-control py-2">
         <Wordmark />
       </Link>
       <div className="flex items-center gap-1">
@@ -96,7 +99,7 @@ function MobileHeader() {
           type="button"
           onClick={openCommandPalette}
           aria-label="Search or jump to"
-          className="grid size-10 place-items-center rounded-control text-fg-muted hover:bg-sunken hover:text-fg"
+          className="grid size-11 place-items-center rounded-control text-fg-muted hover:bg-sunken hover:text-fg"
         >
           <Search aria-hidden="true" className="size-5" />
         </button>
@@ -193,13 +196,15 @@ function useReminderNudge() {
 function Shell() {
   useReminderNudge();
   return (
-    <div className="min-h-dvh bg-ink">
+    <div className="min-h-dvh bg-ink md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
       <SkipLink />
       <Rail />
-      <MobileHeader />
-      <main id="main" tabIndex={-1} className="min-h-dvh pb-[calc(4rem+env(safe-area-inset-bottom))] outline-none md:pb-0 md:pl-56">
-        <Outlet />
-      </main>
+      <div className="min-w-0">
+        <MobileHeader />
+        <main id="main" tabIndex={-1} className="min-h-dvh pb-[calc(4rem+env(safe-area-inset-bottom))] outline-none md:pb-0">
+          <Outlet />
+        </main>
+      </div>
       <TabBar />
       <CommandPalette />
     </div>

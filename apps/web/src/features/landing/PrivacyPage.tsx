@@ -49,12 +49,13 @@ export default function PrivacyPage() {
           your entries are sent too.
         </p>
         <p>
-          Google processes this under its Gemini API terms. [Confirm which tier the service uses: on paid tiers, Google
-          states it doesn’t use prompts or responses to improve its products.]
+          Solace uses Google’s paid Gemini API. Under those terms, Google doesn’t use your prompts or the responses to
+          improve its products. So neither Solace nor Google trains AI on your journal.
         </p>
         <p>
           If you add your own Gemini key in Settings, it stays in your browser and is sent with each request. We never
-          store or log it.
+          store or log it. Requests made with your key fall under Google’s terms for that key: on the free tier, Google
+          may use them to improve its products.
         </p>
       </LegalSection>
 

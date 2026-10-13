@@ -26,6 +26,8 @@ type Props = {
   onDelete?: () => void;
   /** Called when the user discards a draft whose entry was deleted elsewhere. */
   onGone?: () => void;
+  /** Extra page-level actions shown in the toolbar (e.g. Today's "New entry"). */
+  actions?: React.ReactNode;
 };
 
 const supportsPopover = typeof HTMLElement !== 'undefined' && 'showPopover' in HTMLElement.prototype;
@@ -56,7 +58,7 @@ function imageFiles(list: FileList | DataTransferItemList | null | undefined): F
  * The writing surface. No Save button: every keystroke goes to the autosave engine, which
  * keeps a device draft and syncs to the server in the background.
  */
-export function Editor({ engine, server, dateMode, today, placeholder, autoFocus, onDelete, onGone }: Props) {
+export function Editor({ engine, server, dateMode, today, placeholder, autoFocus, onDelete, onGone, actions }: Props) {
   const snapshot = useEngineSnapshot(engine)!;
   const { fields } = snapshot;
   const [focusMode, setFocusMode] = useState(false);
@@ -193,15 +195,16 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
                 value={fields.entryDate}
                 max={today}
                 onChange={(e) => e.target.value && engine.edit({ entryDate: e.target.value })}
-                className="h-11 rounded-control border border-line bg-transparent px-2 text-sm text-fg-muted hover:border-line-strong sm:h-9"
+                className="-ml-2 h-11 rounded-control border border-transparent bg-transparent px-2 text-sm text-fg-muted transition-colors hover:border-line hover:text-fg focus-visible:border-line-strong sm:h-9"
               />
             </div>
           ) : (
             <p className="text-sm text-fg-muted">{formatLongDay(fields.entryDate)}</p>
           )}
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="ml-auto flex min-w-0 items-center gap-3">
             <SaveStatus snapshot={snapshot} onResolve={() => setConflictOpen(true)} />
             {!focusMode && <span className="hidden text-xs text-fg-faint tabular-nums sm:inline">{plural(words, 'word')}</span>}
+            {!focusMode && actions}
             <IconButton
               label={focusMode ? 'Leave focus mode' : 'Focus mode'}
               icon={focusMode ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
@@ -252,7 +255,9 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
           spellCheck
           className={clsx(
             'journal-writing journal-autogrow journal-caret prose-journal mt-4 -ml-3.5 block w-[calc(100%+0.875rem)] max-w-none resize-none overflow-hidden border-l-2 border-transparent bg-transparent pl-3 text-fg placeholder:text-fg-faint/70 focus-visible:border-lamp/70 focus-visible:outline-none',
-            focusMode ? 'min-h-[70vh]' : dateMode === 'picker' ? 'min-h-[10rem]' : 'min-h-[40vh]',
+            // Room for a few paragraphs; field-sizing grows it from there. Not a viewport fraction,
+            // so the mood/tags/photos row stays within reach on Today.
+            focusMode ? 'min-h-[70vh]' : dateMode === 'picker' ? 'min-h-[5lh]' : 'min-h-[4lh] sm:min-h-[7lh]',
           )}
         />
         {nearLimit && (
@@ -268,7 +273,7 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
       </div>
 
       {!focusMode && (
-        <div className="mt-10 space-y-8">
+        <div className="mt-8 space-y-8">
           {enriching && (
             <p className="flex items-center gap-2 text-sm text-dusk" role="status">
               <span className="size-1.5 animate-pulse rounded-full bg-dusk motion-reduce:animate-none" aria-hidden="true" />
@@ -298,16 +303,19 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
             </p>
           )}
 
-          <div className="grid gap-8 border-t border-line pt-6">
+          <div className="grid gap-5 border-t border-line pt-6">
             <MoodPicker mood={fields.mood} source={fields.moodSource} onChange={onMood} />
-            <TagEditor tags={fields.tags} onChange={onTags} />
-            <Photos
-              entryId={engine.id}
-              attachments={attachments}
-              uploads={photos.uploads}
-              onAdd={onAddPhotos}
-              onDismissUpload={photos.dismiss}
-            />
+            {/* Tags and photos stay a quiet row until used; photos open into a grid once there are some. */}
+            <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+              <TagEditor tags={fields.tags} onChange={onTags} />
+              <Photos
+                entryId={engine.id}
+                attachments={attachments}
+                uploads={photos.uploads}
+                onAdd={onAddPhotos}
+                onDismissUpload={photos.dismiss}
+              />
+            </div>
           </div>
         </div>
       )}

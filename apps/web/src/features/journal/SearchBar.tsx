@@ -71,7 +71,7 @@ export function SearchBar({ q, mode, onQuery, onMode }: Props) {
               onQuery('');
               input.current?.focus();
             }}
-            className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-control text-fg-faint hover:text-fg"
+            className="absolute top-1/2 right-0.5 grid size-10 -translate-y-1/2 max-sm:size-11 place-items-center rounded-control text-fg-faint hover:text-fg"
           >
             <X className="size-4" aria-hidden="true" />
           </button>

@@ -12,7 +12,7 @@ export function PublicHeader({ className }: { className?: string }) {
   return (
     <header className={clsx('relative z-20', className)}>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <Link to="/" aria-label="Solace home" className="rounded-control">
+        <Link to="/" aria-label="Solace home" className="-my-2 rounded-control py-2">
           <Wordmark />
         </Link>
         <nav aria-label="Account" className="flex items-center gap-1 sm:gap-2">
@@ -44,19 +44,19 @@ export function PublicFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <Wordmark />
         <nav aria-label="Footer">
-          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-fg-muted">
+          <ul className="-mx-2 flex flex-wrap gap-x-2 text-sm text-fg-muted">
             <li>
-              <Link className="hover:text-fg" to="/privacy">
+              <Link className="inline-flex min-h-11 items-center rounded-control px-2 hover:text-fg sm:min-h-8" to="/privacy">
                 Privacy
               </Link>
             </li>
             <li>
-              <Link className="hover:text-fg" to="/terms">
+              <Link className="inline-flex min-h-11 items-center rounded-control px-2 hover:text-fg sm:min-h-8" to="/terms">
                 Terms
               </Link>
             </li>
             <li>
-              <Link className="hover:text-fg" to="/login">
+              <Link className="inline-flex min-h-11 items-center rounded-control px-2 hover:text-fg sm:min-h-8" to="/login">
                 Sign in
               </Link>
             </li>

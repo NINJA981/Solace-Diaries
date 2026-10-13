@@ -126,7 +126,7 @@ export function TimezoneSelect({
             setQuery(null);
           }}
           onKeyDown={onKeyDown}
-          className="h-10 w-full rounded-control border border-control-edge bg-sunken px-3 text-base text-fg placeholder:text-fg-faint hover:border-fg-muted focus:border-lamp focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+          className="h-10 w-full rounded-control border border-control-edge bg-sunken px-3 max-sm:min-h-11 text-base text-fg placeholder:text-fg-faint hover:border-fg-muted focus:border-lamp focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
           placeholder="Search for a city or region"
         />
         {open && (
