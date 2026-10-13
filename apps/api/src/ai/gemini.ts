@@ -109,6 +109,15 @@ function abortReason(signal: AbortSignal): Error {
   return signal.reason instanceof Error ? signal.reason : new DOMException('Aborted', 'AbortError');
 }
 
+const MAX_INLINE_WAIT_MS = 30_000;
+
+/** Gemini's 429 carries google.rpc.RetryInfo, e.g. "retryDelay": "19469s", inside the message. */
+export function retryDelayOf(err: unknown): number | undefined {
+  const text = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  const m = text.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/) ?? text.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
+  return m ? Math.round(Number(m[1]) * 1000) : undefined;
+}
+
 /** Turn whatever a transport threw into our error vocabulary, plus whether to retry. */
 function classify(err: unknown, timedOut: boolean): { error: Error; retryable: boolean } {
   if (err instanceof AiBadOutputError || err instanceof AiUnavailableError) {
@@ -128,9 +137,11 @@ function classify(err: unknown, timedOut: boolean): { error: Error; retryable: b
       status === 400 || status === 401 || status === 403
         ? 'Gemini rejected the request (check the API key).'
         : `Gemini responded with HTTP ${status}.`;
+    const retryAfterMs = status === 429 ? retryDelayOf(err) : undefined;
     return {
-      error: new AiUnavailableError(message, status, { cause: err }),
-      retryable: RETRYABLE_STATUS.has(status),
+      error: new AiUnavailableError(message, status, { cause: err, retryAfterMs }),
+      // A quota that resets in minutes or hours isn't worth sleeping on in-process.
+      retryable: RETRYABLE_STATUS.has(status) && (retryAfterMs ?? 0) <= MAX_INLINE_WAIT_MS,
     };
   }
   const code =

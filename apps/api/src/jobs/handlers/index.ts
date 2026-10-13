@@ -1,11 +1,34 @@
 /** Job handler registry (intelligence layer). The platform worker claims jobs and calls these. */
+import { AiUnavailableError } from '../../ai/errors';
 import { logger } from '../../logger';
 import { describeAttachment, enrichEntry, markEnrichmentFailed } from '../../services/enrichment';
-import { JOB, type JobHandler, type JobType } from '../types';
+import { DeferJobError, JOB, type JobHandler, type JobType } from '../types';
+
+const MIN_RATE_LIMIT_WAIT_MS = 60_000;
+const MAX_RATE_LIMIT_WAIT_MS = 24 * 60 * 60_000;
+
+/**
+ * A provider rate limit isn't a failure of the job: wait as long as the provider asked
+ * (bounded), without spending one of the job's attempts, then run it again.
+ */
+export function deferOnRateLimit(handler: JobHandler): JobHandler {
+  return async (payload, ctx) => {
+    try {
+      await handler(payload, ctx);
+    } catch (err) {
+      if (!(err instanceof AiUnavailableError) || err.status !== 429) throw err;
+      const wait = Math.min(
+        MAX_RATE_LIMIT_WAIT_MS,
+        Math.max(MIN_RATE_LIMIT_WAIT_MS, err.retryAfterMs ?? MIN_RATE_LIMIT_WAIT_MS * 2),
+      );
+      throw new DeferJobError(new Date(Date.now() + wait), 'AI provider rate limit');
+    }
+  };
+}
 
 export const handlers: Partial<Record<JobType, JobHandler>> = {
-  [JOB.enrichEntry]: (payload, ctx) => enrichEntry(payload, ctx.signal),
-  [JOB.describeAttachment]: (payload, ctx) => describeAttachment(payload, ctx.signal),
+  [JOB.enrichEntry]: deferOnRateLimit((payload, ctx) => enrichEntry(payload, ctx.signal)),
+  [JOB.describeAttachment]: deferOnRateLimit((payload, ctx) => describeAttachment(payload, ctx.signal)),
 };
 
 /** Called by the worker once a job is dead-lettered. */

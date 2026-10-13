@@ -8,11 +8,15 @@ export class AiUnavailableError extends Error {
     message: string,
     /** Upstream HTTP status, when there was one. */
     public readonly status?: number,
-    options?: { cause?: unknown },
+    options?: { cause?: unknown; retryAfterMs?: number },
   ) {
     super(message, options);
     this.name = 'AiUnavailableError';
+    this.retryAfterMs = options?.retryAfterMs;
   }
+
+  /** How long the provider asked us to wait (from a 429's RetryInfo), when it said. */
+  readonly retryAfterMs?: number;
 }
 
 /** The model answered, but with something we can't use (invalid JSON, empty, wrong dimensions). */
