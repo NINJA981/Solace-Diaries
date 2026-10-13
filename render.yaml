@@ -5,7 +5,7 @@ services:
   - type: web
     name: solace-api
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: npm ci --include=dev && npm run build -w @solace/api
     startCommand: node apps/api/src/db/migrate.ts && npm run start -w @solace/api
