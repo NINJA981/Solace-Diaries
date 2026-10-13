@@ -11,3 +11,4 @@ data/
 apps/web/test-results/
 apps/web/playwright-report/
 apps/web/dev-dist/
+.vercel/

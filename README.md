@@ -85,7 +85,7 @@ Migrations run at the start of every deploy, before the server boots. Health che
 | `VITE_SUPABASE_URL`      | `https://<project>.supabase.co`                        |
 | `VITE_SUPABASE_ANON_KEY` | the project's anon (publishable) key                   |
 
-`apps/web/vercel.json` sets a strict Content-Security-Policy. Its `connect-src` lists `https://solace-api.onrender.com`; change it to your API's real origin.
+`apps/web/vercel.json` sets a strict Content-Security-Policy. Its `connect-src` must list your API's real origin (currently `https://solace-api-vsac.onrender.com`).
 
 **Supabase project.**
 
