@@ -67,27 +67,28 @@ npm run typecheck && npm run lint
 
 **API on Render.** `render.yaml` is a blueprint. Create a Blueprint instance from this repo and fill in the secrets:
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | Supabase → Connect → *Session pooler* URI (IPv4-compatible) |
-| `SUPABASE_URL` | `https://<project>.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API keys |
-| `WEB_ORIGIN` | your Vercel URL, e.g. `https://solace.vercel.app` (comma-separate extra origins) |
-| `GEMINI_API_KEY` | server Gemini key from a **paid** (billing-enabled) project; see Privacy below |
+| Variable                    | Value                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Supabase → Connect → _Session pooler_ URI (IPv4-compatible)                      |
+| `SUPABASE_URL`              | `https://<project>.supabase.co`                                                  |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API keys                                           |
+| `WEB_ORIGIN`                | your Vercel URL, e.g. `https://solace.vercel.app` (comma-separate extra origins) |
+| `GEMINI_API_KEY`            | server Gemini key from a **paid** (billing-enabled) project; see Privacy below   |
 
 Migrations run at the start of every deploy, before the server boots. Health check: `GET /api/healthz`.
 
 **Web on Vercel.** Import the repo with **Root Directory** set to `apps/web`, then set:
 
-| Variable | Value |
-| --- | --- |
-| `VITE_API_URL` | the Render URL, e.g. `https://solace-api.onrender.com` |
-| `VITE_SUPABASE_URL` | `https://<project>.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | the project's anon (publishable) key |
+| Variable                 | Value                                                  |
+| ------------------------ | ------------------------------------------------------ |
+| `VITE_API_URL`           | the Render URL, e.g. `https://solace-api.onrender.com` |
+| `VITE_SUPABASE_URL`      | `https://<project>.supabase.co`                        |
+| `VITE_SUPABASE_ANON_KEY` | the project's anon (publishable) key                   |
 
 `apps/web/vercel.json` sets a strict Content-Security-Policy. Its `connect-src` lists `https://solace-api.onrender.com`; change it to your API's real origin.
 
 **Supabase project.**
+
 - Enable the Email and Google providers.
 - Set the Site URL to your Vercel domain and add `https://<domain>/auth/callback` as a redirect URL.
 - Configure custom SMTP, because the built-in mailer is heavily rate-limited.
