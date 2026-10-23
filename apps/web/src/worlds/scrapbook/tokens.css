@@ -1,10 +1,14 @@
 /*
  * Scrapbook — kraft paper, stamps and gel pens.
- * SKELETON: a provisional palette and type pairing; the Scrapbook world pass finishes the art.
  *   canvas   kraft paper (light) / black photo-album pages (dark)
  *   accent   stamp red (light) / peach gel pen (dark): primary actions, the person's own voice
  *   ai       blue ink: anything Solace contributes
- * Its one bold move (to come): entries as collage pages, with taped photos and die-cut stickers.
+ *   tape     washi tape (decoration only, never behind text)
+ * Type: Playpen Sans (handwriting) for headings and margin notes; Courier Prime (typewriter) for
+ * everything you read and write; Playpen Sans again for small interface labels.
+ * Its one bold move: pages are collages. Cards are hand-placed (a degree or two off true) with a
+ * strip of tape, buttons are stuck-on labels that press flat, and paper grain lies over it all.
+ * The editor is the one flat, straight, still sheet: nothing tilts or animates near the caret.
  */
 
 [data-world='scrapbook'] {
@@ -111,6 +115,10 @@
   --shadow-3: 0 28px 60px -24px rgb(0 0 0 / 0.7);
   --shadow-overlay: 0 36px 80px -28px rgb(0 0 0 / 0.75);
   --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  --tape-a: rgb(233 196 106 / 0.78);
+  --tape-b: rgb(150 205 208 / 0.8);
+  --cat: #f0b27a;
+  --cat-ink: #2b2620;
   --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.96 0 0 0 0 0.9 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --texture-opacity: 0.05;
 }
@@ -146,6 +154,71 @@
   --shadow-3: 0 26px 54px -22px rgb(60 40 20 / 0.45);
   --shadow-overlay: 0 34px 76px -26px rgb(60 40 20 / 0.5);
   --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.25);
+  --tape-a: rgb(222 180 80 / 0.8);
+  --tape-b: rgb(120 185 190 / 0.8);
+  --cat: #e49a4c;
+  --cat-ink: #2b2118;
   --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.16 0 0 0 0 0.08 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --texture-opacity: 0.09;
+}
+
+/*
+ * Scrapbook touches. Scoped to the world; they use `rotate` and box-shadow (no layout) and are
+ * never applied to the editor or the composer.
+ */
+[data-world='scrapbook'] :is(button, a).bg-accent:not(:disabled) {
+  box-shadow: 2px 3px 0 color-mix(in oklab, var(--accent) 45%, black);
+  transition:
+    transform var(--dur-1) var(--ease-standard),
+    box-shadow var(--dur-1) var(--ease-standard),
+    background-color var(--dur-1),
+    filter var(--dur-1);
+}
+[data-world='scrapbook'] :is(button, a).bg-accent:not(:disabled):active {
+  transform: translate(2px, 3px);
+  box-shadow: 0 0 0 color-mix(in oklab, var(--accent) 45%, black);
+}
+/* Entries are pages pinned in by hand: each a degree or so off true, with a bit of tape. */
+[data-world='scrapbook'] li > article.rounded-card {
+  box-shadow: var(--shadow-1);
+  transition:
+    rotate var(--dur-3) var(--ease-emphasized),
+    box-shadow var(--dur-2) var(--ease-standard),
+    border-color var(--dur-1);
+}
+[data-world='scrapbook'] li:nth-child(3n + 1) > article.rounded-card {
+  rotate: -0.45deg;
+}
+[data-world='scrapbook'] li:nth-child(3n + 2) > article.rounded-card {
+  rotate: 0.35deg;
+}
+[data-world='scrapbook'] li:nth-child(3n) > article.rounded-card {
+  rotate: -0.15deg;
+}
+[data-world='scrapbook'] li > article.rounded-card:hover {
+  rotate: 0deg;
+  box-shadow: var(--shadow-2);
+}
+[data-world='scrapbook'] li > article.rounded-card::before {
+  content: '';
+  position: absolute;
+  top: -0.55rem;
+  left: 1.4rem;
+  width: 3.4rem;
+  height: 1.1rem;
+  background: var(--tape-a);
+  clip-path: polygon(0 0, 100% 0, 97% 25%, 100% 50%, 97% 75%, 100% 100%, 0 100%, 3% 75%, 0 50%, 3% 25%);
+  pointer-events: none;
+  rotate: -4deg;
+}
+[data-world='scrapbook'] li:nth-child(even) > article.rounded-card::before {
+  left: auto;
+  right: 1.6rem;
+  background: var(--tape-b);
+  rotate: 5deg;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-world='scrapbook'] li > article.rounded-card {
+    transition: none;
+  }
 }
