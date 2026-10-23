@@ -31,12 +31,12 @@ export function EmptyState({
       {icon && (
         <div
           aria-hidden="true"
-          className="mb-4 grid size-12 place-items-center rounded-full bg-dusk-soft text-dusk [&_svg]:size-5"
+          className="mb-4 grid size-12 place-items-center rounded-full bg-ai-soft text-ai [&_svg]:size-5"
         >
           {icon}
         </div>
       )}
-      <h2 className="font-serif text-xl font-normal text-fg">{title}</h2>
+      <h2 className="type-heading text-xl text-fg">{title}</h2>
       {description && <p className="mt-2 text-sm leading-relaxed text-fg-muted">{description}</p>}
       {action && <div className="mt-6">{action}</div>}
     </div>
@@ -51,18 +51,18 @@ type CardProps<T extends ElementType> = { as?: T; className?: string; children?:
 export function Card<T extends ElementType = 'div'>({ as, className, children, ...rest }: CardProps<T>) {
   const Tag: ElementType = as ?? 'div';
   return (
-    <Tag className={clsx('rounded-card border border-line bg-surface shadow-[var(--shadow-card)]', className)} {...rest}>
+    <Tag className={clsx('rounded-card border border-line bg-surface shadow-1', className)} {...rest}>
       {children}
     </Tag>
   );
 }
 
-export type ChipTone = 'default' | 'lamp' | 'dusk';
+export type ChipTone = 'default' | 'accent' | 'ai';
 
 const chipTones: Record<ChipTone, { idle: string; selected: string }> = {
   default: { idle: 'border-line text-fg-muted', selected: 'border-fg-muted bg-sunken text-fg' },
-  lamp: { idle: 'border-line text-fg-muted', selected: 'border-lamp/50 bg-lamp-soft text-lamp' },
-  dusk: { idle: 'border-dusk/30 bg-dusk-soft text-dusk', selected: 'border-dusk bg-dusk-soft text-dusk' },
+  accent: { idle: 'border-line text-fg-muted', selected: 'border-accent/50 bg-accent-soft text-accent' },
+  ai: { idle: 'border-ai/30 bg-ai-soft text-ai', selected: 'border-ai bg-ai-soft text-ai' },
 };
 
 export type ChipProps = {

@@ -4,9 +4,11 @@ import { Sparkles, Telescope } from 'lucide-react';
 import { localDate } from '@solace/shared';
 import { EmptyState, buttonClasses } from '@/components/ui';
 import { useTimezone } from '@/lib/session';
+import { useVoice } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { useGraph, useStats } from '../journal-core/queries';
 import { Constellation } from './Constellation';
+import { useConstellationSkin } from './useConstellationSkin';
 import { Memories } from './Memories';
 import { MoodChart } from './MoodChart';
 import { StatRow, StatRowSkeleton } from './StatRow';
@@ -16,7 +18,7 @@ import { HeatmapLegend, YearHeatmap } from './YearHeatmap';
 function Section({ id, title, intro, children }: { id: string; title: string; intro?: ReactNode; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="scroll-mt-20">
-      <h2 id={id} className="font-serif text-2xl text-fg">
+      <h2 id={id} className="type-heading text-2xl text-fg">
         {title}
       </h2>
       {intro && <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-fg-muted">{intro}</p>}
@@ -30,6 +32,8 @@ export default function InsightsPage() {
   const today = localDate(new Date(), tz);
   const stats = useStats(tz);
   const graph = useGraph();
+  const voice = useVoice();
+  const skin = useConstellationSkin();
   const s = stats.data;
   const hasMoods = !!s?.moodTrend.some((w) => w.avgScore !== null);
   // A brand-new journal gets one invitation, not a stack of empty sections.
@@ -37,7 +41,7 @@ export default function InsightsPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-20 sm:px-8 sm:pt-10">
-      <h1 className="font-serif text-3xl text-fg sm:text-4xl">Insights</h1>
+      <h1 className="type-heading text-3xl text-fg sm:text-4xl">Insights</h1>
       <p className="mt-2 max-w-prose text-fg-muted">What your writing looks like over time, and what Solace has picked up along the way.</p>
 
       <div className="mt-8 space-y-14">
@@ -48,8 +52,8 @@ export default function InsightsPage() {
         ) : s && s.totalEntries === 0 ? (
           <EmptyState
             icon={<Telescope />}
-            title="Insights grow with your journal"
-            description="Write a few entries and this page fills in: your streaks, a year of days, how your moods move, and a letter about your week."
+            title={voice.insightsEmptyTitle}
+            description={voice.insightsEmptyBody}
             action={
               <Link to="/app/today" className={buttonClasses('primary')}>
                 Write today’s entry
@@ -104,12 +108,12 @@ export default function InsightsPage() {
                 <div className="rounded-card border border-line bg-sunken">
                   <EmptyState
                     icon={<Sparkles />}
-                    title="Your sky is still forming"
-                    description="After a few more entries, the things you write about most will appear here as stars."
+                    title={voice.skyEmptyTitle}
+                    description={voice.skyEmptyBody}
                   />
                 </div>
               ) : (
-                <Constellation graph={graph.data} />
+                <Constellation graph={graph.data} skin={skin} />
               )}
             </Section>
 

@@ -101,7 +101,7 @@ function LoginForm() {
       footer={
         <>
           New to Solace?{' '}
-          <Link to={`/signup${params.get('next') ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium text-lamp underline-offset-4 hover:underline">
+          <Link to={`/signup${params.get('next') ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium text-accent underline-offset-4 hover:underline">
             Start your journal
           </Link>
         </>

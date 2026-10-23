@@ -35,7 +35,7 @@ export function EntryCard({ entry, today, snippet, footnote, headingLevel = 'h3'
     >
       <div className="flex flex-col-reverse gap-0.5 @sm:flex-row @sm:items-baseline @sm:justify-between @sm:gap-3">
         <H
-          className={clsx('min-w-0 truncate font-serif text-lg leading-snug', entry.title.trim() ? 'text-fg' : 'text-fg-muted italic')}
+          className={clsx('min-w-0 truncate type-heading text-lg leading-snug', entry.title.trim() ? 'text-fg' : 'text-fg-muted italic')}
           style={morphing ? { viewTransitionName: 'entry-title', width: 'fit-content' } : undefined}
         >
           <Link
@@ -51,13 +51,13 @@ export function EntryCard({ entry, today, snippet, footnote, headingLevel = 'h3'
         </time>
       </div>
       {(snippet ?? entry.excerpt) && (
-        <p className="mt-1.5 line-clamp-2 font-serif text-[0.98rem] leading-relaxed text-fg-muted">
+        <p className="mt-1.5 line-clamp-2 font-prose text-excerpt leading-relaxed text-fg-muted">
           {snippet ?? entry.excerpt}
         </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-fg-faint">
         {entry.mood && (
-          <span className={clsx('inline-flex items-center gap-1.5', entry.moodSource === 'ai' && 'text-dusk')}>
+          <span className={clsx('inline-flex items-center gap-1.5', entry.moodSource === 'ai' && 'text-ai')}>
             <span aria-hidden="true" className="inline-flex">
               <MoodDot mood={entry.mood} size={8} />
             </span>
@@ -78,7 +78,7 @@ export function EntryCard({ entry, today, snippet, footnote, headingLevel = 'h3'
             <span className="sr-only">{entry.attachmentCount === 1 ? 'photo' : 'photos'}</span>
           </span>
         )}
-        {isEnriching(entry.enrichmentStatus) && <span className="text-dusk">Solace is reading…</span>}
+        {isEnriching(entry.enrichmentStatus) && <span className="text-ai">Solace is reading…</span>}
         {footnote}
       </div>
     </article>

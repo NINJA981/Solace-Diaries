@@ -7,23 +7,8 @@
   }
 }
 
-/* The entry title morphs from a list card into the editor (View Transitions, progressive). */
-::view-transition-group(entry-title) {
-  animation-duration: 260ms;
-  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
-}
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 180ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
+/* The entry title morphs from a list card into the editor: see the view-transition rules in
+   styles/index.css (one place, one set of motion tokens). */
 
 /* Long timelines: skip layout/paint for month groups far off-screen. */
 .journal-month-deferred {
@@ -33,10 +18,10 @@
 
 /* A calm caret in the writing surface. */
 .journal-caret {
-  caret-color: var(--lamp);
+  caret-color: var(--accent);
 }
 
-/* The writing surface shows focus with a quiet lamp-colored edge (its own border), not a box. */
+/* The writing surface shows focus with a quiet accent-coloured edge (its own border), not a box. */
 .journal-writing:focus-visible {
   outline: none;
 }
@@ -58,7 +43,7 @@
   margin-left: 1px;
   vertical-align: -0.15em;
   border-radius: 1px;
-  background: var(--dusk);
+  background: var(--ai);
   animation: solace-caret 1.1s ease-in-out infinite;
 }
 
@@ -71,7 +56,7 @@
   margin-left: 2px;
   vertical-align: -0.15em;
   border-radius: 1px;
-  background: var(--dusk);
+  background: var(--ai);
   animation: solace-caret 1.1s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -91,9 +76,9 @@
   margin-inline: 0.1em;
   padding-inline: 0.3em;
   border-radius: 999px;
-  background: var(--dusk-soft);
-  color: var(--dusk);
-  font-family: var(--font-sans);
+  background: var(--ai-soft);
+  color: var(--ai);
+  font-family: var(--font-ui);
   font-size: 0.68em;
   font-weight: 600;
   line-height: 1;
@@ -108,6 +93,6 @@
   inset: -0.6em -0.35em;
 }
 .solace-answer a[href^='https://solace.invalid/cite/']:hover {
-  background: var(--dusk);
-  color: var(--ink);
+  background: var(--ai);
+  color: var(--canvas);
 }

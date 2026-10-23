@@ -84,3 +84,52 @@ test.describe('auth gate', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'There’s no page here' })).toBeVisible();
   });
 });
+
+/** Every world × theme: the public pages render in that world before first paint and pass axe. */
+const WORLD_COLORS = JSON.parse(readFileSync(new URL('../src/worlds/theme-colors.json', import.meta.url), 'utf8')) as Record<
+  string,
+  { light: string; dark: string }
+>;
+
+async function severeAxe(page: Page) {
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  return results.violations
+    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+    .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+}
+
+const hex = (rgb: string) =>
+  '#' +
+  (rgb.match(/\d+/g) ?? [])
+    .slice(0, 3)
+    .map((n) => Number(n).toString(16).padStart(2, '0'))
+    .join('');
+
+test.describe('worlds', () => {
+  for (const world of Object.keys(WORLD_COLORS)) {
+    for (const scheme of ['dark', 'light'] as const) {
+      test(`${world} (${scheme}): landing and auth pages pass axe`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
+        await page.addInitScript((w) => {
+          try {
+            localStorage.setItem('solace.world', w);
+          } catch {
+            /* ignore */
+          }
+        }, world);
+        const violations = await withCsp(page);
+        for (const path of ['/', '/login', '/signup', '/reset']) {
+          await page.goto(path);
+          await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+          // Applied before first paint by theme-init.js: the right world, theme and canvas.
+          await expect(page.locator('html')).toHaveAttribute('data-world', world);
+          await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
+          const canvas = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+          expect(hex(canvas)).toBe(WORLD_COLORS[world]![scheme]);
+          expect(await severeAxe(page), `${world}/${scheme} ${path}`).toEqual([]);
+        }
+        expect(violations).toEqual([]);
+      });
+    }
+  }
+});

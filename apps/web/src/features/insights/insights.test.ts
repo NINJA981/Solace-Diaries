@@ -24,11 +24,11 @@ describe('mood bands', () => {
 
 describe('heatmap cells', () => {
   const day = (p: Partial<DayStat>): DayStat => ({ date: '2026-03-03', count: 1, words: 10, moodScore: null, mood: null, ...p });
-  it('colors by mood valence when known, else lamp by count', () => {
+  it('colors by mood valence when known, else accent by count', () => {
     expect(cellFill(undefined).fill).toBe(EMPTY_FILL);
     expect(cellFill(day({ moodScore: 1.6, mood: 'joyful' })).fill).toBe('var(--mood-5)');
     expect(cellFill(day({ moodScore: -0.4 })).fill).toBe('var(--mood-3)');
-    expect(cellFill(day({ count: 2 }))).toEqual({ fill: 'var(--lamp)', opacity: 0.7 });
+    expect(cellFill(day({ count: 2 }))).toEqual({ fill: 'var(--accent)', opacity: 0.7 });
   });
   it('labels cells for screen readers', () => {
     expect(cellLabel('2026-03-03', day({ count: 2, mood: 'calm' }))).toMatch(/March 3, 2026: 2 entries, mostly calm$/);

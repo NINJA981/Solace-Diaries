@@ -1,8 +1,11 @@
 import { clsx } from 'clsx';
 import { X } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { m } from 'motion/react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { errorMessage } from '@/lib/errors';
+import { Motion } from '@/lib/motion';
 import { Button, IconButton } from './Button';
+import { useModalDialog } from './useModalDialog';
 
 /** `<dialog closedby>` light-dismiss support (Chrome/Edge 134+, Firefox 141+). */
 export function supportsClosedBy(): boolean {
@@ -36,88 +39,75 @@ export function Dialog({
   dismissible = true,
 }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
-  const returnTo = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descId = useId();
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    } else if (!open && dialog.open) {
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    }
-  }, [open]);
-
-  // Restore focus once the dialog is gone.
-  useEffect(() => {
-    if (open) return;
-    const target = returnTo.current;
-    returnTo.current = null;
-    if (target?.isConnected) target.focus();
-  }, [open]);
+  const { present, motionProps } = useModalDialog(open, ref);
 
   return (
-    <dialog
-      ref={ref}
-      aria-labelledby={titleId}
-      aria-describedby={description ? descId : undefined}
-      onCancel={(e) => {
-        e.preventDefault();
-        onOpenChange(false);
-      }}
-      onClose={() => {
-        if (open) onOpenChange(false);
-      }}
-      // Light dismiss: native `closedby` where supported, a backdrop-click fallback elsewhere (Safari).
-      {...{ closedby: dismissible ? 'any' : 'closerequest' }}
-      onClick={(e) => {
-        if (!dismissible || supportsClosedBy() || e.target !== e.currentTarget) return;
-        const r = e.currentTarget.getBoundingClientRect();
-        const inside = r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right;
-        if (!inside) onOpenChange(false);
-      }}
-      className={clsx(
-        'm-auto w-[calc(100%-2rem)] max-w-md overflow-visible rounded-sheet border border-line bg-raised p-0 text-fg',
-        'shadow-[0_30px_80px_-30px_rgb(5_8_20/0.7)] backdrop:bg-ink/75 backdrop:backdrop-blur-[2px]',
-        'open:animate-[dialog-in_180ms_ease-out]',
-        className,
-      )}
-    >
-      {open && (
-        <div className="flex flex-col">
-          <div className="flex items-start gap-4 px-6 pt-6">
-            <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="font-serif text-xl leading-tight font-normal text-fg">
-                {title}
-              </h2>
-              {description && (
-                <div id={descId} className="mt-1.5 text-sm leading-relaxed text-fg-muted">
-                  {description}
-                </div>
-              )}
+    <Motion>
+      <m.dialog
+        ref={ref}
+        {...motionProps}
+        aria-labelledby={titleId}
+        aria-describedby={description ? descId : undefined}
+        onCancel={(e) => {
+          e.preventDefault();
+          onOpenChange(false);
+        }}
+        onClose={() => {
+          if (open) onOpenChange(false);
+        }}
+        // Light dismiss: native `closedby` where supported, a backdrop-click fallback elsewhere (Safari).
+        {...{ closedby: dismissible ? 'any' : 'closerequest' }}
+        onClick={(e) => {
+          if (!dismissible || supportsClosedBy() || e.target !== e.currentTarget) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          const inside =
+            r.top <= e.clientY &&
+            e.clientY <= r.bottom &&
+            r.left <= e.clientX &&
+            e.clientX <= r.right;
+          if (!inside) onOpenChange(false);
+        }}
+        className={clsx(
+          'm-auto w-[calc(100%-2rem)] max-w-md overflow-visible rounded-sheet border border-line bg-raised p-0 text-fg',
+          'shadow-3 backdrop:bg-canvas/75 backdrop:backdrop-blur-[2px]',
+          className,
+        )}
+      >
+        {present && (
+          <div className="flex flex-col">
+            <div className="flex items-start gap-4 px-6 pt-6">
+              <div className="min-w-0 flex-1">
+                <h2 id={titleId} className="type-heading text-xl leading-tight text-fg">
+                  {title}
+                </h2>
+                {description && (
+                  <div id={descId} className="mt-1.5 text-sm leading-relaxed text-fg-muted">
+                    {description}
+                  </div>
+                )}
+              </div>
+              <IconButton
+                label="Close"
+                icon={<X />}
+                size="sm"
+                className="-mt-1 -mr-2"
+                onClick={() => onOpenChange(false)}
+              />
             </div>
-            <IconButton
-              label="Close"
-              icon={<X />}
-              size="sm"
-              className="-mt-1 -mr-2"
-              onClick={() => onOpenChange(false)}
-            />
+            {children && <div className="px-6 pt-4">{children}</div>}
+            {footer ? (
+              <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-line px-6 py-4">
+                {footer}
+              </div>
+            ) : (
+              <div className="h-6" />
+            )}
           </div>
-          {children && <div className="px-6 pt-4">{children}</div>}
-          {footer ? (
-            <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-line px-6 py-4">{footer}</div>
-          ) : (
-            <div className="h-6" />
-          )}
-        </div>
-      )}
-    </dialog>
+        )}
+      </m.dialog>
+    </Motion>
   );
 }
 

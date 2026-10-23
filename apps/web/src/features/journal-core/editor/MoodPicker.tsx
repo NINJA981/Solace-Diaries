@@ -13,7 +13,7 @@ type Props = {
 
 /**
  * Ten moods as chips. A mood Solace inferred (source 'ai') is shown as a suggestion in
- * dusk; accepting or picking any chip makes it the user's own.
+ * the AI colour; accepting or picking any chip makes it the user's own.
  */
 export const MoodPicker = memo(function MoodPicker({ mood, source, onChange }: Props) {
   const suggested = source === 'ai' ? mood : null;
@@ -22,14 +22,14 @@ export const MoodPicker = memo(function MoodPicker({ mood, source, onChange }: P
     <fieldset className="min-w-0">
       <legend className="mb-2 text-sm font-medium text-fg-muted">How did this day feel?</legend>
       {suggested && (
-        <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-dusk">
+        <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ai">
           <span>
             Solace sensed: <span className="font-medium">{suggested}</span>
           </span>
           <button
             type="button"
             onClick={() => onChange(suggested)}
-            className="relative rounded-control font-medium underline decoration-dusk/50 underline-offset-2 hover:decoration-dusk after:absolute after:-inset-3 after:content-['']"
+            className="relative rounded-control font-medium underline decoration-ai/50 underline-offset-2 hover:decoration-ai after:absolute after:-inset-3 after:content-['']"
           >
             That’s right
           </button>
@@ -48,9 +48,9 @@ export const MoodPicker = memo(function MoodPicker({ mood, source, onChange }: P
               className={clsx(
                 'inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-sm transition-colors sm:h-9',
                 isChosen
-                  ? 'border-lamp/60 bg-lamp-soft text-fg'
+                  ? 'border-accent/60 bg-accent-soft text-fg'
                   : isSuggested
-                    ? 'border-dusk/50 bg-dusk-soft text-fg'
+                    ? 'border-ai/50 bg-ai-soft text-fg'
                     : 'border-line text-fg-muted hover:border-line-strong hover:text-fg',
               )}
             >

@@ -66,14 +66,6 @@ export function compactNumber(n: number): string {
   return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
 }
 
-/** Greeting for the local hour. */
-export function greeting(hour: number): string {
-  if (hour < 5) return 'Still up';
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 /** Hour (0-23) right now in `tz`. */
 export function localHour(tz: string, at = new Date()): number {
   const h = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }).format(at);

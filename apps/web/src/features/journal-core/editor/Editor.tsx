@@ -4,6 +4,8 @@ import { Maximize2, Minimize2, RotateCcw, Trash, ImagePlus } from 'lucide-react'
 import { LIMITS, countWords, type Entry } from '@solace/shared';
 import { IconButton, toast } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
+import { feedback } from '@/lib/feedback';
+import { useVoice } from '@/lib/voice';
 import { formatLongDay, plural } from '../format';
 import { isEnriching, useRetryEnrichment } from '../queries';
 import { ConflictSheet } from './ConflictSheet';
@@ -72,12 +74,25 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
   const bodyId = useId();
   const dateId = useId();
   const retry = useRetryEnrichment(engine.id);
+  const voice = useVoice();
 
   const attachments = server?.attachments ?? NO_ATTACHMENTS;
   const photos = usePhotoUploads(engine, attachments.length);
   const words = countWords(fields.body);
 
   useAutoGrow(bodyRef, fields.body);
+
+  // Save-status cues (sound and haptics only when the person turned them on): an error that needs
+  // attention, and words safely back on the server after being offline or retrying.
+  const status = snapshot.status;
+  const lastStatus = useRef(status);
+  useEffect(() => {
+    const prev = lastStatus.current;
+    lastStatus.current = status;
+    if (prev === status) return;
+    if (status === 'failed' || status === 'conflict') feedback('error');
+    else if (status === 'saved' && (prev === 'offline' || prev === 'retrying')) feedback('save');
+  }, [status]);
 
   const conflictOpen = !!snapshot.conflict && dismissedConflict !== snapshot.conflict;
   const setConflictOpen = (open: boolean) => setDismissedConflict(open ? null : snapshot.conflict);
@@ -87,7 +102,10 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        void engine.flush();
+        // An explicit save gets the save cue (sound/haptics, when on) once it has landed.
+        void engine.flush().then(() => {
+          if (engine.getSnapshot().status === 'saved') feedback('save');
+        });
       } else if (e.key === 'Escape' && focusMode && !conflictOpen) {
         setFocusMode(false);
       }
@@ -157,7 +175,7 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
       className={clsx(
         'relative',
         focusMode &&
-          'fixed inset-0 z-50 m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto border-0 bg-ink px-4 pt-6 pb-24 text-fg sm:px-8 sm:pt-12',
+          'fixed inset-0 z-50 m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto border-0 bg-canvas px-4 pt-6 pb-24 text-fg sm:px-8 sm:pt-12',
       )}
       onDragEnter={(e) => {
         if (!e.dataTransfer.types.includes('Files')) return;
@@ -236,7 +254,7 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
               bodyRef.current?.focus();
             }
           }}
-          className="journal-writing journal-caret -ml-3.5 w-[calc(100%+0.875rem)] border-l-2 border-transparent bg-transparent pl-3 font-serif text-2xl leading-tight text-fg placeholder:text-fg-faint/70 focus-visible:border-lamp/70 focus-visible:outline-none sm:text-3xl"
+          className="journal-writing journal-caret -ml-3.5 w-[calc(100%+0.875rem)] border-l-2 border-transparent bg-transparent pl-3 type-heading text-2xl leading-tight text-fg placeholder:text-fg-faint/70 focus-visible:border-accent/70 focus-visible:outline-none sm:text-3xl"
         />
 
         <label htmlFor={bodyId} className="sr-only">
@@ -247,14 +265,14 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
           ref={bodyRef}
           value={fields.body}
           maxLength={LIMITS.bodyMax}
-          placeholder={placeholder ?? 'What’s on your mind?'}
+          placeholder={placeholder ?? voice.entryPlaceholder}
           onChange={(e) => engine.edit({ body: e.target.value })}
           onBlur={flush}
           onPaste={onPaste}
           rows={8}
           spellCheck
           className={clsx(
-            'journal-writing journal-autogrow journal-caret prose-journal mt-4 -ml-3.5 block w-[calc(100%+0.875rem)] max-w-none resize-none overflow-hidden border-l-2 border-transparent bg-transparent pl-3 text-fg placeholder:text-fg-faint/70 focus-visible:border-lamp/70 focus-visible:outline-none',
+            'journal-writing journal-autogrow journal-caret prose-journal mt-4 -ml-3.5 block w-[calc(100%+0.875rem)] max-w-none resize-none overflow-hidden border-l-2 border-transparent bg-transparent pl-3 text-fg placeholder:text-fg-faint/70 focus-visible:border-accent/70 focus-visible:outline-none',
             // Room for a few paragraphs; field-sizing grows it from there. Not a viewport fraction,
             // so the mood/tags/photos row stays within reach on Today.
             focusMode ? 'min-h-[70vh]' : dateMode === 'picker' ? 'min-h-[5lh]' : 'min-h-[4lh] sm:min-h-[7lh]',
@@ -275,15 +293,15 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
       {!focusMode && (
         <div className="mt-8 space-y-8">
           {enriching && (
-            <p className="flex items-center gap-2 text-sm text-dusk" role="status">
-              <span className="size-1.5 animate-pulse rounded-full bg-dusk motion-reduce:animate-none" aria-hidden="true" />
-              Solace is reading this entry…
+            <p className="flex items-center gap-2 text-sm text-ai" role="status">
+              <span className="size-1.5 animate-pulse rounded-full bg-ai motion-reduce:animate-none" aria-hidden="true" />
+              {voice.readingEntry}
             </p>
           )}
           {server?.enrichmentStatus === 'ready' && server.summary && (
-            <aside aria-label="Solace’s note" className="border-l-2 border-dusk/60 pl-4">
-              <p className="text-xs font-medium text-dusk">Solace’s note</p>
-              <p className="mt-1 font-serif text-base leading-relaxed text-fg-muted italic">{server.summary}</p>
+            <aside aria-label="Solace’s note" className="border-l-2 border-ai/60 pl-4">
+              <p className="text-xs font-medium text-ai">{voice.noteLabel}</p>
+              <p className="mt-1 font-prose text-base leading-relaxed text-fg-muted italic">{server.summary}</p>
             </aside>
           )}
           {server?.enrichmentStatus === 'failed' && (
@@ -295,7 +313,7 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
                 onClick={() =>
                   retry.mutate(undefined, { onError: (err) => toast(errorMessage(err), { tone: 'danger' }) })
                 }
-                className="inline-flex min-h-11 items-center gap-1.5 font-medium text-dusk underline underline-offset-2 sm:min-h-0"
+                className="inline-flex min-h-11 items-center gap-1.5 font-medium text-ai underline underline-offset-2 sm:min-h-0"
               >
                 <RotateCcw className="size-3.5" aria-hidden="true" />
                 Try again
@@ -323,9 +341,9 @@ export function Editor({ engine, server, dateMode, today, placeholder, autoFocus
       {dragging && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed inset-0 z-[55] grid place-items-center bg-ink/70 backdrop-blur-sm"
+          className="pointer-events-none fixed inset-0 z-[55] grid place-items-center bg-canvas/70 backdrop-blur-sm"
         >
-          <div className="flex flex-col items-center gap-2 rounded-sheet border border-dashed border-lamp px-10 py-8 text-lamp">
+          <div className="flex flex-col items-center gap-2 rounded-sheet border border-dashed border-accent px-10 py-8 text-accent">
             <ImagePlus className="size-6" />
             <span className="text-sm font-medium">Drop photos to add them</span>
           </div>

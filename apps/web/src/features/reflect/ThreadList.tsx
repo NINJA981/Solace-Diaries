@@ -5,6 +5,7 @@ import { Plus, Trash } from 'lucide-react';
 import type { Thread } from '@solace/shared';
 import { ConfirmDialog, toast } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
+import { voiceNow } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { useDeleteThread, useThreads } from '../journal-core/queries';
 
@@ -86,7 +87,7 @@ export function ThreadList({ activeId, onNavigate }: { activeId?: string; onNavi
           try {
             await del.mutateAsync(id);
             setDeleting(null);
-            toast('Reflection deleted');
+            toast(voiceNow().reflectionDeleted);
             if (id === activeId) navigate('/app/reflect');
           } catch (err) {
             toast(errorMessage(err), { tone: 'danger' });

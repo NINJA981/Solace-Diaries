@@ -4,6 +4,7 @@ import { ImagePlus, LoaderCircle, X } from 'lucide-react';
 import { LIMITS, type Attachment, type Entry } from '@solace/shared';
 import { api, errorMessage } from '@/lib/api';
 import { ConfirmDialog, Dialog, toast } from '@/components/ui';
+import { voiceNow } from '@/lib/voice';
 import { qk, useDeleteAttachment } from '../queries';
 import type { EntrySync } from './syncEngine';
 
@@ -173,7 +174,7 @@ export const Photos = memo(function Photos({ entryId, attachments, uploads, onAd
                   type="button"
                   aria-label="Remove photo"
                   onClick={() => setRemoving(a)}
-                  className="absolute top-1 right-1 grid size-8 place-items-center rounded-full bg-ink/80 text-fg opacity-100 backdrop-blur transition-opacity hover:bg-ink sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                  className="absolute top-1 right-1 grid size-8 place-items-center rounded-full bg-canvas/80 text-fg opacity-100 backdrop-blur transition-opacity hover:bg-canvas sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                 >
                   <X className="size-4" aria-hidden="true" />
                 </button>
@@ -183,8 +184,8 @@ export const Photos = memo(function Photos({ entryId, attachments, uploads, onAd
               <li key={u.key} className="relative aspect-square overflow-hidden rounded-control bg-sunken">
                 <img src={u.preview} alt="" className="size-full object-cover opacity-50" />
                 {u.error ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-ink/85 p-1.5 text-center">
-                    <span className="line-clamp-3 text-[11px] leading-tight text-danger">{u.error}</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-canvas/85 p-1.5 text-center">
+                    <span className="line-clamp-3 text-caption leading-tight text-danger">{u.error}</span>
                     <button type="button" onClick={() => onDismissUpload(u.key)} className="text-xs font-medium text-fg underline">
                       Dismiss
                     </button>
@@ -202,7 +203,7 @@ export const Photos = memo(function Photos({ entryId, attachments, uploads, onAd
                 <button
                   type="button"
                   onClick={() => input.current?.click()}
-                  className="flex size-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line-strong text-fg-faint transition-colors hover:border-lamp hover:text-lamp"
+                  className="flex size-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line-strong text-fg-faint transition-colors hover:border-accent hover:text-accent"
                 >
                   <ImagePlus className="size-5" aria-hidden="true" />
                   <span className="text-xs">Add photos</span>
@@ -235,7 +236,7 @@ export const Photos = memo(function Photos({ entryId, attachments, uploads, onAd
           if (!removing) return;
           try {
             await del.mutateAsync(removing.id);
-            toast('Photo removed');
+            toast(voiceNow().photoRemoved);
           } catch (err) {
             toast(errorMessage(err), { tone: 'danger' });
           }

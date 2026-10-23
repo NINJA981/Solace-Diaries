@@ -7,14 +7,14 @@ export type ButtonSize = 'sm' | 'md';
 
 const base =
   'inline-flex shrink-0 items-center justify-center gap-2 font-medium whitespace-nowrap select-none ' +
-  'rounded-control transition-[background-color,border-color,color,box-shadow,filter] duration-150 ' +
+  'rounded-control transition-[background-color,border-color,color,box-shadow,filter] ' +
   'disabled:cursor-not-allowed disabled:opacity-55 aria-busy:cursor-progress';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-lamp text-lamp-fg shadow-[0_1px_0_rgb(255_255_255/0.18)_inset] hover:brightness-[1.06] active:brightness-95',
+  primary: 'bg-accent text-accent-fg inset-shadow-highlight hover:brightness-[1.06] active:brightness-95',
   secondary: 'border border-line-strong bg-raised text-fg hover:border-fg-faint hover:bg-sunken',
   ghost: 'text-fg-muted hover:bg-sunken hover:text-fg',
-  danger: 'bg-danger text-ink hover:brightness-[1.06] active:brightness-95',
+  danger: 'bg-danger text-canvas hover:brightness-[1.06] active:brightness-95',
 };
 
 // Below `sm` every control is at least 44px tall (touch). min-* so callers' larger heights still win.

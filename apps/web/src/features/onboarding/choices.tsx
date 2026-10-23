@@ -29,7 +29,7 @@ export function AiStylePicker({ value, onChange, name = 'ai-style' }: { value: A
             className={clsx(
               'relative flex cursor-pointer flex-col gap-2 rounded-card border p-4 transition-colors',
               'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
-              checked ? 'border-dusk/70 bg-dusk-soft' : 'border-line bg-surface hover:border-line-strong',
+              checked ? 'border-ai/70 bg-ai-soft' : 'border-line bg-surface hover:border-line-strong',
             )}
           >
             <input
@@ -46,13 +46,13 @@ export function AiStylePicker({ value, onChange, name = 'ai-style' }: { value: A
                 aria-hidden="true"
                 className={clsx(
                   'grid size-4 place-items-center rounded-full border',
-                  checked ? 'border-dusk bg-dusk' : 'border-line-strong',
+                  checked ? 'border-ai bg-ai' : 'border-line-strong',
                 )}
               >
-                {checked && <span className="size-1.5 rounded-full bg-ink" />}
+                {checked && <span className="size-1.5 rounded-full bg-canvas" />}
               </span>
             </span>
-            <span className="font-serif text-[0.975rem] leading-snug text-fg-muted italic">{style.example}</span>
+            <span className="font-prose text-excerpt leading-snug text-fg-muted italic">{style.example}</span>
           </label>
         );
       })}

@@ -1,0 +1,9 @@
+/*
+ * Every world's tokens ship in the main stylesheet (a few kB): the pre-paint script can then
+ * switch worlds with one attribute and nothing ever flashes. Fonts, heroes, skins, companions
+ * and sounds stay lazy (see each world's manifest.ts).
+ */
+@import './lamplight/tokens.css';
+@import './jelly/tokens.css';
+@import './scrapbook/tokens.css';
+@import './chrome/tokens.css';

@@ -12,7 +12,7 @@ export function StatRow({ stats }: { stats: Stats }) {
   return (
     <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
       {items.map((i) => (
-        <div key={i.label} className="flex flex-col-reverse gap-0.5 border-l border-line pl-4 first:border-lamp/70">
+        <div key={i.label} className="flex flex-col-reverse gap-0.5 border-l border-line pl-4 first:border-accent/70">
           <dt className="text-sm text-fg-muted">{i.label}</dt>
           <dd className="text-3xl font-semibold tracking-tight text-fg">{compactNumber(i.value)}</dd>
         </div>

@@ -60,7 +60,7 @@ export function Timeline({ filters, today, empty }: Props) {
         <section key={g.month} aria-labelledby={`month-${g.month}`} className={i > 1 ? 'journal-month-deferred' : undefined}>
           <h2
             id={`month-${g.month}`}
-            className="sticky top-14 z-10 -mx-1 mb-3 bg-ink/90 px-1 py-2 font-serif text-lg text-fg-muted backdrop-blur md:top-0"
+            className="sticky top-14 z-10 -mx-1 mb-3 bg-canvas/90 px-1 py-2 type-heading text-lg text-fg-muted backdrop-blur md:top-0"
           >
             {formatMonth(g.month)}
           </h2>

@@ -10,10 +10,11 @@ export const FAMILY_OF: Record<GraphKind, Family> = {
   habit: 'aims',
   emotion: 'feelings',
 };
-export const FAMILIES: { key: Family; label: string; token: string }[] = [
-  { key: 'world', label: 'People and places', token: '--lamp' },
-  { key: 'aims', label: 'Goals, projects and habits', token: '--dusk' },
-  { key: 'feelings', label: 'Feelings', token: '--fg' },
+/** Legend order and labels; each skin decides the colour token per family. */
+export const FAMILIES: { key: Family; label: string }[] = [
+  { key: 'world', label: 'People and places' },
+  { key: 'aims', label: 'Goals, projects and habits' },
+  { key: 'feelings', label: 'Feelings' },
 ];
 
 export type Star = {

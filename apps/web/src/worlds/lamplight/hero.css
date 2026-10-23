@@ -1,0 +1,56 @@
+/* Lamplight's landing hero (RememberingScene): ambient twinkle runs only while on screen. */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+@keyframes star-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+.remembering .dust-twinkle {
+  animation: twinkle 4.8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.remembering[data-phase='done'] .star {
+  animation: star-breathe 5.5s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.remembering[data-visible='true'] :is(.dust-twinkle, .star) {
+  animation-play-state: running;
+}
+
+/* Each remembered phrase gets a hairline in the accent and a low glow beneath the baseline,
+   drawn left to right as its star lights. Ink stays on the words; no boxes over the prose. */
+.passage-mark {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--accent) 70%, transparent), color-mix(in oklab, var(--accent) 70%, transparent)),
+    linear-gradient(to top, var(--accent-soft), transparent);
+  background-repeat: no-repeat;
+  background-position:
+    0 calc(100% - 0.08em),
+    0 100%;
+  background-size:
+    0% 1px,
+    0% 0.55em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition:
+    background-size var(--dur-4) ease-out,
+    color var(--dur-4) ease-out;
+}
+.passage-mark.is-lit {
+  background-size:
+    100% 1px,
+    100% 0.55em;
+  color: var(--fg);
+}

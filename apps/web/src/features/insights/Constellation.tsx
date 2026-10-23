@@ -1,6 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import type { Graph, GraphKind } from '@solace/shared';
-import { FAMILIES, layoutConstellation, type Family, type Star } from './constellationLayout';
+import { rgba, isLightColor } from '@/lib/color';
+import { readToken, resolveColors } from '@/lib/color-dom';
+import { starsSkin } from '@/worlds/lamplight/constellationSkin';
+import { FAMILIES, layoutConstellation, type Star } from './constellationLayout';
+import type { ConstellationSkin, SkinCache, SkinColors, SkinFrame } from './skin';
 
 const KIND_LABEL: Record<GraphKind, string> = {
   person: 'Person',
@@ -14,58 +18,58 @@ const MARGIN = 30;
 const FRAME_MS = 1000 / 30; // a quiet sky doesn't need 60fps
 const LABELLED = 5;
 
-type Colors = Record<Family, string> & { line: string; label: string; ring: string; light: boolean };
+const FALLBACK: Omit<SkinColors, 'light'> = {
+  world: { r: 227, g: 182, b: 94, a: 1 },
+  aims: { r: 169, g: 156, b: 240, a: 1 },
+  feelings: { r: 235, g: 232, b: 243, a: 1 },
+  line: { r: 70, g: 82, b: 122, a: 1 },
+  label: { r: 179, g: 175, b: 198, a: 1 },
+  ring: { r: 240, g: 203, b: 126, a: 1 },
+  background: { r: 15, g: 21, b: 36, a: 1 },
+};
 
-/** Rough luminance of a #rrggbb token, to tell a paper (light) sky from an ink (dark) one. */
-function isLight(hex: string): boolean {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return false;
-  const n = parseInt(m[1]!, 16);
-  return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 150;
-}
-
-function readColors(): Colors {
-  const css = getComputedStyle(document.documentElement);
-  const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+/** The skin's colours as the browser resolves them here (any CSS colour, any world or theme). */
+function readColors(scope: Element, skin: ConstellationSkin): SkinColors {
+  const resolved = resolveColors(
+    {
+      world: skin.familyTokens.world,
+      aims: skin.familyTokens.aims,
+      feelings: skin.familyTokens.feelings,
+      line: '--line-strong',
+      label: '--fg-muted',
+      ring: '--focus',
+      background: '--sunken',
+    },
+    scope,
+  );
+  const pick = (k: keyof typeof FALLBACK) => resolved[k] ?? FALLBACK[k];
+  const background = pick('background');
   return {
-    world: v('--lamp', '#e3b65e'),
-    aims: v('--dusk', '#a99cf0'),
-    feelings: v('--fg', '#ebe8f3'),
-    line: v('--line-strong', '#46527a'),
-    label: v('--fg-muted', '#b3afc6'),
-    ring: v('--focus', '#f0cb7e'),
-    light: isLight(v('--sunken', '#0f1524')),
+    world: pick('world'),
+    aims: pick('aims'),
+    feelings: pick('feelings'),
+    line: pick('line'),
+    label: pick('label'),
+    ring: pick('ring'),
+    background,
+    light: isLightColor(background),
   };
 }
 
-function withAlpha(color: string, a: number): string {
-  const m = /^#([0-9a-f]{6})$/i.exec(color);
-  if (!m) return color;
-  const n = parseInt(m[1]!, 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-}
-
-/** One soft glow per family, rendered once; drawing sprites is far cheaper than shadowBlur. */
-function makeSprite(color: string, dpr: number, strength: number): HTMLCanvasElement {
-  const size = Math.ceil(64 * dpr);
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const g = c.getContext('2d')!;
-  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, withAlpha(color, 0.55 * strength));
-  grad.addColorStop(0.35, withAlpha(color, 0.16 * strength));
-  grad.addColorStop(1, withAlpha(color, 0));
-  g.fillStyle = grad;
-  g.fillRect(0, 0, size, size);
-  return c;
+function readFonts(scope: Element): SkinFrame['fonts'] {
+  return {
+    ui: readToken('--font-ui', scope) || 'system-ui, sans-serif',
+    heading: readToken('--font-heading', scope) || 'serif',
+  };
 }
 
 /**
- * The Memory Constellation: what Solace remembers, drawn as a night sky. Layout is computed
- * once; afterwards stars only drift a couple of pixels. The loop runs at ~30fps and only while
- * the canvas is on screen, the tab is visible and reduced motion is off.
+ * The Memory Constellation: what Solace remembers, drawn by the current world's skin (stars in
+ * Lamplight). Layout is computed once; afterwards nodes only drift a couple of pixels. The loop
+ * runs at ~30fps and only while the canvas is on screen, the tab is visible and motion is
+ * allowed. Colours are re-read whenever the world or theme changes.
  */
-export const Constellation = memo(function Constellation({ graph }: { graph: Graph }) {
+export const Constellation = memo(function Constellation({ graph, skin = starsSkin }: { graph: Graph; skin?: ConstellationSkin }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { stars, links } = useMemo(() => layoutConstellation(graph, 2), [graph]);
@@ -96,8 +100,9 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
     let w = 0;
     let h = 0;
     let dpr = 1;
-    let colors = readColors();
-    let sprites: Record<Family, HTMLCanvasElement> = {} as Record<Family, HTMLCanvasElement>;
+    let colors = readColors(wrap, skin);
+    let fonts = readFonts(wrap);
+    let cache: SkinCache = {};
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     let onScreen = true;
     let pageVisible = document.visibilityState !== 'hidden';
@@ -106,19 +111,13 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
     let now = performance.now();
     const maxLink = Math.max(1, ...links.map((l) => l.w));
 
-    const buildSprites = () => {
-      // Glows read as light on ink; on paper they'd read as smudges, so keep them faint.
-      const k = colors.light ? 0.35 : 1;
-      sprites = {
-        world: makeSprite(colors.world, dpr, k),
-        aims: makeSprite(colors.aims, dpr, k),
-        feelings: makeSprite(colors.feelings, dpr, colors.light ? 0.15 : 1),
-      };
+    const prepare = () => {
+      cache = skin.prepare?.(colors, dpr) ?? {};
     };
 
     const pos = (i: number) => {
       const s = stars[i]!;
-      const drift = reduce.matches ? 0 : 2.2;
+      const drift = reduce.matches ? 0 : skin.drift;
       return {
         x: MARGIN + s.x * (w - MARGIN * 2) + Math.sin(now * 0.00023 + s.phase) * drift,
         y: MARGIN + s.y * (h - MARGIN * 2) + Math.cos(now * 0.00019 + s.phase * 1.3) * drift,
@@ -128,45 +127,21 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
 
     const draw = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
+      const frame: SkinFrame = { ctx, width: w, height: h, dpr, colors, now, reducedMotion: reduce.matches, fonts };
+      skin.background(frame);
       const act = activeRef.current;
       const p = stars.map((_, i) => pos(i));
-      ctx.lineCap = 'round';
       for (const l of links) {
-        const touches = act !== null && (l.a === act || l.b === act);
-        ctx.strokeStyle = colors.line;
-        ctx.globalAlpha = touches ? 0.85 : 0.18 + 0.32 * (l.w / maxLink);
-        ctx.lineWidth = touches ? 1.2 : 0.7;
-        ctx.beginPath();
-        ctx.moveTo(p[l.a]!.x, p[l.a]!.y);
-        ctx.lineTo(p[l.b]!.x, p[l.b]!.y);
-        ctx.stroke();
+        skin.edge(frame, p[l.a]!, p[l.b]!, { active: act !== null && (l.a === act || l.b === act), strength: l.w / maxLink });
       }
-      ctx.globalAlpha = 1;
       stars.forEach((s, i) => {
-        const { x, y } = p[i]!;
-        const twinkle = reduce.matches ? 1 : 0.82 + 0.18 * Math.sin(now * 0.0011 + s.phase * 3);
-        const g = s.r * 7;
-        ctx.globalAlpha = twinkle * (act === null || act === i ? 1 : 0.7);
-        ctx.drawImage(sprites[s.family], x - g / 2, y - g / 2, g, g);
-        ctx.globalAlpha = act === null || act === i ? 1 : 0.75;
-        ctx.fillStyle = colors[s.family];
-        ctx.beginPath();
-        ctx.arc(x, y, s.r, 0, Math.PI * 2);
-        ctx.fill();
+        skin.node(frame, s, p[i]!, { active: act === i, dimmed: act !== null && act !== i }, cache);
       });
+      if (act !== null && stars[act]) skin.ring(frame, stars[act]!, p[act]!);
+      // Selective direct labels: the brightest few nodes, never the active one (it has a tooltip).
       ctx.globalAlpha = 1;
-      if (act !== null && stars[act]) {
-        const { x, y } = p[act]!;
-        ctx.strokeStyle = colors.ring;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(x, y, stars[act]!.r + 5, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      // Selective direct labels: the brightest few stars, never the active one (it has a tooltip).
-      ctx.font = '500 12px "Instrument Sans", system-ui, sans-serif';
-      ctx.fillStyle = colors.label;
+      ctx.font = skin.label.font(frame);
+      ctx.fillStyle = rgba(skin.label.color(frame));
       ctx.textBaseline = 'middle';
       for (const i of labelled) {
         if (i === act) continue;
@@ -174,7 +149,7 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
         const s = stars[i]!;
         const right = x < w - 120;
         ctx.textAlign = right ? 'left' : 'right';
-        ctx.fillText(s.name, right ? x + s.r + 6 : x - s.r - 6, y);
+        ctx.fillText(s.name, right ? x + s.r + skin.label.gap : x - s.r - skin.label.gap, y);
       }
     };
     redrawRef.current = () => {
@@ -205,7 +180,7 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
       canvas.style.height = `${h}px`;
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
-      buildSprites();
+      prepare();
       draw();
     };
     resize();
@@ -233,14 +208,19 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
       start();
     };
     reduce.addEventListener('change', onMotion);
-    // Theme switches change the token values: re-read them and re-render the glows.
+    // World and theme switches change the token values: re-read them and re-render the sprites.
+    // Watch the root and the nearest previewed world (a [data-world] subtree), if any.
     const retheme = () => {
-      colors = readColors();
-      buildSprites();
+      colors = readColors(wrap, skin);
+      fonts = readFonts(wrap);
+      prepare();
       draw();
     };
     const mo = new MutationObserver(retheme);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+    const watched = ['data-world', 'data-theme', 'class', 'style'];
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: watched });
+    const scope = wrap.closest('[data-world]');
+    if (scope && scope !== document.documentElement) mo.observe(scope, { attributes: true, attributeFilter: watched });
     const scheme = window.matchMedia('(prefers-color-scheme: light)');
     scheme.addEventListener('change', retheme);
 
@@ -253,7 +233,7 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
       reduce.removeEventListener('change', onMotion);
       scheme.removeEventListener('change', retheme);
     };
-  }, [stars, links, labelled]);
+  }, [stars, links, labelled, skin]);
 
   // Static skies (reduced motion / paused) still need to show hover and focus.
   useEffect(() => {
@@ -306,7 +286,7 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
         {a && tip && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-control border border-line-strong bg-raised px-2.5 py-1.5 text-xs whitespace-nowrap shadow-[var(--shadow-card)]"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-control border border-line-strong bg-raised px-2.5 py-1.5 text-xs whitespace-nowrap shadow-1"
             style={{ left: tip.x, top: tip.y - a.r - 10 }}
           >
             <span className="font-medium text-fg">{a.name}</span>
@@ -345,7 +325,7 @@ export const Constellation = memo(function Constellation({ graph }: { graph: Gra
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-fg-muted">
         {FAMILIES.map((f) => (
           <span key={f.key} className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className="inline-block size-2.5 rounded-full" style={{ background: `var(${f.token})` }} />
+            <span aria-hidden="true" className="inline-block size-2.5 rounded-full" style={{ background: `var(${skin.familyTokens[f.key]})` }} />
             {f.label}
           </span>
         ))}

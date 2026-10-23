@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/lib/errors';
 import { ME_QUERY_KEY, browserTimezone, useProfile, useSession } from '@/lib/session';
+import { useProfileAppearanceSync } from '@/lib/world';
 
 export function FullPageLoader({ label = 'Loading your journal' }: { label?: string }) {
   return (
-    <div className="grid min-h-dvh place-items-center bg-ink text-fg-muted">
+    <div className="grid min-h-dvh place-items-center bg-canvas text-fg-muted">
       <Spinner label={label} size={22} />
     </div>
   );
@@ -54,6 +55,8 @@ export function RequireAuth({ children, requireOnboarded = true }: { children: R
   const { pathname, search } = useLocation();
   const queryClient = useQueryClient();
   useTimezoneAdoption();
+  // The profile's world wins over this device's, and its sound/haptics choices switch feedback on.
+  useProfileAppearanceSync();
 
   if (status === 'loading') return <FullPageLoader />;
   if (status === 'signed-out') return <Navigate to={loginRedirect(pathname, search)} replace />;
@@ -61,7 +64,7 @@ export function RequireAuth({ children, requireOnboarded = true }: { children: R
   if (!profile) {
     return (
       <main id="main" className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6">
-        <h1 className="font-serif text-2xl font-normal">We couldn’t open your journal</h1>
+        <h1 className="type-heading text-2xl">We couldn’t open your journal</h1>
         <p className="mt-3 text-fg-muted">{errorMessage(error, 'Your profile didn’t load.')}</p>
         <div className="mt-6">
           <Button onClick={() => void queryClient.refetchQueries({ queryKey: ME_QUERY_KEY })}>Try again</Button>

@@ -11,11 +11,11 @@ import { MIN_PASSWORD, passwordStrength } from '@/lib/auth-errors';
 /** Quiet, centered frame for sign-in, sign-up and password pages. */
 export function AuthLayout({ title, intro, children, footer }: { title: string; intro?: ReactNode; children: ReactNode; footer?: ReactNode }) {
   return (
-    <div className="relative isolate flex min-h-dvh flex-col bg-ink">
+    <div className="relative isolate flex min-h-dvh flex-col bg-canvas">
       <SkipLink />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(50%_60%_at_50%_0%,var(--lamp-soft),transparent_70%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(50%_60%_at_50%_0%,var(--accent-soft),transparent_70%)]"
       />
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-5 sm:px-8">
         <Link to="/" aria-label="Solace home" className="-my-2 rounded-control py-2">
@@ -25,7 +25,7 @@ export function AuthLayout({ title, intro, children, footer }: { title: string; 
       <main id="main" tabIndex={-1} className="flex flex-1 items-start justify-center px-5 pt-10 pb-16 outline-none sm:pt-16">
         <div className="w-full max-w-[25rem]">
           {!config.supabaseConfigured && <SetupNotice />}
-          <h1 className="font-serif text-[2.15rem] leading-tight font-[380] tracking-[-0.015em] text-fg">{title}</h1>
+          <h1 className="type-title text-title leading-tight text-fg">{title}</h1>
           {intro && <div className="mt-3 leading-relaxed text-fg-muted">{intro}</div>}
           <div className="mt-8">{children}</div>
           {footer && <div className="mt-8 border-t border-line pt-6 text-sm text-fg-muted">{footer}</div>}

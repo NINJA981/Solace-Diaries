@@ -5,9 +5,10 @@ import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { RequireAuth } from '@/app/guards';
 import { prefetchPage } from '@/app/pages';
-import { toast } from '@/components/ui/toast';
+import { preloadToasts, toast } from '@/components/ui/toast';
 import { api } from '@/lib/api';
 import { useProfile } from '@/lib/session';
+import { voiceNow } from '@/lib/voice';
 import { AccountMenu } from './AccountMenu';
 import { CommandPalette, isMac, openCommandPalette } from './CommandPalette';
 import { Wordmark } from './Logo';
@@ -19,7 +20,7 @@ function Rail() {
   const shortcut = isMac() ? '⌘K' : 'Ctrl K';
   return (
     // The column spans the whole document (so its edge runs the full page); the rail inside it stays put.
-    <aside className="relative z-30 hidden border-r border-line bg-ink md:block">
+    <aside className="relative z-30 hidden border-r border-line bg-canvas md:block">
       <div className="sticky top-0 flex h-dvh flex-col overflow-y-auto">
         <div className="flex h-16 shrink-0 items-center px-5">
           <Link to="/app/today" aria-label="Solace, go to Today" className="rounded-control">
@@ -36,7 +37,7 @@ function Rail() {
           >
             <Search aria-hidden="true" className="size-4" />
             <span className="flex-1 text-left">Search</span>
-            <kbd className="font-sans text-xs">{shortcut}</kbd>
+            <kbd className="font-ui text-xs">{shortcut}</kbd>
           </button>
         </div>
         <nav aria-label="Main" className="mt-5 flex-1 px-3">
@@ -53,11 +54,11 @@ function Rail() {
                     onFocus={() => prefetchPage(item.to)}
                     aria-current={active ? 'page' : undefined}
                     className={clsx(
-                      'group flex h-10 items-center gap-3 rounded-control px-3 text-[0.9375rem] transition-colors',
-                      active ? 'bg-lamp-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
+                      'group flex h-10 items-center gap-3 rounded-control px-3 text-sm transition-colors',
+                      active ? 'bg-accent-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
                     )}
                   >
-                    <Icon aria-hidden="true" className={clsx('size-[18px]', active ? 'text-lamp' : 'text-fg-faint group-hover:text-fg-muted')} />
+                    <Icon aria-hidden="true" className={clsx('size-[18px]', active ? 'text-accent' : 'text-fg-faint group-hover:text-fg-muted')} />
                     {item.label}
                   </NavLink>
                 </li>
@@ -74,7 +75,7 @@ function Rail() {
             className={({ isActive: on }) =>
               clsx(
                 'flex h-10 items-center gap-3 rounded-control px-3 text-sm transition-colors',
-                on ? 'bg-lamp-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
+                on ? 'bg-accent-soft font-medium text-fg' : 'text-fg-muted hover:bg-sunken hover:text-fg',
               )
             }
           >
@@ -90,7 +91,7 @@ function Rail() {
 
 function MobileHeader() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-ink/90 px-4 backdrop-blur-md md:hidden">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-canvas/90 px-4 backdrop-blur-md md:hidden">
       <Link to="/app/today" aria-label="Solace, go to Today" className="-my-2 rounded-control py-2">
         <Wordmark />
       </Link>
@@ -130,7 +131,7 @@ function TabBar() {
                 aria-current={active ? 'page' : undefined}
                 className={clsx(
                   'flex h-16 flex-col items-center justify-center gap-1 text-xs transition-colors',
-                  active ? 'font-medium text-lamp' : 'text-fg-muted',
+                  active ? 'font-medium text-accent' : 'text-fg-muted',
                 )}
               >
                 <Icon aria-hidden="true" className="size-[22px]" strokeWidth={active ? 2.1 : 1.7} />
@@ -179,7 +180,7 @@ function useReminderNudge() {
       } catch {
         /* ignore */
       }
-      toast('Your writing hour is here. A few lines is enough.', {
+      toast(voiceNow().reminderToast, {
         id: 'reminder',
         action: { label: 'Write now', onClick: () => navigate('/app/today') },
       });
@@ -195,8 +196,10 @@ function useReminderNudge() {
 
 function Shell() {
   useReminderNudge();
+  // Toasts animate in with motion/react; have that chunk ready before the first one.
+  useEffect(() => preloadToasts(), []);
   return (
-    <div className="min-h-dvh bg-ink md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
+    <div className="min-h-dvh bg-canvas md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
       <SkipLink />
       <Rail />
       <div className="min-w-0">

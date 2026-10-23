@@ -1,0 +1,151 @@
+/*
+ * Scrapbook — kraft paper, stamps and gel pens.
+ * SKELETON: a provisional palette and type pairing; the Scrapbook world pass finishes the art.
+ *   canvas   kraft paper (light) / black photo-album pages (dark)
+ *   accent   stamp red (light) / peach gel pen (dark): primary actions, the person's own voice
+ *   ai       blue ink: anything Solace contributes
+ * Its one bold move (to come): entries as collage pages, with taped photos and die-cut stickers.
+ */
+
+[data-world='scrapbook'] {
+  --font-display: 'Playpen Sans', 'Comic Neue', 'Segoe Print', ui-rounded, cursive;
+  --font-heading: 'Playpen Sans', 'Comic Neue', 'Segoe Print', ui-rounded, cursive;
+  --font-prose: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+  --font-ui: 'Playpen Sans', ui-rounded, system-ui, sans-serif;
+  --font-mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+  --weight-display: 600;
+  --weight-title: 600;
+  --weight-heading: 500;
+  --stretch-display: normal;
+  --stretch-heading: normal;
+  --tracking-display: -0.01em;
+  --tracking-title: -0.005em;
+  --tracking-heading: 0em;
+  --tracking-brand: 0em;
+  --leading-display: 1.12;
+  --leading-body: 1.6;
+  --leading-prose: 1.75;
+  --leading-reading: 1.7;
+  --leading-markdown: 1.66;
+
+  --text-micro: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-xs: 0.8125rem;
+  --text-label: 0.875rem;
+  --text-sm: 0.9375rem;
+  --text-meta: 0.95rem;
+  --text-excerpt: 0.98rem;
+  --text-note: 1.02rem;
+  --text-reading: 1.06rem;
+  --text-base: 1.0625rem;
+  --text-prose: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-prose-lg: 1.25rem;
+  --text-brand: 1.375rem;
+  --text-xl: 1.5rem;
+  --text-section: 1.6rem;
+  --text-title: 2.15rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: 2.16rem;
+  --text-4xl: 2.6rem;
+  --text-5xl: clamp(2.6rem, 6vw, 4.4rem);
+
+  --spacing: 0.25rem;
+
+  /* Paper cut by hand: small, slightly uneven-feeling corners. */
+  --radius-mark: 2px;
+  --radius-inner: 3px;
+  --radius-control: 4px;
+  --radius-card: 6px;
+  --radius-sheet: 10px;
+  --radius-pill: 9999px;
+
+  /* Paper settles: a soft overshoot, never a bounce. */
+  --dur-1: 160ms;
+  --dur-2: 240ms;
+  --dur-3: 340ms;
+  --dur-4: 800ms;
+  --ease-standard: cubic-bezier(0.45, 0, 0.25, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.9, 0.3, 1.08);
+  /* springToLinear({ stiffness: 260, damping: 24, mass: 1 }) */
+  --dur-spring: 477ms;
+  --ease-spring: linear(0, 0.008 1.7%, 0.029 3.3%, 0.061 5%, 0.112 7.1%, 0.213 10.4%, 0.557 20.8%, 0.654 24.2%, 0.739 27.5%, 0.803 30.4%, 0.864 33.8%, 0.913 37.1%, 0.951 40.4%, 0.983 44.2%, 1.007 48.3%, 1.021 52.5%, 1.029 57.5%, 1.028 66.3%, 1);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 3px;
+  --focus-ring-radius: 3px;
+
+  /* Paper fibre: a faint grain over the page. */
+  --texture-size: 180px 180px;
+  --texture-blend: normal;
+}
+
+[data-world='scrapbook'][data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #1b1916;
+  --surface: #24211d;
+  --raised: #2d2924;
+  --sunken: #141210;
+  --line: #3a352e;
+  --line-strong: #5a5247;
+  --fg: #f4ede1;
+  --fg-muted: #cfc5b4;
+  --fg-faint: #ab9f8c;
+  --accent: #ffb38a;
+  --accent-fg: #2a1206;
+  --accent-soft: rgb(255 179 138 / 0.15);
+  --accent-glow: rgb(255 179 138 / 0.45);
+  --ai: #9cc8ff;
+  --ai-soft: rgb(156 200 255 / 0.14);
+  --danger: #ff8f80;
+  --danger-soft: rgb(255 143 128 / 0.15);
+  --success: #9fe0a0;
+  --focus: #ffe08a;
+  --mood-1: #86a8f0;
+  --mood-2: #b9a6ee;
+  --mood-3: #ddd2c0;
+  --mood-4: #f3c27a;
+  --mood-5: #ff9f6b;
+  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 10px 22px -12px rgb(0 0 0 / 0.75);
+  --shadow-2: 0 18px 36px -16px rgb(0 0 0 / 0.75);
+  --shadow-3: 0 28px 60px -24px rgb(0 0 0 / 0.7);
+  --shadow-overlay: 0 36px 80px -28px rgb(0 0 0 / 0.75);
+  --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.96 0 0 0 0 0.9 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-opacity: 0.05;
+}
+
+[data-world='scrapbook'][data-theme='light'] {
+  color-scheme: light;
+  --canvas: #e2d5bd;
+  --surface: #fbf7ef;
+  --raised: #fffdf8;
+  --sunken: #d8c9ac;
+  --line: #cdbb9b;
+  --line-strong: #a8936f;
+  --fg: #2b2118;
+  --fg-muted: #4e3f2f;
+  --fg-faint: #5a4936;
+  --accent: #942416;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(148 36 22 / 0.08);
+  --accent-glow: rgb(148 36 22 / 0.3);
+  --ai: #1f4aa8;
+  --ai-soft: rgb(31 74 168 / 0.09);
+  --danger: #8a1c2b;
+  --danger-soft: rgb(138 28 43 / 0.08);
+  --success: #2e6b2f;
+  --focus: #1f3fa0;
+  --mood-1: #3f5fb0;
+  --mood-2: #7a62b3;
+  --mood-3: #9a8c7a;
+  --mood-4: #b8741f;
+  --mood-5: #c2410c;
+  --shadow-1: 0 1px 1px rgb(60 40 20 / 0.12), 0 8px 18px -10px rgb(60 40 20 / 0.35);
+  --shadow-2: 0 16px 30px -14px rgb(60 40 20 / 0.4);
+  --shadow-3: 0 26px 54px -22px rgb(60 40 20 / 0.45);
+  --shadow-overlay: 0 34px 76px -26px rgb(60 40 20 / 0.5);
+  --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.25);
+  --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.16 0 0 0 0 0.08 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-opacity: 0.09;
+}

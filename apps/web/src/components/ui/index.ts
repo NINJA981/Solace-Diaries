@@ -7,7 +7,7 @@
 //   Dialog        { open, onOpenChange, title, description?, children, footer? } — native <dialog>, Esc closes, focus returns
 //   ConfirmDialog { open, onOpenChange, title, description, confirmLabel, tone?: 'danger'|'default', onConfirm (may be async), children?, confirmDisabled? }
 //   Tabs          { value, onValueChange, items: {value,label}[], label? } — roving tabindex
-//   Chip          { selected?, onClick?, tone?: 'default'|'lamp'|'dusk' } & children
+//   Chip          { selected?, onClick?, tone?: 'default'|'accent'|'ai' } & children
 //   Skeleton      { className } ; Spinner { label?: string }
 //   EmptyState    { title, description?, action?: ReactNode, icon?: ReactNode }
 //   Card          { as?, className, children }

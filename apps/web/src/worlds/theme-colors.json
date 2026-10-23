@@ -1,0 +1,6 @@
+{
+  "lamplight": { "light": "#f4f3f8", "dark": "#131a2c" },
+  "jelly": { "light": "#fbf3ff", "dark": "#1d1430" },
+  "scrapbook": { "light": "#e2d5bd", "dark": "#1b1916" },
+  "chrome": { "light": "#eceff3", "dark": "#14181f" }
+}

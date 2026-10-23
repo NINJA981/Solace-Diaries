@@ -101,7 +101,7 @@ function SignupForm() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to={`/login${params.get('next') ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium text-lamp underline-offset-4 hover:underline">
+          <Link to={`/login${params.get('next') ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium text-accent underline-offset-4 hover:underline">
             Sign in
           </Link>
         </>

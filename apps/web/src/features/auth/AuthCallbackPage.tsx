@@ -96,10 +96,10 @@ export default function AuthCallbackPage() {
   }
 
   return (
-    <main id="main" className="grid min-h-dvh place-items-center bg-ink px-6">
+    <main id="main" className="grid min-h-dvh place-items-center bg-canvas px-6">
       <div className="flex flex-col items-center gap-4 text-center">
         <Spinner label="Signing you in" size={22} />
-        <h1 className="font-serif text-2xl font-normal text-fg">Signing you in…</h1>
+        <h1 className="type-heading text-2xl text-fg">Signing you in…</h1>
       </div>
     </main>
   );

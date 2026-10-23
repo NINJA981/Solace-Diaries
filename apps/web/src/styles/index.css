@@ -1,10 +1,11 @@
 @import "tailwindcss";
 @import "./tokens.css";
+@import "../worlds/worlds.css";
 
 /*
- * Self-hosted variable fonts (no third-party font requests). The latin files are
- * preloaded from index.html by the `preload-fonts` Vite plugin; latin-ext only downloads
- * when a page actually uses those characters.
+ * Lamplight's self-hosted variable fonts (the default world, so they ship with the app; other
+ * worlds register theirs lazily from their manifest). The latin files are preloaded from
+ * index.html by the `preload-fonts` Vite plugin; latin-ext only downloads when a page uses it.
  */
 @font-face {
   font-family: 'Newsreader';
@@ -55,22 +56,9 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-@keyframes dialog-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.985); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes toast-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-/* Form-control boundary: ≥3:1 against the control fill in both themes (WCAG 1.4.11). */
-@theme {
-  --color-control-edge: color-mix(in oklab, var(--fg-faint) 80%, var(--sunken));
 }
 
 @layer base {
@@ -92,14 +80,14 @@
 
 /* Markdown rendered by SafeMarkdown (weekly letters, Reflect answers). */
 .md {
-  line-height: 1.65;
+  line-height: var(--leading-markdown);
   overflow-wrap: anywhere;
 }
 .md > * + * {
   margin-top: 0.75em;
 }
 .md :is(h1, h2, h3, h4) {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-weight: 500;
   line-height: 1.25;
   margin-top: 1.2em;
@@ -117,22 +105,22 @@
 .md strong { font-weight: 600; color: var(--fg); }
 .md em { font-style: italic; }
 .md a {
-  color: var(--lamp);
+  color: var(--accent);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
 .md blockquote {
-  border-left: 2px solid var(--dusk);
+  border-left: 2px solid var(--ai);
   padding-left: 1em;
   color: var(--fg-muted);
-  font-family: var(--font-serif);
+  font-family: var(--font-prose);
   font-style: italic;
 }
 .md code {
   font-size: 0.9em;
   background: var(--sunken);
-  border-radius: 4px;
+  border-radius: var(--radius-mark);
   padding: 0.1em 0.35em;
 }
 .md hr {
@@ -173,7 +161,7 @@
   color: var(--fg);
 }
 [cmdk-item][data-selected='true'] svg {
-  color: var(--lamp);
+  color: var(--accent);
 }
 [cmdk-empty] {
   padding: 1.5rem 0.75rem;
@@ -182,49 +170,28 @@
   text-align: center;
 }
 
-/* Landing hero: ambient twinkle runs only while the scene is on screen. */
-@keyframes twinkle {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.85; }
-}
-@keyframes star-breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
-}
-.remembering .dust-twinkle {
-  animation: twinkle 4.8s ease-in-out infinite;
-  animation-play-state: paused;
-}
-.remembering[data-phase='done'] .star {
-  animation: star-breathe 5.5s ease-in-out infinite;
-  animation-play-state: paused;
-}
-.remembering[data-visible='true'] :is(.dust-twinkle, .star) {
-  animation-play-state: running;
-}
-
 /* A modal is a container, not a control: when it takes focus on open (e.g. ⌘K from the keyboard)
    it shouldn't wear the focus ring; the field or button inside shows focus instead. */
 dialog:focus-visible {
   outline: none;
 }
 
-/* Hero passage: each remembered phrase gets a lamp hairline and a low glow beneath the baseline,
-   drawn left to right as its star lights. Ink stays on the words; no boxes over the prose. */
-.passage-mark {
-  background-image:
-    linear-gradient(color-mix(in oklab, var(--lamp) 70%, transparent), color-mix(in oklab, var(--lamp) 70%, transparent)),
-    linear-gradient(to top, var(--lamp-soft), transparent);
-  background-repeat: no-repeat;
-  background-position: 0 calc(100% - 0.08em), 0 100%;
-  background-size: 0% 1px, 0% 0.55em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  transition: background-size 900ms ease-out, color 900ms ease-out;
+/* The backdrop fades with its dialog (the dialog itself moves with motion/react; while it
+   animates out it carries data-closing, then close() runs). */
+dialog::backdrop {
+  transition:
+    background-color var(--dur-2) var(--ease-standard),
+    backdrop-filter var(--dur-2) var(--ease-standard);
 }
-.passage-mark.is-lit {
-  background-size: 100% 1px, 100% 0.55em;
-  color: var(--fg);
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: transparent;
+    backdrop-filter: none;
+  }
+}
+dialog[data-closing]::backdrop {
+  background-color: transparent;
+  backdrop-filter: none;
 }
 
 /* Fallback fonts take the same x-height as our web fonts while those load (less shift). */
@@ -237,17 +204,27 @@ html {
 details::details-content {
   block-size: 0;
   overflow-y: clip;
-  transition: block-size 260ms ease, content-visibility 260ms allow-discrete;
+  transition:
+    block-size var(--dur-3) var(--ease-standard),
+    content-visibility var(--dur-3) allow-discrete;
 }
 details[open]::details-content {
   block-size: auto;
 }
 
-/* Route changes: a short cross-fade via React Router's `viewTransition` links. */
+/*
+ * Route changes: a short cross-fade via React Router's `viewTransition` links, and the entry
+ * title morphing from a list card into the editor. One duration for the cross-fade everywhere.
+ */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 160ms;
+  animation-duration: var(--dur-2);
 }
+::view-transition-group(entry-title) {
+  animation-duration: var(--dur-3);
+  animation-timing-function: var(--ease-emphasized);
+}
+/* Reduced motion: pages swap in place; nothing slides or morphs. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

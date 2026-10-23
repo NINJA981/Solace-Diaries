@@ -1,0 +1,151 @@
+/*
+ * Chrome — graphite, ice and a holographic sheen. Precise, quick, data-forward.
+ * SKELETON: a provisional palette and type pairing; the Chrome world pass finishes the art.
+ *   canvas   graphite (dark) / brushed aluminium (light)
+ *   accent   ice cyan (dark) / deep cyan (light): primary actions, the person's own voice
+ *   ai       holographic violet: anything Solace contributes
+ * Its one bold move (to come): liquid-glass surfaces whose specular sheen follows pointer and tilt.
+ */
+
+[data-world='chrome'] {
+  --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-prose: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-ui: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Martian Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --weight-display: 640;
+  --weight-title: 600;
+  --weight-heading: 560;
+  /* Wide grotesk headlines; interface and prose stay at normal width. */
+  --stretch-display: 125%;
+  --stretch-heading: 112%;
+  --tracking-display: -0.02em;
+  --tracking-title: -0.012em;
+  --tracking-heading: -0.004em;
+  --tracking-brand: 0.02em;
+  --leading-display: 1.02;
+  --leading-body: 1.5;
+  --leading-prose: 1.65;
+  --leading-reading: 1.6;
+  --leading-markdown: 1.58;
+
+  --text-micro: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-xs: 0.8125rem;
+  --text-label: 0.875rem;
+  --text-sm: 0.9375rem;
+  --text-meta: 0.95rem;
+  --text-excerpt: 0.98rem;
+  --text-note: 1.02rem;
+  --text-reading: 1.06rem;
+  --text-base: 1.0625rem;
+  --text-prose: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-prose-lg: 1.25rem;
+  --text-brand: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-section: 1.5rem;
+  --text-title: 2rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.4rem;
+  --text-5xl: clamp(2.4rem, 5.4vw, 4rem);
+
+  --spacing: 0.25rem;
+
+  /* Machined: tight, consistent radii. */
+  --radius-mark: 2px;
+  --radius-inner: 4px;
+  --radius-control: 6px;
+  --radius-card: 10px;
+  --radius-sheet: 16px;
+  --radius-pill: 9999px;
+
+  /* Fast and exact: 120-200ms, no wobble. */
+  --dur-1: 120ms;
+  --dur-2: 160ms;
+  --dur-3: 200ms;
+  --dur-4: 500ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  /* springToLinear({ stiffness: 700, damping: 50, mass: 1 }) */
+  --dur-spring: 265ms;
+  --ease-spring: linear(0, 0.006 1.7%, 0.024 3.3%, 0.091 7.1%, 0.17 10.4%, 0.463 21.7%, 0.55 25.4%, 0.627 29.2%, 0.687 32.5%, 0.746 36.3%, 0.795 40%, 0.836 43.8%, 0.877 48.3%, 0.911 53.3%, 0.938 58.8%, 0.96 65%, 0.986 78.8%, 1);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-radius: 6px;
+
+  --texture-size: auto;
+  --texture-blend: normal;
+}
+
+[data-world='chrome'][data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #14181f;
+  --surface: #1b2029;
+  --raised: #232934;
+  --sunken: #0e1117;
+  --line: #2b323f;
+  --line-strong: #434c5d;
+  --fg: #eef2f8;
+  --fg-muted: #b6bfcd;
+  --fg-faint: #949eaf;
+  --accent: #7ee0ff;
+  --accent-fg: #04202b;
+  --accent-soft: rgb(126 224 255 / 0.13);
+  --accent-glow: rgb(126 224 255 / 0.5);
+  --ai: #c3a6ff;
+  --ai-soft: rgb(195 166 255 / 0.14);
+  --danger: #ff8b8b;
+  --danger-soft: rgb(255 139 139 / 0.14);
+  --success: #7ef0b5;
+  --focus: #e8f4ff;
+  --mood-1: #5b7cfa;
+  --mood-2: #9d8cff;
+  --mood-3: #c3c8d6;
+  --mood-4: #6fe3d0;
+  --mood-5: #d4f56a;
+  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 8px 24px -14px rgb(0 0 0 / 0.9);
+  --shadow-2: 0 18px 40px -18px rgb(0 0 0 / 0.85);
+  --shadow-3: 0 28px 70px -26px rgb(0 0 0 / 0.8);
+  --shadow-overlay: 0 36px 90px -28px rgb(0 0 0 / 0.85);
+  --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.35);
+  --texture: none;
+  --texture-opacity: 0;
+}
+
+[data-world='chrome'][data-theme='light'] {
+  color-scheme: light;
+  --canvas: #eceff3;
+  --surface: #f8f9fb;
+  --raised: #ffffff;
+  --sunken: #e1e5eb;
+  --line: #d3d9e1;
+  --line-strong: #aab3c0;
+  --fg: #10151d;
+  --fg-muted: #3d4655;
+  --fg-faint: #505a6a;
+  --accent: #075a80;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(7 90 128 / 0.09);
+  --accent-glow: rgb(7 90 128 / 0.3);
+  --ai: #6438cc;
+  --ai-soft: rgb(100 56 204 / 0.09);
+  --danger: #b8232b;
+  --danger-soft: rgb(184 35 43 / 0.08);
+  --success: #11743f;
+  --focus: #075a80;
+  --mood-1: #3554c8;
+  --mood-2: #6b55d6;
+  --mood-3: #8d96a8;
+  --mood-4: #0f8f7f;
+  --mood-5: #7c9a00;
+  --shadow-1: 0 1px 2px rgb(16 21 29 / 0.08), 0 8px 22px -12px rgb(16 21 29 / 0.22);
+  --shadow-2: 0 16px 36px -16px rgb(16 21 29 / 0.3);
+  --shadow-3: 0 26px 60px -24px rgb(16 21 29 / 0.32);
+  --shadow-overlay: 0 32px 80px -28px rgb(16 21 29 / 0.36);
+  --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.6);
+  --texture: none;
+  --texture-opacity: 0;
+}

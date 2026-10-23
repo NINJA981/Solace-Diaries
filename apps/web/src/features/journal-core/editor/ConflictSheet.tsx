@@ -12,8 +12,8 @@ function Version({ label, title, body }: { label: string; title: string; body: s
         <span className="text-sm font-medium text-fg">{label}</span>
         <span className="text-xs text-fg-faint">{plural(countWords(body), 'word')}</span>
       </div>
-      {title && <p className="mb-1 font-serif text-base text-fg">{title}</p>}
-      <p className="line-clamp-4 font-serif text-sm leading-relaxed whitespace-pre-wrap text-fg-muted">
+      {title && <p className="mb-1 font-prose text-base text-fg">{title}</p>}
+      <p className="line-clamp-4 font-prose text-sm leading-relaxed whitespace-pre-wrap text-fg-muted">
         {body || <em className="text-fg-faint">Empty</em>}
       </p>
     </div>

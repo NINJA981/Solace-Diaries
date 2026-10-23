@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import { EmptyState } from '@/components/ui';
 import { ApiRequestError, errorMessage } from '@/lib/api';
+import { useVoice } from '@/lib/voice';
 import { EntryCard, EntryCardSkeleton, InlineError } from '../journal-core/EntryCard';
 import { Highlighted } from '../journal-core/Highlighted';
 import { plural } from '../journal-core/format';
@@ -17,6 +18,7 @@ type Props = {
 
 export function SearchResults({ q, mode, filters, today, onMode }: Props) {
   const search = useSearch(q, mode, filters);
+  const voice = useVoice();
   const hits = search.data?.hits ?? [];
   const other: SearchMode = mode === 'hybrid' ? 'keyword' : 'hybrid';
   const switchLabel = other === 'keyword' ? 'Search exact words instead' : 'Search by meaning instead';
@@ -45,7 +47,7 @@ export function SearchResults({ q, mode, filters, today, onMode }: Props) {
           onRetry={() => void search.refetch()}
         />
         {mode === 'hybrid' && (
-          <button type="button" onClick={() => onMode('keyword')} className="text-sm font-medium text-lamp underline underline-offset-2">
+          <button type="button" onClick={() => onMode('keyword')} className="text-sm font-medium text-accent underline underline-offset-2">
             Search exact words instead
           </button>
         )}
@@ -55,14 +57,14 @@ export function SearchResults({ q, mode, filters, today, onMode }: Props) {
     body = (
       <EmptyState
         icon={<Search />}
-        title="No entries match"
+        title={voice.searchEmptyTitle}
         description={
           mode === 'keyword'
             ? 'None of your entries use those exact words. Searching by meaning can find related moments.'
             : 'Nothing close to that yet. Try fewer words, or loosen the filters.'
         }
         action={
-          <button type="button" onClick={() => onMode(other)} className="text-sm font-medium text-lamp underline underline-offset-2">
+          <button type="button" onClick={() => onMode(other)} className="text-sm font-medium text-accent underline underline-offset-2">
             {switchLabel}
           </button>
         }
@@ -80,7 +82,7 @@ export function SearchResults({ q, mode, filters, today, onMode }: Props) {
                 today={today}
                 headingLevel="h2"
                 snippet={<Highlighted text={h.snippet} query={q} />}
-                footnote={byMeaningOnly ? <span className="text-dusk">Matched by meaning</span> : undefined}
+                footnote={byMeaningOnly ? <span className="text-ai">Matched by meaning</span> : undefined}
               />
             </li>
           );

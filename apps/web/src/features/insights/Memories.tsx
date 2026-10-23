@@ -3,6 +3,7 @@ import { Archive, ArchiveRestore, Pencil, Trash } from 'lucide-react';
 import { LIMITS, MEMORY_KINDS, type Memory, type MemoryKind } from '@solace/shared';
 import { Button, ConfirmDialog, EmptyState, IconButton, Skeleton, Tabs, toast } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
+import { useVoice, voiceNow } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { plural } from '../journal-core/format';
 import { useDeleteMemory, useMemories, useUpdateMemory, type MemoryStatus } from '../journal-core/queries';
@@ -43,7 +44,7 @@ function MemoryItem({ m, status }: { m: Memory; status: MemoryStatus }) {
       {
         onSuccess: () => {
           setEditing(false);
-          toast('Memory updated');
+          toast(voiceNow().memoryUpdated);
         },
         onError: (err) => toast(errorMessage(err), { tone: 'danger' }),
       },
@@ -88,7 +89,7 @@ function MemoryItem({ m, status }: { m: Memory; status: MemoryStatus }) {
                 }
               }}
               rows={2}
-              className="journal-autogrow w-full resize-none rounded-control border border-line-strong bg-sunken px-3 py-2 font-serif text-base text-fg"
+              className="journal-autogrow w-full resize-none rounded-control border border-line-strong bg-sunken px-3 py-2 font-prose text-base text-fg"
             />
             <div className="mt-2 flex gap-2">
               <Button type="submit" size="sm" loading={update.isPending} className="max-sm:h-11">
@@ -110,7 +111,7 @@ function MemoryItem({ m, status }: { m: Memory; status: MemoryStatus }) {
           </form>
         ) : (
           <>
-            <p className="font-serif text-[1.02rem] leading-relaxed text-fg">{m.content}</p>
+            <p className="font-prose text-note leading-relaxed text-fg">{m.content}</p>
             <p className="mt-0.5 text-xs text-fg-faint">{seen(m)}</p>
           </>
         )}
@@ -139,7 +140,7 @@ function MemoryItem({ m, status }: { m: Memory; status: MemoryStatus }) {
           try {
             await del.mutateAsync(m.id);
             setConfirming(false);
-            toast('Memory deleted');
+            toast(voiceNow().memoryDeleted);
           } catch (err) {
             toast(errorMessage(err), { tone: 'danger' });
           }
@@ -153,6 +154,7 @@ function MemoryItem({ m, status }: { m: Memory; status: MemoryStatus }) {
 export function Memories() {
   const [status, setStatus] = useState<MemoryStatus>('active');
   const q = useMemories(status);
+  const voice = useVoice();
   const groups = useMemo(() => {
     const items = q.data ?? [];
     return MEMORY_KINDS.map((k) => ({ kind: k, items: items.filter((m) => m.kind === k) })).filter((g) => g.items.length);
@@ -182,10 +184,10 @@ export function Memories() {
         <InlineError message="Couldn’t load what Solace remembers." onRetry={() => void q.refetch()} />
       ) : groups.length === 0 ? (
         <EmptyState
-          title={status === 'active' ? 'Nothing remembered yet' : 'No archived memories'}
+          title={status === 'active' ? voice.memoriesEmptyTitle : 'No archived memories'}
           description={
             status === 'active'
-              ? 'As you write, Solace notes the people, places and patterns that matter to you. They’ll appear here.'
+              ? voice.memoriesEmptyBody
               : 'Memories you archive are kept here, out of Solace’s answers, until you restore or delete them.'
           }
         />
@@ -193,7 +195,7 @@ export function Memories() {
         <div className="grid gap-x-10 gap-y-8 md:grid-cols-2">
           {groups.map((g) => (
             <section key={g.kind} aria-labelledby={`mem-${g.kind}`}>
-              <h3 id={`mem-${g.kind}`} className="mb-1 text-sm font-medium text-dusk">
+              <h3 id={`mem-${g.kind}`} className="mb-1 text-sm font-medium text-ai">
                 {KIND_TITLE[g.kind]}
               </h3>
               <ul>

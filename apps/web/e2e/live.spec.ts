@@ -47,8 +47,9 @@ test('live: sign in, write, real AI enrichment, search, Reflect, delete account'
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/onboarding$/, { timeout: 30_000 });
     await page.getByRole('textbox', { name: 'Your name' }).fill('Live Check');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click(); // name
+    await page.getByRole('button', { name: 'Continue' }).click(); // world
+    await page.getByRole('button', { name: 'Continue' }).click(); // day
     await page.getByRole('button', { name: 'Start writing' }).click();
     await expect(page).toHaveURL(/\/app\/today$/);
   });

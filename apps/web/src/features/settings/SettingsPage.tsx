@@ -17,7 +17,13 @@ import { getGeminiKey, isPlausibleGeminiKey, maskKey, setGeminiKey } from '@/lib
 import { errorMessage } from '@/lib/errors';
 import { ME_QUERY_KEY, useProfile, useSession } from '@/lib/session';
 import { getSupabase } from '@/lib/supabase-lazy';
-import { resolveTheme, useTheme, type ThemePreference } from '@/lib/theme';
+import { useTheme } from '@/lib/theme';
+import { buzz, getFeedbackPrefs, play, setFeedbackPrefs } from '@/lib/feedback';
+import { voiceNow } from '@/lib/voice';
+import { useWorld } from '@/lib/world';
+import { SwitchRow } from '@/features/appearance/SwitchRow';
+import { ThemeChoice } from '@/features/appearance/ThemeChoice';
+import { WorldPicker } from '@/features/appearance/WorldPicker';
 
 type AuthErr = Parameters<typeof authErrorMessage>[0];
 
@@ -46,7 +52,7 @@ function Section({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24 border-t border-line py-10 first:border-t-0 first:pt-0">
-      <h2 id={`${id}-title`} className={clsx('font-serif text-[1.6rem] leading-tight font-normal', tone === 'danger' ? 'text-danger' : 'text-fg')}>
+      <h2 id={`${id}-title`} className={clsx('type-heading text-section leading-tight', tone === 'danger' ? 'text-danger' : 'text-fg')}>
         {title}
       </h2>
       {description && <div className="mt-2 max-w-prose leading-relaxed text-fg-muted">{description}</div>}
@@ -85,7 +91,7 @@ function ProfileSection({ profile }: { profile: Profile }) {
     update.mutate(
       { displayName: name.trim(), timezone, reminderHour: reminder === '' ? null : Number(reminder) },
       {
-        onSuccess: () => toast('Profile saved.', { tone: 'success' }),
+        onSuccess: () => toast(voiceNow().profileSaved, { tone: 'success' }),
         onError: (err) => toast(errorMessage(err), { tone: 'danger' }),
       },
     );
@@ -138,41 +144,82 @@ function VoiceSection({ profile }: { profile: Profile }) {
   );
 }
 
-function AppearanceSection() {
-  const { theme, setTheme } = useTheme();
-  const system = resolveTheme('system');
-  const options: { value: ThemePreference; label: string }[] = [
-    { value: 'system', label: `Match this device (currently ${system})` },
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-  ];
+function AppearanceSection({ profile }: { profile: Profile }) {
+  const { world, manifest, setWorld } = useWorld();
+  const { resolved } = useTheme();
+  const update = useUpdateProfile();
+  const [companion, setCompanion] = useState(profile.companionName ?? '');
+  // Optimistic: show the pending choice while it saves, otherwise the saved one.
+  const pending = update.isPending ? update.variables : undefined;
+  const sound = pending?.soundEnabled ?? profile.soundEnabled ?? false;
+  const haptics = pending?.hapticsEnabled ?? profile.hapticsEnabled ?? false;
+
+  const toggle = (key: 'soundEnabled' | 'hapticsEnabled', next: boolean) => {
+    if (next) {
+      // Switch it on here and now (this click is the gesture audio needs) and let them hear it.
+      const prefs = getFeedbackPrefs();
+      setFeedbackPrefs(key === 'soundEnabled' ? { ...prefs, sound: true } : { ...prefs, haptics: true });
+      if (key === 'soundEnabled') play('tap');
+      else buzz('tap');
+    }
+    update.mutate({ [key]: next }, { onError: (err) => toast(errorMessage(err), { tone: 'danger' }) });
+  };
+
+  const saveCompanion = (e: FormEvent) => {
+    e.preventDefault();
+    update.mutate(
+      { companionName: companion.trim() },
+      {
+        onSuccess: () => toast('Companion name saved.', { tone: 'success', id: 'companion' }),
+        onError: (err) => toast(errorMessage(err), { tone: 'danger' }),
+      },
+    );
+  };
+
   return (
-    <Section id="appearance" title="Appearance" description="Saved on this device only.">
-      <fieldset>
-        <legend className="sr-only">Theme</legend>
-        <div className="flex max-w-md flex-col gap-2">
-          {options.map((o) => (
-            <label
-              key={o.value}
-              className={clsx(
-                'flex h-11 cursor-pointer items-center gap-3 rounded-control border px-3.5 text-sm transition-colors',
-                'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
-                theme === o.value ? 'border-lamp/60 bg-lamp-soft text-fg' : 'border-line text-fg-muted hover:border-line-strong',
-              )}
-            >
-              <input
-                type="radio"
-                name="theme"
-                value={o.value}
-                checked={theme === o.value}
-                onChange={() => setTheme(o.value)}
-                className="size-4 accent-[var(--lamp)]"
-              />
-              {o.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+    <Section
+      id="appearance"
+      title="Appearance"
+      description="Your world comes with you to every device you sign in on. Light or dark is saved on this device."
+    >
+      <div className="flex flex-col gap-10">
+        <fieldset>
+          <legend className="mb-3 text-sm font-medium text-fg">World</legend>
+          <WorldPicker value={world} onChange={setWorld} theme={resolved} name="settings-world" className="max-w-3xl" />
+        </fieldset>
+        <ThemeChoice name="settings-theme" />
+        <fieldset className="flex flex-col gap-5">
+          <legend className="mb-3 text-sm font-medium text-fg">Sound and touch</legend>
+          <SwitchRow
+            label="Sounds"
+            hint="Soft sounds in your world’s style when you save and when something needs you."
+            checked={sound}
+            onChange={(next) => toggle('soundEnabled', next)}
+          />
+          <SwitchRow
+            label="Vibration"
+            hint="A light buzz on phones that support it. It stays off while your device asks for reduced motion."
+            checked={haptics}
+            onChange={(next) => toggle('hapticsEnabled', next)}
+          />
+        </fieldset>
+        <form onSubmit={saveCompanion} className="flex max-w-md flex-col gap-3">
+          <Input
+            label="Companion’s name"
+            hint={`The small companion that keeps you company in your world. Leave it empty to call it ${manifest.companionName}.`}
+            value={companion}
+            maxLength={24}
+            placeholder={manifest.companionName}
+            autoComplete="off"
+            onChange={(e) => setCompanion(e.target.value)}
+          />
+          <div>
+            <Button type="submit" variant="secondary" disabled={companion.trim() === (profile.companionName ?? '')}>
+              Save name
+            </Button>
+          </div>
+        </form>
+      </div>
     </Section>
   );
 }
@@ -222,7 +269,7 @@ function GeminiSection() {
       {stored ? (
         <div className="flex max-w-md flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface px-4 py-3">
           <span className="flex items-center gap-3 text-sm text-fg">
-            <KeyRound aria-hidden="true" className="size-4 text-lamp" />
+            <KeyRound aria-hidden="true" className="size-4 text-accent" />
             <span>
               Using your key <span className="text-fg-muted">{maskKey(stored)}</span>
             </span>
@@ -440,7 +487,7 @@ function DangerSection() {
           navigate('/', { replace: true });
           // 'deleted' also clears the BYOK key and this account's drafts/queue from this browser.
           await signOut({ scope: 'local', reason: 'deleted' }).catch(() => {});
-          toast('Your account and journal have been deleted. Thank you for writing with Solace.', { duration: 9000 });
+          toast(voiceNow().accountDeleted, { duration: 9000 });
         }}
       >
         <Input
@@ -461,7 +508,7 @@ export default function SettingsPage() {
   if (!profile) return null;
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 md:py-12">
-      <h1 className="font-serif text-4xl leading-tight font-[380] tracking-[-0.015em] text-fg">Settings</h1>
+      <h1 className="type-title text-4xl leading-tight text-fg">Settings</h1>
       <div className="mt-10 grid gap-10 lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-14">
         <nav aria-label="Settings sections" className="hidden lg:block">
           <ul className="sticky top-8 flex flex-col gap-1 text-sm">
@@ -483,7 +530,7 @@ export default function SettingsPage() {
         <div className="min-w-0">
           <ProfileSection profile={profile} />
           <VoiceSection profile={profile} />
-          <AppearanceSection />
+          <AppearanceSection profile={profile} />
           <GeminiSection />
           <DataSection />
           <AccountSection />

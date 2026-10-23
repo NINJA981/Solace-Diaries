@@ -1,8 +1,9 @@
+import { Suspense } from 'react';
 import { Link } from 'react-router';
 import { config } from '@/lib/config';
 import { buttonClasses } from '@/components/ui/Button';
 import { PublicFooter, PublicHeader } from './PublicChrome';
-import { RememberingScene } from './RememberingScene';
+import { useWorldManifest } from '@/worlds';
 import { SkipLink } from '@/components/layout/SkipLink';
 import { ReflectGlimpse } from './ReflectGlimpse';
 
@@ -88,16 +89,23 @@ const FAQ = [
   },
 ];
 
+/** Holds the hero's place while a world's lazy hero loads, so nothing below it jumps. */
+function HeroPlaceholder() {
+  return <div aria-hidden="true" className="min-h-[22rem] lg:mt-6" />;
+}
+
 export default function LandingPage() {
+  // Each world brings its own hero (Lamplight's is the RememberingScene night sky).
+  const { Hero } = useWorldManifest();
   return (
-    <div className="min-h-dvh overflow-x-clip bg-ink">
+    <div className="min-h-dvh overflow-x-clip bg-canvas">
       <SkipLink />
       <PublicHeader />
       <main id="main" tabIndex={-1} className="outline-none">
         {/* Hero */}
         <section className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-x-16 gap-y-10 px-5 pt-10 pb-20 sm:px-8 sm:pt-16 lg:min-h-[min(46rem,calc(100svh-4rem))] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:pt-4 lg:pb-24">
           <div className="max-w-xl">
-            <h1 className="font-serif text-5xl leading-[1.06] font-[350] tracking-[-0.022em] text-fg">
+            <h1 className="type-display text-5xl leading-display text-fg">
               A private journal that remembers.
             </h1>
             <p className="mt-6 max-w-[34rem] leading-relaxed text-fg-muted sm:text-lg">
@@ -114,19 +122,21 @@ export default function LandingPage() {
             </div>
             <p className="mt-5 text-sm text-fg-faint">Private by default. Export or delete everything, anytime.</p>
           </div>
-          <RememberingScene className="lg:mt-6" />
+          <Suspense fallback={<HeroPlaceholder />}>
+            <Hero className="lg:mt-6" />
+          </Suspense>
         </section>
 
         {/* How it works: a real sequence, drawn as three joined stars */}
         <section id="how" aria-labelledby="how-title" className="scroll-mt-8 border-t border-line">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-            <h2 id="how-title" className="max-w-xl font-serif text-3xl leading-tight font-normal text-fg sm:text-4xl">
+            <h2 id="how-title" className="max-w-xl type-heading text-3xl leading-tight text-fg sm:text-4xl">
               You write. Solace remembers. Later, you can look back.
             </h2>
             <ol className="relative mt-14 grid gap-12 md:grid-cols-3 md:gap-10">
               <span
                 aria-hidden="true"
-                className="absolute top-[7px] right-[16%] left-[7px] hidden h-px bg-gradient-to-r from-dusk/70 via-dusk/40 to-dusk/10 md:block"
+                className="absolute top-[7px] right-[16%] left-[7px] hidden h-px bg-gradient-to-r from-ai/70 via-ai/40 to-ai/10 md:block"
               />
               {STEPS.map((step, i) => (
                 <li key={step.title} className="relative pl-8 md:pl-0">
@@ -134,9 +144,9 @@ export default function LandingPage() {
                     aria-hidden="true"
                     className="absolute top-[1px] left-0 grid size-[14px] place-items-center md:relative md:top-0 md:mb-7"
                   >
-                    <span className="size-[9px] rounded-full bg-lamp shadow-[0_0_14px_3px_var(--star-glow)]" />
+                    <span className="size-[9px] rounded-full bg-accent shadow-[0_0_14px_3px_var(--accent-glow)]" />
                   </span>
-                  <h3 className="font-serif text-xl leading-snug font-medium text-fg md:text-2xl">
+                  <h3 className="type-heading text-xl leading-snug font-medium text-fg md:text-2xl">
                     <span className="sr-only">Step {i + 1}: </span>
                     {step.title}
                   </h3>
@@ -151,7 +161,7 @@ export default function LandingPage() {
         <section aria-labelledby="reflect-title" className="border-t border-line bg-surface/40">
           <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-12 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16">
             <div className="max-w-md">
-              <h2 id="reflect-title" className="font-serif text-3xl leading-tight font-normal text-fg sm:text-4xl">
+              <h2 id="reflect-title" className="type-heading text-3xl leading-tight text-fg sm:text-4xl">
                 Ask your past a question
               </h2>
               <p className="mt-5 leading-relaxed text-fg-muted">
@@ -171,7 +181,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
               <div className="max-w-md">
-                <h2 id="privacy-title" className="font-serif text-3xl leading-tight font-normal text-fg sm:text-4xl">
+                <h2 id="privacy-title" className="type-heading text-3xl leading-tight text-fg sm:text-4xl">
                   What happens to what you write
                 </h2>
                 <p className="mt-5 leading-relaxed text-fg-muted">
@@ -179,7 +189,7 @@ export default function LandingPage() {
                 </p>
                 <Link
                   to="/privacy"
-                  className="mt-6 inline-block text-sm font-medium text-lamp underline decoration-lamp/40 underline-offset-4 hover:decoration-lamp"
+                  className="mt-6 inline-block text-sm font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
                 >
                   Read the privacy policy
                 </Link>
@@ -188,7 +198,7 @@ export default function LandingPage() {
                 {PROMISES.map((p) => (
                   <div key={p.title} className="border-t border-line pt-5">
                     <dt className="font-medium text-fg">{p.title}</dt>
-                    <dd className="mt-2 text-[0.9375rem] leading-relaxed text-fg-muted">{p.body}</dd>
+                    <dd className="mt-2 text-sm leading-relaxed text-fg-muted">{p.body}</dd>
                   </div>
                 ))}
               </dl>
@@ -201,7 +211,7 @@ export default function LandingPage() {
         <section aria-labelledby="faq-title" className="border-t border-line">
           <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
             <div className="max-w-md">
-              <h2 id="faq-title" className="font-serif text-3xl leading-tight font-normal text-fg sm:text-4xl">
+              <h2 id="faq-title" className="type-heading text-3xl leading-tight text-fg sm:text-4xl">
                 Questions
               </h2>
             </div>
@@ -213,7 +223,7 @@ export default function LandingPage() {
                     <svg
                       aria-hidden="true"
                       viewBox="0 0 16 16"
-                      className="size-4 shrink-0 text-fg-faint transition-transform duration-200 group-open:rotate-45"
+                      className="size-4 shrink-0 text-fg-faint transition-transform duration-(--dur-2) group-open:rotate-45"
                     >
                       <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
@@ -229,10 +239,10 @@ export default function LandingPage() {
         <section aria-labelledby="cta-title" className="relative isolate overflow-hidden border-t border-line">
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[radial-gradient(45%_70%_at_50%_100%,var(--lamp-soft),transparent_70%)]"
+            className="absolute inset-0 -z-10 bg-[radial-gradient(45%_70%_at_50%_100%,var(--accent-soft),transparent_70%)]"
           />
           <div className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32">
-            <h2 id="cta-title" className="font-serif text-4xl leading-tight font-[350] tracking-[-0.015em] text-fg sm:text-5xl">
+            <h2 id="cta-title" className="type-display text-4xl leading-tight tracking-title text-fg sm:text-5xl">
               Start with one sentence tonight.
             </h2>
             <p className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-fg-muted">

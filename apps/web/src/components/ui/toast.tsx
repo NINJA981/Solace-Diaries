@@ -1,6 +1,5 @@
-import { clsx } from 'clsx';
-import { X } from 'lucide-react';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useState, useSyncExternalStore } from 'react';
+import { feedback } from '@/lib/feedback';
 
 export type ToastTone = 'default' | 'success' | 'danger';
 export type ToastOptions = {
@@ -11,14 +10,14 @@ export type ToastOptions = {
   /** Replaces an existing toast with the same id instead of stacking. */
   id?: string;
 };
-type ToastItem = { id: string; message: string; tone: ToastTone; action?: ToastOptions['action']; duration: number };
+export type ToastItem = { id: string; message: string; tone: ToastTone; action?: ToastOptions['action']; duration: number };
 
 let items: ToastItem[] = [];
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 let counter = 0;
 
-function dismiss(id: string) {
+export function dismissToast(id: string) {
   items = items.filter((t) => t.id !== id);
   emit();
 }
@@ -36,9 +35,12 @@ export const toast = Object.assign(
     };
     items = [...items.filter((t) => t.id !== id), item].slice(-4);
     emit();
+    // Sound and haptics (only if the person turned them on): confirmations and errors.
+    if (item.tone === 'danger') feedback('error');
+    else if (item.tone === 'success') feedback('save');
     return id;
   },
-  { dismiss },
+  { dismiss: dismissToast },
 );
 
 function subscribe(l: () => void) {
@@ -46,68 +48,20 @@ function subscribe(l: () => void) {
   return () => listeners.delete(l);
 }
 
-function ToastView({ item }: { item: ToastItem }) {
-  const [paused, setPaused] = useState(false);
-  const remaining = useRef(item.duration);
-  const startedAt = useRef(0);
-
-  useEffect(() => {
-    if (!item.duration || paused) return;
-    startedAt.current = Date.now();
-    const timer = setTimeout(() => dismiss(item.id), remaining.current);
-    return () => {
-      clearTimeout(timer);
-      remaining.current -= Date.now() - startedAt.current;
-    };
-  }, [item.id, item.duration, paused]);
-
-  return (
-    <li
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
-      className={clsx(
-        'pointer-events-auto flex w-full items-center gap-3 rounded-card border bg-raised py-2.5 pr-2 pl-4 text-sm text-fg',
-        'shadow-[0_18px_40px_-20px_rgb(5_8_20/0.8)] animate-[toast-in_200ms_ease-out]',
-        item.tone === 'danger' ? 'border-danger/50' : item.tone === 'success' ? 'border-success/40' : 'border-line-strong',
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={clsx(
-          'size-1.5 shrink-0 rounded-full',
-          item.tone === 'danger' ? 'bg-danger' : item.tone === 'success' ? 'bg-success' : 'bg-lamp',
-        )}
-      />
-      <p className="min-w-0 flex-1 leading-snug">{item.message}</p>
-      {item.action && (
-        <button
-          type="button"
-          className="h-8 shrink-0 rounded-control px-2.5 font-medium text-lamp hover:bg-lamp-soft max-sm:min-h-11"
-          onClick={() => {
-            item.action?.onClick();
-            dismiss(item.id);
-          }}
-        >
-          {item.action.label}
-        </button>
-      )}
-      <button
-        type="button"
-        aria-label="Dismiss notification"
-        className="grid size-8 shrink-0 place-items-center rounded-control text-fg-faint hover:bg-sunken hover:text-fg max-sm:size-11"
-        onClick={() => dismiss(item.id)}
-      >
-        <X className="size-4" aria-hidden="true" />
-      </button>
-    </li>
-  );
+// The animated list (motion/react) loads with the first toast; the live regions exist from the
+// start so screen readers announce what lands in them.
+const loadItems = () => import('./ToastItems');
+const ToastItems = lazy(loadItems);
+/** Warm the toast chunk ahead of the first toast (the signed-in app does this on mount). */
+export function preloadToasts(): void {
+  void loadItems().catch(() => {});
 }
 
 /** Mount once near the root. Danger toasts go to an assertive region, the rest polite. */
 export function Toaster() {
   const list = useSyncExternalStore(subscribe, () => items, () => items);
+  const [armed, setArmed] = useState(false);
+  if (list.length > 0 && !armed) setArmed(true);
   const polite = list.filter((t) => t.tone !== 'danger');
   const urgent = list.filter((t) => t.tone === 'danger');
   return (
@@ -118,14 +72,18 @@ export function Toaster() {
       }
     >
       <ol aria-live="assertive" aria-label="Alerts" className="flex flex-col gap-2">
-        {urgent.map((t) => (
-          <ToastView key={t.id} item={t} />
-        ))}
+        {armed && (
+          <Suspense fallback={null}>
+            <ToastItems items={urgent} />
+          </Suspense>
+        )}
       </ol>
       <ol aria-live="polite" aria-label="Notifications" className="flex flex-col gap-2">
-        {polite.map((t) => (
-          <ToastView key={t.id} item={t} />
-        ))}
+        {armed && (
+          <Suspense fallback={null}>
+            <ToastItems items={polite} />
+          </Suspense>
+        )}
       </ol>
     </div>
   );

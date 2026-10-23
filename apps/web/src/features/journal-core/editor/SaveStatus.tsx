@@ -53,7 +53,7 @@ export function SaveStatus({ snapshot, onResolve }: { snapshot: EngineSnapshot; 
         <button
           type="button"
           onClick={onResolve}
-          className="relative font-medium text-lamp underline underline-offset-2 after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-['']"
+          className="relative font-medium text-accent underline underline-offset-2 after:absolute after:-inset-x-2 after:-inset-y-3.5 after:content-['']"
         >
           Review
         </button>

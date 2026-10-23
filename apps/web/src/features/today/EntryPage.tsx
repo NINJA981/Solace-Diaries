@@ -5,6 +5,7 @@ import { localDate } from '@solace/shared';
 import { ConfirmDialog, EmptyState, buttonClasses, toast } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
 import { useSession, useTimezone } from '@/lib/session';
+import { voiceNow } from '@/lib/voice';
 import { Editor } from '../journal-core/editor/Editor';
 import { EditorSkeleton } from '../journal-core/editor/EditorSkeleton';
 import { deleteEntryEverywhere } from '../journal-core/editor/registry';
@@ -36,7 +37,7 @@ export default function EntryPage() {
       await deleteEntryEverywhere(userId, id, (entryId) => del.mutateAsync(entryId));
       setConfirming(false);
       navigate('/app/journal');
-      toast('Entry deleted');
+      toast(voiceNow().entryDeleted);
     } catch (err) {
       // Autosave is already stopped here, so don't leave a dead editor on screen: the entry
       // (as last saved) is still in the journal, where deleting can be tried again.

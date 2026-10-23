@@ -1,36 +1,34 @@
 /*
- * Solace design tokens — "ink & lamplight".
- * Writing at night by a brass lamp; memories surface as stars.
- *   ink      deep indigo night (dark) / cool paper (light) — never cream, never #000
- *   lamp     warm brass: the one accent for primary actions & the user's own voice
- *   dusk     soft violet: anything Solace (AI) contributes — memories, citations, insights
- *   mood     a 5-step valence ramp, slate-blue (low) → gold (high), for charts & mood chips
- * Theme: <html data-theme="light|dark">; absent = follow the OS.
- * Every text/background pair here meets WCAG AA (4.5:1 body, 3:1 large/UI) in both themes.
+ * Solace design tokens: the registry.
+ *
+ * Values live in the worlds (src/worlds/<id>/tokens.css). Every world defines every token below
+ * for both themes on [data-world='<id>'][data-theme='light|dark']; theme-init.js sets both
+ * attributes on <html> before first paint, and any element may set them again to preview
+ * another world (onboarding's "pick your vibe" cards do).
+ *
+ * This file only tells Tailwind which utilities exist and how they read those tokens, plus the
+ * base element styles. Utilities read the raw token *where they are used* (`@theme inline`), so
+ * a subtree with its own data-world/data-theme repaints correctly.
+ *
+ * Colour roles (semantic, never metaphors):
+ *   canvas · surface · raised · sunken   fills, back to front (canvas = the page)
+ *   line · line-strong                   hairlines and edges
+ *   fg · fg-muted · fg-faint             text, primary to quiet (each ≥4.5:1 on every fill)
+ *   accent (-fg, -soft, -glow)           the one accent: primary actions, the person's own voice
+ *   ai (-soft)                           anything Solace contributes: memories, citations, insights
+ *   danger (-soft) · success · focus     status and focus
+ *   mood-1 … mood-5                      valence ramp, low → high, for charts and mood chips
+ * Type roles: display (hero headlines), title (focused-page titles), heading (sections, cards),
+ *   prose (writing and reading), ui (interface), mono. Each has family, weight and tracking.
+ * Elevation: shadow-1 (cards), -2 (menus, popovers, toasts), -3 (dialogs), -overlay (palette),
+ *   highlight-inset (the top sheen on filled buttons).
+ * Motion: dur-1 … dur-4, ease-standard (state changes), ease-emphasized (entrances),
+ *   ease-spring (CSS linear() spring; JS presets live in the world manifest).
+ * Contrast for every world × theme is enforced by src/worlds/contrast.test.ts.
  */
 
-@theme {
-  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
-  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-
-  /* Radii follow hierarchy: controls < cards < sheets; chips are pills. */
-  --radius-control: 8px;
-  --radius-card: 14px;
-  --radius-sheet: 22px;
-
-  /* Type scale (1.2 minor third), body 17px for comfortable long-form reading. */
-  --text-xs: 0.8125rem;
-  --text-sm: 0.9375rem;
-  --text-base: 1.0625rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.5rem;
-  --text-2xl: 1.8rem;
-  --text-3xl: 2.16rem;
-  --text-4xl: 2.6rem;
-  --text-5xl: clamp(2.6rem, 6vw, 4.4rem);
-
-  /* Colors exposed as Tailwind utilities (bg-ink, text-fg-muted, border-line, …). */
-  --color-ink: var(--ink);
+@theme inline {
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-raised: var(--raised);
   --color-sunken: var(--sunken);
@@ -39,11 +37,11 @@
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
   --color-fg-faint: var(--fg-faint);
-  --color-lamp: var(--lamp);
-  --color-lamp-fg: var(--lamp-fg);
-  --color-lamp-soft: var(--lamp-soft);
-  --color-dusk: var(--dusk);
-  --color-dusk-soft: var(--dusk-soft);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
@@ -53,145 +51,189 @@
   --color-mood-3: var(--mood-3);
   --color-mood-4: var(--mood-4);
   --color-mood-5: var(--mood-5);
+  /* Form-control boundary: ≥3:1 against the control fill (WCAG 1.4.11), checked per world. */
+  --color-control-edge: color-mix(in oklab, var(--fg-faint) 80%, var(--sunken));
+
+  /* Type roles: families (font-display, font-heading, …) */
+  --font-display: var(--font-display);
+  --font-heading: var(--font-heading);
+  --font-ui: var(--font-ui);
+  --font-prose: var(--font-prose);
+  --font-mono: var(--font-mono);
+  --tracking-display: var(--tracking-display);
+  --tracking-title: var(--tracking-title);
+  --tracking-heading: var(--tracking-heading);
+  --tracking-brand: var(--tracking-brand);
+  --leading-display: var(--leading-display);
+  --leading-body: var(--leading-body);
+  --leading-prose: var(--leading-prose);
+  --leading-reading: var(--leading-reading);
+  --leading-markdown: var(--leading-markdown);
+
+  /* Type scale. The core steps keep Tailwind's paired line-heights; the named reading and
+     interface steps set only the size (line-height comes from the context, like body text). */
+  --text-micro: var(--text-micro);
+  --text-caption: var(--text-caption);
+  --text-xs: var(--text-xs);
+  --text-label: var(--text-label);
+  --text-sm: var(--text-sm);
+  --text-meta: var(--text-meta);
+  --text-excerpt: var(--text-excerpt);
+  --text-note: var(--text-note);
+  --text-reading: var(--text-reading);
+  --text-base: var(--text-base);
+  --text-prose: var(--text-prose);
+  --text-lg: var(--text-lg);
+  --text-prose-lg: var(--text-prose-lg);
+  --text-brand: var(--text-brand);
+  --text-xl: var(--text-xl);
+  --text-section: var(--text-section);
+  --text-title: var(--text-title);
+  --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
+  --text-4xl: var(--text-4xl);
+  --text-5xl: var(--text-5xl);
+
+  /* Density: every spacing and sizing utility scales from this. */
+  --spacing: var(--spacing);
+
+  /* Radius follows hierarchy: marks < inner < controls < cards < sheets; pills are pills. */
+  --radius-mark: var(--radius-mark);
+  --radius-inner: var(--radius-inner);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-sheet: var(--radius-sheet);
+  --radius-pill: var(--radius-pill);
+
+  /* Elevation */
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-overlay: var(--shadow-overlay);
+  --inset-shadow-highlight: var(--highlight-inset);
+
+  /* Motion: every transition-* utility follows the world's tempo. */
+  --ease-standard: var(--ease-standard);
+  --ease-emphasized: var(--ease-emphasized);
+  --ease-spring: var(--ease-spring);
+  --default-transition-duration: var(--dur-1);
+  --default-transition-timing-function: var(--ease-standard);
+  --animate-fade-in: fade-in var(--dur-1) var(--ease-emphasized);
 }
 
-/* ── Dark (default visual identity) ─────────────────────────── */
-:root,
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --ink: #131a2c; /* page background — deep indigo ink */
-  --surface: #1a2238; /* panels, nav */
-  --raised: #222b45; /* cards, popovers */
-  --sunken: #0f1524; /* editor well, inputs */
-  --line: #2e3858;
-  --line-strong: #46527a;
-  --fg: #ebe8f3; /* 14.3:1 on ink */
-  --fg-muted: #b3afc6; /* 8.1:1 on ink */
-  --fg-faint: #9894b0; /* ≥4.5:1 on every dark surface */
-  --lamp: #e3b65e; /* brass lamplight — 9.2:1 on ink */
-  --lamp-fg: #1b1608; /* text on lamp fills */
-  --lamp-soft: rgb(227 182 94 / 0.14);
-  --dusk: #a99cf0; /* Solace's voice — 7.2:1 on ink */
-  --dusk-soft: rgb(169 156 240 / 0.14);
-  --danger: #f29a8f; /* 8.1:1 on ink */
-  --danger-soft: rgb(242 154 143 / 0.14);
-  --success: #8fd4a8;
-  --focus: #f0cb7e;
-  /* mood valence ramp: very low → very high */
-  --mood-1: #6f86d6;
-  --mood-2: #9a9ee0;
-  --mood-3: #c4bdd6;
-  --mood-4: #e2c27e;
-  --mood-5: #f2a640;
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 32px -18px rgb(5 8 20 / 0.9);
-  --star-glow: rgb(227 182 94 / 0.55);
+/* Type roles as one class each: family, width, weight and tracking. Weight and tracking yield to an
+   explicit font-* / tracking-* utility on the same element, whatever the class order. */
+@utility type-display {
+  font-family: var(--font-display);
+  font-stretch: var(--stretch-display);
+  font-weight: var(--tw-font-weight, var(--weight-display));
+  letter-spacing: var(--tw-tracking, var(--tracking-display));
+}
+@utility type-title {
+  font-family: var(--font-heading);
+  font-stretch: var(--stretch-heading);
+  font-weight: var(--tw-font-weight, var(--weight-title));
+  letter-spacing: var(--tw-tracking, var(--tracking-title));
+}
+@utility type-heading {
+  font-family: var(--font-heading);
+  font-stretch: var(--stretch-heading);
+  font-weight: var(--tw-font-weight, var(--weight-heading));
+  letter-spacing: var(--tw-tracking, var(--tracking-heading));
 }
 
-/* ── Light: cool paper, same ink family ─────────────────────── */
-:root[data-theme='light'] {
-  color-scheme: light;
-  --ink: #f4f3f8;
-  --surface: #ffffff;
-  --raised: #ffffff;
-  --sunken: #ebe9f2;
-  --line: #dcd9e7;
-  --line-strong: #b9b4cc;
-  --fg: #1a2036; /* 14.6:1 on ink */
-  --fg-muted: #4b4f68; /* 7.3:1 */
-  --fg-faint: #5d6078; /* ≥4.5:1 on every light surface */
-  --lamp: #8a5f12; /* deep brass — 5.1:1 on ink, used for text & fills */
-  --lamp-fg: #ffffff;
-  --lamp-soft: rgb(138 95 18 / 0.1);
-  --dusk: #5a47b8; /* 6.3:1 */
-  --dusk-soft: rgb(90 71 184 / 0.09);
-  --danger: #b3261e; /* 5.9:1 */
-  --danger-soft: rgb(179 38 30 / 0.08);
-  --success: #19683a;
-  --focus: #8a5f12;
-  --mood-1: #3f58b0;
-  --mood-2: #7470c4;
-  --mood-3: #a39cb8;
-  --mood-4: #c08a2a;
-  --mood-5: #d9730f;
-  --shadow-card: 0 1px 2px rgb(26 32 54 / 0.06), 0 10px 28px -16px rgb(26 32 54 / 0.22);
-  --star-glow: rgb(138 95 18 / 0.35);
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    color-scheme: light;
-    --ink: #f4f3f8;
-    --surface: #ffffff;
-    --raised: #ffffff;
-    --sunken: #ebe9f2;
-    --line: #dcd9e7;
-    --line-strong: #b9b4cc;
-    --fg: #1a2036;
-    --fg-muted: #4b4f68;
-    --fg-faint: #5d6078;
-    --lamp: #8a5f12;
-    --lamp-fg: #ffffff;
-    --lamp-soft: rgb(138 95 18 / 0.1);
-    --dusk: #5a47b8;
-    --dusk-soft: rgb(90 71 184 / 0.09);
-    --danger: #b3261e;
-    --danger-soft: rgb(179 38 30 / 0.08);
-    --success: #19683a;
-    --focus: #8a5f12;
-    --mood-1: #3f58b0;
-    --mood-2: #7470c4;
-    --mood-3: #a39cb8;
-    --mood-4: #c08a2a;
-    --mood-5: #d9730f;
-    --shadow-card: 0 1px 2px rgb(26 32 54 / 0.06), 0 10px 28px -16px rgb(26 32 54 / 0.22);
-    --star-glow: rgb(138 95 18 / 0.35);
-  }
+/* Loading spinners keep turning, slowly, under reduced motion: they show work is happening. */
+@utility spin-calm {
+  --animation-reduced: spin 2.4s linear infinite;
 }
 
 /* ── Base ───────────────────────────────────────────────────── */
 html {
-  background: var(--ink);
-  color: var(--fg);
-  font-family: var(--font-sans);
+  background: var(--canvas);
   font-size: 100%;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-body {
-  min-height: 100dvh;
-  background: var(--ink);
+/* The root and any previewed world take their own colours and type. */
+html,
+[data-world] {
+  color: var(--fg);
+  font-family: var(--font-ui);
+}
+[data-world]:not(html) {
   font-size: var(--text-base);
-  line-height: 1.55;
+  line-height: var(--leading-body);
 }
 
-/* Long-form writing & reading: serif, generous leading, ~68ch measure. */
+body {
+  min-height: 100dvh;
+  background: var(--canvas);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+}
+
+/* World texture (grain, paper fibre…): a faint fixed overlay that never takes pointer events.
+   Worlds without one set --texture: none and --texture-opacity: 0. `.world-texture` gives a
+   previewed world (a [data-world] subtree) its texture too. */
+body::after,
+.world-texture::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  background-image: var(--texture);
+  background-size: var(--texture-size);
+  opacity: var(--texture-opacity);
+  mix-blend-mode: var(--texture-blend);
+}
+.world-texture {
+  position: relative;
+  isolation: isolate;
+}
+.world-texture::after {
+  position: absolute;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* Long-form writing & reading: comfortable measure (~68ch), generous leading. */
 .prose-journal {
-  font-family: var(--font-serif);
-  font-size: 1.1875rem;
-  line-height: 1.72;
+  font-family: var(--font-prose);
+  font-size: var(--text-prose);
+  line-height: var(--leading-prose);
   max-width: 68ch;
   font-optical-sizing: auto;
 }
 
 :focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: var(--focus-ring-width) solid var(--focus);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--focus-ring-radius);
 }
 
 ::selection {
-  background: var(--lamp-soft);
+  background: var(--accent-soft);
   color: var(--fg);
 }
 
+/*
+ * Reduced motion: movement becomes stillness or a crossfade, designed per component. A
+ * component that wants a calmer alternative sets --animation-reduced (e.g. a slow spin);
+ * everything else stops animating. Transitions stay (colour and opacity are not motion);
+ * components drop their own transforms.
+ */
+@property --animation-reduced {
+  syntax: '*';
+  inherits: false;
+  initial-value: none;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: var(--animation-reduced) !important;
     scroll-behavior: auto !important;
   }
 }

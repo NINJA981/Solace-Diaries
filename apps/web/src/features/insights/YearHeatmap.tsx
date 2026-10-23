@@ -12,11 +12,11 @@ const TOP = 18;
 const MIN_CELL = 11;
 const MAX_CELL = 15;
 
-/** Fill for a day: mood valence when known, else lamp intensity by count, else empty. */
+/** Fill for a day: mood valence when known, else accent intensity by count, else empty. */
 export function cellFill(d: DayStat | undefined): { fill: string; opacity: number } {
   if (!d || d.count === 0) return { fill: EMPTY_FILL, opacity: 1 };
   if (d.moodScore !== null) return { fill: `var(--mood-${moodStep(d.moodScore)})`, opacity: 1 };
-  return { fill: 'var(--lamp)', opacity: d.count >= 3 ? 1 : d.count === 2 ? 0.7 : 0.45 };
+  return { fill: 'var(--accent)', opacity: d.count >= 3 ? 1 : d.count === 2 ? 0.7 : 0.45 };
 }
 
 export function cellLabel(date: string, d: DayStat | undefined): string {
@@ -97,7 +97,7 @@ export const YearHeatmap = memo(function YearHeatmap({ days, today }: { days: Da
         className="block max-w-full overflow-visible"
       >
         {months.map((m) => (
-          <text key={m.month} x={LABEL_W + m.col * step} y={11} className="fill-fg-faint text-[11px]" aria-hidden="true">
+          <text key={m.month} x={LABEL_W + m.col * step} y={11} className="fill-fg-faint text-caption" aria-hidden="true">
             {formatMonthShort(m.month)}
           </text>
         ))}
@@ -110,7 +110,7 @@ export const YearHeatmap = memo(function YearHeatmap({ days, today }: { days: Da
             key={label}
             x={0}
             y={TOP + (row as number) * step + cell - 2}
-            className="fill-fg-faint text-[10px]"
+            className="fill-fg-faint text-micro"
             aria-hidden="true"
           >
             {label}
@@ -157,7 +157,7 @@ export const YearHeatmap = memo(function YearHeatmap({ days, today }: { days: Da
 });
 
 export function HeatmapLegend() {
-  const swatch = (style: React.CSSProperties) => <span className="inline-block size-3 rounded-[3px]" style={style} />;
+  const swatch = (style: React.CSSProperties) => <span className="inline-block size-3 rounded-mark" style={style} />;
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-fg-faint">
       <span className="inline-flex items-center gap-1.5">
@@ -170,7 +170,7 @@ export function HeatmapLegend() {
         <span>Brighter</span>
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span aria-hidden="true">{swatch({ background: 'var(--lamp)', opacity: 0.7 })}</span>
+        <span aria-hidden="true">{swatch({ background: 'var(--accent)', opacity: 0.7 })}</span>
         Wrote, no mood yet
       </span>
       <span className="inline-flex items-center gap-1.5">

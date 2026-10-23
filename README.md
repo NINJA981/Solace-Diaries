@@ -74,6 +74,7 @@ npm run typecheck && npm run lint
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API keys                                           |
 | `WEB_ORIGIN`                | your Vercel URL, e.g. `https://solace.vercel.app` (comma-separate extra origins) |
 | `GEMINI_API_KEY`            | server Gemini key from a **paid** (billing-enabled) project; see Privacy below   |
+| `AI_TIER`                   | `free` (default) or `paid`; set to match the key, and set `VITE_AI_TIER` the same |
 
 Migrations run at the start of every deploy, before the server boots. Health check: `GET /api/healthz`.
 
@@ -84,6 +85,7 @@ Migrations run at the start of every deploy, before the server boots. Health che
 | `VITE_API_URL`           | the Render URL, e.g. `https://solace-api.onrender.com` |
 | `VITE_SUPABASE_URL`      | `https://<project>.supabase.co`                        |
 | `VITE_SUPABASE_ANON_KEY` | the project's anon (publishable) key                   |
+| `VITE_AI_TIER`           | `free` (default) or `paid`; must match the API's `AI_TIER` (the public pages read this one) |
 
 `apps/web/vercel.json` sets a strict Content-Security-Policy. Its `connect-src` must list your API's real origin (currently `https://solace-api-vsac.onrender.com`).
 

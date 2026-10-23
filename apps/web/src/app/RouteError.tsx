@@ -20,8 +20,8 @@ export function RouteError() {
   const Tag = inApp ? 'section' : 'main';
   return (
     <Tag id={inApp ? undefined : 'main'} className="mx-auto flex min-h-[70dvh] max-w-lg flex-col justify-center px-6 py-16">
-      <p aria-hidden="true" className="font-serif text-4xl text-lamp">✶</p>
-      <h1 className="mt-4 font-serif text-3xl font-normal text-fg">
+      <p aria-hidden="true" className="font-display text-4xl text-accent">✶</p>
+      <h1 className="mt-4 type-heading text-3xl text-fg">
         {stale ? 'Solace was just updated' : 'This page ran into a problem'}
       </h1>
       <p className="mt-3 text-fg-muted">

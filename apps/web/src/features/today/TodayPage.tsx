@@ -3,7 +3,9 @@ import { Link, useSearchParams } from 'react-router';
 import { Plus } from 'lucide-react';
 import { localDate } from '@solace/shared';
 import { Button, toast } from '@/components/ui';
+import { feedback } from '@/lib/feedback';
 import { useProfile, useTimezone } from '@/lib/session';
+import { STREAK_MILESTONES, useVoice } from '@/lib/voice';
 import { errorMessage } from '@/lib/api';
 import { Editor } from '../journal-core/editor/Editor';
 import { EditorSkeleton } from '../journal-core/editor/EditorSkeleton';
@@ -11,7 +13,7 @@ import { hasContent, type EntrySync } from '../journal-core/editor/syncEngine';
 import { useEngineSelector, useEntryEditor } from '../journal-core/editor/useEntryEditor';
 import { restorable, useDraftSync, useRefreshUnsynced } from '../journal-core/editor/useDraftSync';
 import { InlineError } from '../journal-core/EntryCard';
-import { formatDay, greeting, localHour, plural } from '../journal-core/format';
+import { formatDay, localHour } from '../journal-core/format';
 import { useDismissPrompt, useEntries, useStats, useTodayPrompt } from '../journal-core/queries';
 import { PromptCard } from './PromptCard';
 import { RecentRail } from './RecentRail';
@@ -45,6 +47,7 @@ export default function TodayPage() {
   const dismiss = useDismissPrompt(tz);
   const todays = useEntries({ from: today, to: today }, { limit: 1 });
   const { unsynced } = useDraftSync();
+  const voice = useVoice();
 
   const editor = useEntryEditor(current?.id ?? '', {
     fetchServer: !!current && !current.isNew,
@@ -60,6 +63,15 @@ export default function TodayPage() {
   const hasText = useEngineSelector(live, (s) => hasContent(s.fields)) === true;
   const promptSeeded = useEngineSelector(live, (s) => (prompt.data ? s.fields.body.startsWith(`> ${prompt.data.text}`) : false)) === true;
   useRefreshUnsynced(status);
+
+  // The day's first entry just reached the server: a small celebration (sound and haptics only if
+  // the person turned them on). Later entries get the ordinary save cue.
+  const todaysCount = todays.data?.pages[0]?.items.length ?? 0;
+  const wasCreated = useRef(isCreated);
+  useEffect(() => {
+    if (isCreated && !wasCreated.current) feedback(todaysCount === 0 ? 'celebrate' : 'save');
+    wasCreated.current = isCreated;
+  }, [isCreated, todaysCount]);
 
   // "New entry" from the command palette / nav: /app/today?new=1
   const handledNew = useRef(false);
@@ -107,16 +119,21 @@ export default function TodayPage() {
       <div className="min-w-0">
         <header className="mb-6">
           <div>
-            <h1 className="font-serif text-3xl text-fg sm:text-4xl">
-              {greeting(hour)}
-              {name ? `, ${name}` : ''}
+            <h1 className="type-heading text-3xl text-fg sm:text-4xl">
+              {voice.greeting({ hour, name })}
             </h1>
             {(streak > 0 || showNudge) && (
               <p className="mt-1 text-sm text-fg-muted">
-                {streak > 0 && (streak === 1 ? 'You’ve started a streak.' : `${plural(streak, 'day')} in a row.`)}
+                {streak > 0 &&
+                  (streak === 1
+                    ? voice.streakStarted
+                    : (STREAK_MILESTONES as readonly number[]).includes(streak)
+                      ? voice.streakMilestone(streak)
+                      : voice.streakDays(streak))}
                 {showNudge && reminderHour !== null && (
-                  <span className="text-lamp">
-                    {streak > 0 ? ' ' : ''}You planned to write around {formatHour(reminderHour)}. A few lines is enough.
+                  <span className="text-accent">
+                    {streak > 0 ? ' ' : ''}
+                    {voice.reminderLine(formatHour(reminderHour))}
                   </span>
                 )}
               </p>
@@ -128,7 +145,7 @@ export default function TodayPage() {
           {restore && (
             <div
               role="status"
-              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-card border border-lamp/30 bg-lamp-soft px-4 py-3 text-sm text-fg"
+              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-card border border-accent/30 bg-accent-soft px-4 py-3 text-sm text-fg"
             >
               <span>
                 You have an unsaved entry from {formatDay(restore.fields.entryDate, today)}
@@ -136,7 +153,7 @@ export default function TodayPage() {
               </span>
               <Link
                 to={`/app/entries/${restore.id}`}
-                className="inline-flex h-11 items-center rounded-control px-3 font-medium text-lamp underline underline-offset-2 sm:h-8"
+                className="inline-flex h-11 items-center rounded-control px-3 font-medium text-accent underline underline-offset-2 sm:h-8"
               >
                 Restore
               </Link>
@@ -166,7 +183,7 @@ export default function TodayPage() {
               dateMode="label"
               today={today}
               autoFocus={false}
-              placeholder="Write anything. It saves as you go."
+              placeholder={voice.todayPlaceholder}
               actions={
                 hasText ? (
                   <Button

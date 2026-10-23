@@ -113,7 +113,7 @@ export const MoodChart = memo(function MoodChart({ trend }: { trend: WeekMood[] 
         </span>
         {BANDS.map((b) => (
           <span key={b.key} className="inline-flex items-center gap-1.5">
-            <span className="inline-block size-2.5 rounded-[2px]" style={{ background: b.color }} />
+            <span className="inline-block size-2.5 rounded-xs" style={{ background: b.color }} />
             {b.label}
           </span>
         ))}
@@ -146,7 +146,7 @@ export const MoodChart = memo(function MoodChart({ trend }: { trend: WeekMood[] 
             [0, 'Steady'],
             [-2, 'Heavy'],
           ].map(([s, label]) => (
-            <text key={label} x={LEFT - 8} y={yScore(s as number) + 4} textAnchor="end" className="fill-fg-faint text-[11px]">
+            <text key={label} x={LEFT - 8} y={yScore(s as number) + 4} textAnchor="end" className="fill-fg-faint text-caption">
               {label}
             </text>
           ))}
@@ -174,10 +174,10 @@ export const MoodChart = memo(function MoodChart({ trend }: { trend: WeekMood[] 
 
           {/* Counts per week, stacked heavy → steady → bright from the baseline, 2px surface gaps. */}
           <line x1={LEFT} x2={LEFT + plotW} y1={barTop + BAR_H} y2={barTop + BAR_H} stroke="var(--line)" shapeRendering="crispEdges" />
-          <text x={LEFT - 8} y={barTop + 8} textAnchor="end" className="fill-fg-faint text-[11px] tabular-nums">
+          <text x={LEFT - 8} y={barTop + 8} textAnchor="end" className="fill-fg-faint text-caption tabular-nums">
             {maxCount}
           </text>
-          <text x={LEFT - 8} y={barTop + BAR_H} textAnchor="end" className="fill-fg-faint text-[11px] tabular-nums">
+          <text x={LEFT - 8} y={barTop + BAR_H} textAnchor="end" className="fill-fg-faint text-caption tabular-nums">
             0
           </text>
           {rows.map((r, i) => {
@@ -202,7 +202,7 @@ export const MoodChart = memo(function MoodChart({ trend }: { trend: WeekMood[] 
             );
           })}
           {monthTicks.map((t) => (
-            <text key={t.i} x={LEFT + slot * t.i + 1} y={height - 6} className="fill-fg-faint text-[11px]">
+            <text key={t.i} x={LEFT + slot * t.i + 1} y={height - 6} className="fill-fg-faint text-caption">
               {t.label}
             </text>
           ))}
@@ -211,7 +211,7 @@ export const MoodChart = memo(function MoodChart({ trend }: { trend: WeekMood[] 
         {a && active !== null && (
           <div
             role="status"
-            className="pointer-events-none absolute top-0 z-10 w-52 -translate-x-1/2 rounded-control border border-line-strong bg-raised px-3 py-2 text-xs shadow-[var(--shadow-card)]"
+            className="pointer-events-none absolute top-0 z-10 w-52 -translate-x-1/2 rounded-control border border-line-strong bg-raised px-3 py-2 text-xs shadow-1"
             style={{ left: tipLeft }}
           >
             <p className="text-fg-faint">Week of {formatShortDay(a.weekStart)}</p>

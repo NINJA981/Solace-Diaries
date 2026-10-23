@@ -59,8 +59,8 @@ export function Tabs({ value, onValueChange, items, label, className, idPrefix }
             disabled={item.disabled}
             onClick={() => onValueChange(item.value)}
             className={clsx(
-              'h-8 rounded-[6px] px-3 text-sm font-medium transition-colors disabled:opacity-50 max-sm:min-h-11',
-              selected ? 'bg-raised text-fg shadow-[var(--shadow-card)]' : 'text-fg-muted hover:text-fg',
+              'h-8 rounded-inner px-3 text-sm font-medium transition-colors disabled:opacity-50 max-sm:min-h-11',
+              selected ? 'bg-raised text-fg shadow-1' : 'text-fg-muted hover:text-fg',
             )}
           >
             {item.label}

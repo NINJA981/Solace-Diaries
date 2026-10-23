@@ -70,7 +70,7 @@ export function PublicFooter() {
 /** Header + main + footer for public pages. */
 export function PublicPage({ children, mainClassName }: { children: ReactNode; mainClassName?: string }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-ink">
+    <div className="flex min-h-dvh flex-col bg-canvas">
       <SkipLink />
       <PublicHeader />
       <main id="main" tabIndex={-1} className={clsx('flex-1 outline-none', mainClassName)}>

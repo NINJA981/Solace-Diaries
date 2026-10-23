@@ -132,6 +132,12 @@ test('journey: sign up → write → find → reflect → insights → export �
     await page.getByRole('textbox', { name: 'Your name' }).fill('Robin');
     await page.getByRole('button', { name: 'Continue' }).click();
 
+    // Pick your vibe: four live previews; Lamplight stays selected (the default world).
+    await expect(page.getByRole('heading', { level: 1, name: 'How should your journal feel?' })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /Lamplight/ })).toBeChecked();
+    await expect(page.getByRole('radio')).toHaveCount(4 + 3);
+    await page.getByRole('button', { name: 'Continue' }).click();
+
     await expect(page.getByRole('heading', { level: 1, name: 'When does your day happen?' })).toBeVisible();
     const tz = page.getByRole('combobox', { name: 'Timezone' });
     await tz.click();

@@ -4,6 +4,8 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { useProfile, useSession } from '@/lib/session';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import { useWorld } from '@/lib/world';
+import { WORLD_ORDER, worlds } from '@/worlds';
 
 export function Avatar({ name, className }: { name: string; className?: string }) {
   const initial = (name.trim()[0] ?? '·').toUpperCase();
@@ -11,7 +13,7 @@ export function Avatar({ name, className }: { name: string; className?: string }
     <span
       aria-hidden="true"
       className={clsx(
-        'grid size-8 shrink-0 place-items-center rounded-full bg-lamp-soft font-serif text-base text-lamp ring-1 ring-lamp/25',
+        'grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft font-heading text-base text-accent ring-1 ring-accent/25',
         className,
       )}
     >
@@ -27,7 +29,7 @@ const THEMES: { value: ThemePreference; label: string }[] = [
 ];
 
 /**
- * Account menu (menu button pattern): Settings, theme, sign out. `placement` opens it
+ * Account menu (menu button pattern): Settings, theme, world, sign out. `placement` opens it
  * above the trigger in the desktop rail and below it in the mobile header.
  */
 export function AccountMenu({ placement = 'bottom', showIdentity = false }: { placement?: 'top' | 'bottom'; showIdentity?: boolean }) {
@@ -35,6 +37,7 @@ export function AccountMenu({ placement = 'bottom', showIdentity = false }: { pl
   const { profile } = useProfile();
   const { email, signOut } = useSession();
   const { theme, setTheme } = useTheme();
+  const { world, setWorld } = useWorld();
   const navigate = useNavigate();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -116,8 +119,8 @@ export function AccountMenu({ placement = 'bottom', showIdentity = false }: { pl
           aria-label="Account"
           onKeyDown={onKeyDown}
           className={clsx(
-            'absolute z-50 w-60 rounded-card border border-line bg-raised p-1.5 shadow-[0_24px_48px_-24px_rgb(5_8_20/0.8)]',
-            'animate-[fade-in_120ms_ease-out]',
+            'absolute z-50 w-60 rounded-card border border-line bg-raised p-1.5 shadow-2',
+            'animate-fade-in',
             placement === 'top' ? 'bottom-full left-0 mb-2' : 'top-full right-0 mt-2',
           )}
         >
@@ -149,6 +152,25 @@ export function AccountMenu({ placement = 'bottom', showIdentity = false }: { pl
               >
                 <span className="grid size-4 place-items-center">{theme === t.value && <Check aria-hidden="true" />}</span>
                 {t.label}
+              </button>
+            ))}
+          </div>
+          <div role="group" aria-label="World" className="mb-1 border-b border-line pb-1">
+            <p aria-hidden="true" className="px-3 pt-1.5 pb-1 text-xs text-fg-faint">
+              World
+            </p>
+            {WORLD_ORDER.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={world === id}
+                tabIndex={-1}
+                className={item}
+                onClick={() => setWorld(id)}
+              >
+                <span className="grid size-4 place-items-center">{world === id && <Check aria-hidden="true" />}</span>
+                {worlds[id].name}
               </button>
             ))}
           </div>

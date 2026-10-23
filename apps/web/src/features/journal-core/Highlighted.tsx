@@ -6,7 +6,7 @@ export function Highlighted({ text, query }: { text: string; query: string }) {
     <>
       {highlight(text, query).map((s, i) =>
         s.match ? (
-          <mark key={i} className="rounded-[3px] bg-lamp-soft px-0.5 text-fg underline decoration-lamp/60 underline-offset-2">
+          <mark key={i} className="rounded-mark bg-accent-soft px-0.5 text-fg underline decoration-accent/60 underline-offset-2">
             {s.text}
           </mark>
         ) : (

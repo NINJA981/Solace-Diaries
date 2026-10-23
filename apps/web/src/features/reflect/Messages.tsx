@@ -4,6 +4,7 @@ import { clsx } from 'clsx';
 import { RotateCcw } from 'lucide-react';
 import type { Citation } from '@solace/shared';
 import { SafeMarkdown } from '@/components/ui';
+import { useVoice } from '@/lib/voice';
 import { formatDay } from '../journal-core/format';
 import { citationFromHref, citedNumbers, isCitationLink, linkCitations, stableStreamText } from './citations';
 import '../journal-core/journal.css';
@@ -13,7 +14,7 @@ export function UserBubble({ content, pending }: { content: string; pending?: bo
     <div className="flex justify-end">
       <div
         className={clsx(
-          'max-w-[85%] rounded-card rounded-br-[4px] border border-lamp/25 bg-lamp-soft px-4 py-2.5 text-[0.98rem] leading-relaxed whitespace-pre-wrap text-fg sm:max-w-[75%]',
+          'max-w-[85%] rounded-card rounded-br-mark border border-accent/25 bg-accent-soft px-4 py-2.5 text-excerpt leading-relaxed whitespace-pre-wrap text-fg sm:max-w-[75%]',
           pending && 'opacity-80',
         )}
       >
@@ -35,9 +36,10 @@ type AnswerProps = {
   footer?: React.ReactNode;
 };
 
-/** Solace's answer: dusk-accented prose, inline [n] markers, and the entries it drew on. */
+/** Solace's answer: AI-accented prose, inline [n] markers, and the entries it drew on. */
 export const Answer = memo(function Answer({ content, citations, streaming, partial, today, idBase, footer }: AnswerProps) {
   const navigate = useNavigate();
+  const voice = useVoice();
   const ref = useRef<HTMLDivElement>(null);
   const shown = streaming ? stableStreamText(content) : content;
   const md = useMemo(() => linkCitations(shown, citations), [shown, citations]);
@@ -72,41 +74,41 @@ export const Answer = memo(function Answer({ content, citations, streaming, part
 
   return (
     <div className="flex gap-3">
-      <span aria-hidden="true" className="mt-2 size-2 shrink-0 rounded-full bg-dusk shadow-[0_0_10px_var(--dusk)]" />
+      <span aria-hidden="true" className="mt-2 size-2 shrink-0 rounded-full bg-ai shadow-[0_0_10px_var(--ai)]" />
       <div className="min-w-0 flex-1">
         <span className="sr-only">Solace: </span>
         <div ref={ref} onClick={openCitation} onAuxClick={openCitation} className={clsx(partial && 'opacity-75')}>
           {md ? (
             <SafeMarkdown
               allowLink={isCitationLink}
-              className={clsx('solace-answer font-serif text-[1.06rem] leading-[1.7] text-fg', streaming && 'solace-streaming')}
+              className={clsx('solace-answer font-prose text-reading text-fg', streaming && 'solace-streaming')}
             >
               {md}
             </SafeMarkdown>
           ) : streaming ? (
-            <p className="flex items-center gap-2 text-sm text-dusk">
+            <p className="flex items-center gap-2 text-sm text-ai">
               <span aria-hidden="true" className="solace-caret" />
-              Looking through your journal…
+              {voice.reflectThinking}
             </p>
           ) : null}
         </div>
         {cited.length > 0 && (
           <section aria-label="From your journal" className="mt-4">
-            <h3 className="mb-2 text-xs font-medium text-dusk">From your journal</h3>
+            <h3 className="mb-2 text-xs font-medium text-ai">From your journal</h3>
             <ol className="grid gap-2 sm:grid-cols-2">
               {cited.map((c) => (
                 <li key={c.n} id={`${idBase}-cite-${c.n}`}>
                   <Link
                     to={`/app/entries/${c.entryId}`}
                     viewTransition
-                    className="flex h-full gap-2.5 rounded-control border border-line bg-surface px-3 py-2.5 transition-colors hover:border-dusk/50"
+                    className="flex h-full gap-2.5 rounded-control border border-line bg-surface px-3 py-2.5 transition-colors hover:border-ai/50"
                   >
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-dusk-soft text-[0.7rem] font-semibold text-dusk">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-ai-soft text-caption font-semibold text-ai">
                       {c.n}
                     </span>
                     <span className="min-w-0">
                       <span className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-serif text-[0.95rem] text-fg">{c.title.trim() || 'Untitled'}</span>
+                        <span className="truncate font-prose text-meta text-fg">{c.title.trim() || 'Untitled'}</span>
                         <time dateTime={c.entryDate} className="shrink-0 text-xs text-fg-faint">
                           {formatDay(c.entryDate, today)}
                         </time>

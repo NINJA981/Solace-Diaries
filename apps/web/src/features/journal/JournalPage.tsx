@@ -4,6 +4,7 @@ import { BookOpen, Feather } from 'lucide-react';
 import { localDate } from '@solace/shared';
 import { EmptyState, Tabs, buttonClasses } from '@/components/ui';
 import { useTimezone } from '@/lib/session';
+import { useVoice } from '@/lib/voice';
 import { useDraftSync } from '../journal-core/editor/useDraftSync';
 import { monthStart } from '../journal-core/dates';
 import { useStats, type SearchMode } from '../journal-core/queries';
@@ -19,6 +20,7 @@ export default function JournalPage() {
   const today = localDate(new Date(), tz);
   const { q, mode, view, filters, hasFilters, month, day, update } = useJournalParams();
   const stats = useStats(tz);
+  const voice = useVoice();
   useDraftSync();
 
   const onQuery = useCallback((value: string) => update({ q: value.trim() || undefined }), [update]);
@@ -43,8 +45,8 @@ export default function JournalPage() {
   ) : (
     <EmptyState
       icon={<Feather />}
-      title="Your journal is empty"
-      description="Everything you write lands here, newest first. Solace starts noticing patterns after a few entries."
+      title={voice.journalEmptyTitle}
+      description={voice.journalEmptyBody}
       action={
         <Link to="/app/today" className={buttonClasses('primary')}>
           Write your first entry
@@ -56,7 +58,7 @@ export default function JournalPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-16 sm:px-8 sm:pt-10">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <h1 className="font-serif text-3xl text-fg sm:text-4xl">Journal</h1>
+        <h1 className="type-heading text-3xl text-fg sm:text-4xl">Journal</h1>
         {!searching && !nothingYet && (
           <Tabs
             label="View"

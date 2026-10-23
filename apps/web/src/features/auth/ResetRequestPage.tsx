@@ -45,7 +45,7 @@ export default function ResetRequestPage() {
         title="Check your email"
         intro="If there’s an account for this address, a link to choose a new password is on its way."
         footer={
-          <Link to="/login" className="font-medium text-lamp underline-offset-4 hover:underline">
+          <Link to="/login" className="font-medium text-accent underline-offset-4 hover:underline">
             Back to sign in
           </Link>
         }
@@ -62,7 +62,7 @@ export default function ResetRequestPage() {
       footer={
         <>
           Remembered it?{' '}
-          <Link to="/login" className="font-medium text-lamp underline-offset-4 hover:underline">
+          <Link to="/login" className="font-medium text-accent underline-offset-4 hover:underline">
             Sign in
           </Link>
         </>

@@ -96,7 +96,7 @@ export function CalendarView({ month, day, today, filters, onMonth, onDay }: Pro
     <div className="lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-10">
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-serif text-xl text-fg" aria-live="polite">
+          <h2 className="type-heading text-xl text-fg" aria-live="polite">
             {formatMonth(month)}
           </h2>
           <div className="flex gap-1">
@@ -153,7 +153,7 @@ export function CalendarView({ month, day, today, filters, onMonth, onDay }: Pro
                           'relative flex aspect-square w-full min-h-11 flex-col items-center justify-center gap-1 rounded-control text-sm tabular-nums transition-colors',
                           s ? 'border border-line bg-raised font-medium text-fg hover:border-line-strong' : 'text-fg-muted hover:bg-surface',
                           future && 'cursor-default text-fg-faint/50 hover:bg-transparent',
-                          selected && 'ring-2 ring-lamp ring-offset-2 ring-offset-ink',
+                          selected && 'ring-2 ring-accent ring-offset-2 ring-offset-canvas',
                           c.date === today && !selected && 'ring-1 ring-line-strong',
                         )}
                       >
@@ -185,7 +185,7 @@ export function CalendarView({ month, day, today, filters, onMonth, onDay }: Pro
       <section aria-live="polite" aria-label={day ? `Entries on ${formatLongDay(day)}` : 'Selected day'} className="mt-8 lg:mt-0">
         {day ? (
           <>
-            <h2 className="mb-3 font-serif text-xl text-fg">{formatLongDay(day)}</h2>
+            <h2 className="mb-3 type-heading text-xl text-fg">{formatLongDay(day)}</h2>
             {q.isPending ? null : dayEntries.length ? (
               <ul className="space-y-3">
                 {dayEntries.map((e) => (

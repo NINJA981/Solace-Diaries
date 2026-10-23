@@ -126,7 +126,7 @@ export function TimezoneSelect({
             setQuery(null);
           }}
           onKeyDown={onKeyDown}
-          className="h-10 w-full rounded-control border border-control-edge bg-sunken px-3 max-sm:min-h-11 text-base text-fg placeholder:text-fg-faint hover:border-fg-muted focus:border-lamp focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+          className="h-10 w-full rounded-control border border-control-edge bg-sunken px-3 max-sm:min-h-11 text-base text-fg placeholder:text-fg-faint hover:border-fg-muted focus:border-accent focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
           placeholder="Search for a city or region"
         />
         {open && (
@@ -135,7 +135,7 @@ export function TimezoneSelect({
             id={listId}
             role="listbox"
             aria-label={label}
-            className="absolute inset-x-0 top-full z-40 mt-1 max-h-64 overflow-y-auto overscroll-contain rounded-card border border-line bg-raised p-1 shadow-[0_24px_48px_-24px_rgb(5_8_20/0.8)]"
+            className="absolute inset-x-0 top-full z-40 mt-1 max-h-64 overflow-y-auto overscroll-contain rounded-card border border-line bg-raised p-1 shadow-2"
           >
             {results.length === 0 && <li className="px-3 py-2.5 text-sm text-fg-muted">No timezone matches “{query}”.</li>}
             {results.map((zone, i) => (
@@ -155,7 +155,7 @@ export function TimezoneSelect({
                   i === active ? 'bg-sunken text-fg' : 'text-fg-muted',
                 )}
               >
-                <span className="grid size-4 place-items-center text-lamp">{zone.value === value && <Check aria-hidden="true" className="size-4" />}</span>
+                <span className="grid size-4 place-items-center text-accent">{zone.value === value && <Check aria-hidden="true" className="size-4" />}</span>
                 <span className="min-w-0 flex-1 truncate">{zone.label}</span>
                 <span className="shrink-0 text-xs text-fg-faint">{zone.offset}</span>
               </li>

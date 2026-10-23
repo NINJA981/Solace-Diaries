@@ -19,7 +19,7 @@ export default function TermsPage() {
         <p>
           You own everything you write and upload. You give us permission to store, process and display it only to run
           Solace for you, including sending it to our AI provider as described in the{' '}
-          <Link to="/privacy" className="text-lamp underline underline-offset-4">
+          <Link to="/privacy" className="text-accent underline underline-offset-4">
             privacy policy
           </Link>
           . That permission ends when you delete the content or your account.

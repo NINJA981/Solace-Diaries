@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import './hero.css';
 
 /**
  * The landing's one memorable moment: a journal entry written by lamplight, where a few
@@ -223,7 +224,7 @@ export function RememberingScene({ className }: { className?: string }) {
       {/* One deliberate light source: the lamp over the page. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -inset-x-12 top-[30%] -bottom-20 -z-10 bg-[radial-gradient(52%_48%_at_42%_62%,var(--lamp-soft),transparent_72%)]"
+        className="pointer-events-none absolute -inset-x-12 top-[30%] -bottom-20 -z-10 bg-[radial-gradient(52%_48%_at_42%_62%,var(--accent-soft),transparent_72%)]"
       />
 
       <div ref={skyRef} aria-hidden="true" className="relative h-[180px] sm:h-[230px] lg:h-[250px]">
@@ -253,7 +254,7 @@ export function RememberingScene({ className }: { className?: string }) {
                 pathLength={1}
                 strokeDasharray="1"
                 strokeDashoffset={phase === 'done' ? 0 : 1}
-                stroke="var(--dusk)"
+                stroke="var(--ai)"
                 strokeOpacity="0.7"
                 strokeWidth="1"
                 strokeLinecap="round"
@@ -267,19 +268,19 @@ export function RememberingScene({ className }: { className?: string }) {
               ref={(el) => {
                 if (el) rings.current.set(s.id, el);
               }}
-              className="absolute block rounded-full border border-lamp opacity-0"
+              className="absolute block rounded-full border border-accent opacity-0"
               style={{ width: s.size * 2.4, height: s.size * 2.4, transform: 'translate(-50%, -50%)' }}
             />
             <span
               ref={(el) => {
                 if (el) stars.current.set(s.id, el);
               }}
-              className={clsx('star absolute block rounded-full bg-lamp', !shown && 'opacity-0')}
+              className={clsx('star absolute block rounded-full bg-accent', !shown && 'opacity-0')}
               style={{
                 width: s.size,
                 height: s.size,
                 transform: 'translate(-50%, -50%)',
-                boxShadow: `0 0 ${s.size * 1.4}px ${s.size * 0.35}px var(--star-glow)`,
+                boxShadow: `0 0 ${s.size * 1.4}px ${s.size * 0.35}px var(--accent-glow)`,
               }}
             />
             <span
@@ -287,7 +288,7 @@ export function RememberingScene({ className }: { className?: string }) {
                 if (el) labels.current.set(s.id, el);
               }}
               className={clsx(
-                'absolute font-serif text-[0.875rem] whitespace-nowrap text-dusk italic',
+                'absolute font-prose text-label whitespace-nowrap text-ai italic',
                 !shown && 'opacity-0',
                 s.labelAt === 'above' && 'bottom-3 left-0',
                 s.labelAt === 'below' && 'top-3 left-0',
@@ -302,8 +303,8 @@ export function RememberingScene({ className }: { className?: string }) {
       </div>
 
       <div className="relative mt-5 sm:mt-7">
-        <p className="font-serif text-[0.95rem] text-fg-faint italic">14 October</p>
-        <blockquote className="mt-2 font-serif text-[1.1875rem] leading-[1.7] text-fg-muted sm:text-[1.3125rem]">
+        <p className="font-prose text-meta text-fg-faint italic">14 October</p>
+        <blockquote className="mt-2 font-prose text-prose leading-reading text-fg-muted sm:text-prose-lg">
           <p>
             Walked down to {word('lake', 'the lake')} with {word('maya', 'Maya')} after work. First {word('run', 'run')}{' '}
             since March, and my knee held up the whole way. {word('dad', 'Dad')} called while I was cooling down. I keep

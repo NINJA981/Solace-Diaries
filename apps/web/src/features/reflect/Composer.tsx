@@ -45,7 +45,7 @@ export function Composer({ streaming, disabled, onSend, onStop, autoFocus }: Pro
       }}
       className="mx-auto w-full max-w-3xl"
     >
-      <div className="flex items-end gap-2 rounded-card border border-line-strong bg-surface p-2 shadow-[var(--shadow-card)] focus-within:border-lamp/60">
+      <div className="flex items-end gap-2 rounded-card border border-line-strong bg-surface p-2 shadow-1 focus-within:border-accent/60">
         <label htmlFor={id} className="sr-only">
           Ask about your journal
         </label>

@@ -6,6 +6,7 @@ import { localDate } from '@solace/shared';
 import { Button, Dialog, EmptyState, buttonClasses, toast } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
 import { useTimezone } from '@/lib/session';
+import { useVoice } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { isNotFound, useCreateThread, useThread } from '../journal-core/queries';
 import { clearStream, retryStream, sendMessage, stopStream, useStream, type StreamState } from './chatStore';
@@ -34,6 +35,7 @@ export default function ReflectPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const tz = useTimezone();
+  const voice = useVoice();
   const today = localDate(new Date(), tz);
   const thread = useThread(threadId);
   const stream = useStream(threadId);
@@ -144,7 +146,7 @@ export default function ReflectPage() {
 
       <section className="flex min-w-0 flex-1 flex-col" aria-labelledby="reflect-title">
         <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-8">
-          <h1 id="reflect-title" className="min-w-0 truncate font-serif text-xl text-fg">
+          <h1 id="reflect-title" className="min-w-0 truncate type-heading text-xl text-fg">
             {title}
           </h1>
           <Button variant="ghost" size="sm" className="shrink-0 max-md:h-11 md:hidden" icon={<MessagesSquare className="size-4" aria-hidden="true" />} onClick={() => setSheetOpen(true)}>
@@ -156,9 +158,9 @@ export default function ReflectPage() {
           <div className="mx-auto w-full max-w-3xl space-y-8 py-8">
             {!threadId && !starting && (
               <div className="pt-4 sm:pt-10">
-                <p className="max-w-[34ch] font-serif text-3xl leading-tight text-fg sm:text-4xl">Ask your journal anything.</p>
+                <p className="max-w-[34ch] type-heading text-3xl leading-tight text-fg sm:text-4xl">{voice.reflectIntroTitle}</p>
                 <p className="mt-3 max-w-prose text-fg-muted">
-                  Solace answers from what you’ve written and shows you which entries it used.
+                  {voice.reflectIntroBody}
                 </p>
                 <ul className="mt-8 grid gap-2 sm:grid-cols-2" aria-label="Questions to start with">
                   {STARTERS.map((q) => (
@@ -166,7 +168,7 @@ export default function ReflectPage() {
                       <button
                         type="button"
                         onClick={() => void ask(q)}
-                        className="flex min-h-14 w-full items-center rounded-card border border-line bg-surface px-4 py-3 text-left font-serif text-[1.02rem] text-fg transition-colors hover:border-dusk/50 hover:bg-dusk-soft"
+                        className="flex min-h-14 w-full items-center rounded-card border border-line bg-surface px-4 py-3 text-left font-prose text-note text-fg transition-colors hover:border-ai/50 hover:bg-ai-soft"
                       >
                         {q}
                       </button>
@@ -264,7 +266,7 @@ export default function ReflectPage() {
                 setAwayFromBottom(false);
                 scrollToBottom(true);
               }}
-              className="sticky bottom-3 left-1/2 mx-auto flex h-10 -translate-x-0 items-center gap-1.5 rounded-full border border-line-strong bg-raised px-4 text-sm text-fg shadow-[var(--shadow-card)]"
+              className="sticky bottom-3 left-1/2 mx-auto flex h-10 -translate-x-0 items-center gap-1.5 rounded-full border border-line-strong bg-raised px-4 text-sm text-fg shadow-1"
             >
               <ArrowDown className="size-4" aria-hidden="true" />
               Jump to latest
@@ -272,7 +274,7 @@ export default function ReflectPage() {
           )}
         </div>
 
-        <div className="border-t border-line bg-ink px-4 pt-3 pb-3 sm:px-8 sm:pb-5">
+        <div className="border-t border-line bg-canvas px-4 pt-3 pb-3 sm:px-8 sm:pb-5">
           <Composer
             streaming={s?.status === 'streaming'}
             disabled={!!starting || !!notFound}

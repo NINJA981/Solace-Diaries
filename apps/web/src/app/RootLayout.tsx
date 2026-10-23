@@ -38,6 +38,12 @@ function useRouteFocus() {
         if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
         heading.setAttribute('data-route-focus', '');
         heading.focus({ preventScroll: true });
+        // A modal still animating out keeps the page inert; try again until it has gone (but never
+        // take focus back from something the person moved to meanwhile).
+        const active = document.activeElement;
+        const stuck = !active || active === document.body || !!active.closest('dialog');
+        if (active === heading || !stuck || tries++ >= 90) return;
+        frame = requestAnimationFrame(tick);
         return;
       }
       if (tries++ < 90) frame = requestAnimationFrame(tick);

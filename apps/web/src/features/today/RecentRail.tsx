@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { MoodDot } from '@/components/ui';
+import { useVoice } from '@/lib/voice';
 import { relativeDay } from '../journal-core/format';
 import { useEntries } from '../journal-core/queries';
 import { InlineError } from '../journal-core/EntryCard';
@@ -7,6 +8,7 @@ import { InlineError } from '../journal-core/EntryCard';
 /** The last few entries, slim enough to sit beside the editor. */
 export function RecentRail({ today, excludeId }: { today: string; excludeId?: string }) {
   const q = useEntries({}, { limit: 6 });
+  const voice = useVoice();
   const items = (q.data?.pages[0]?.items ?? []).filter((e) => e.id !== excludeId).slice(0, 5);
 
   return (
@@ -31,7 +33,7 @@ export function RecentRail({ today, excludeId }: { today: string; excludeId?: st
       ) : q.isError ? (
         <InlineError message="Couldn’t load recent entries." onRetry={() => void q.refetch()} />
       ) : items.length === 0 ? (
-        <p className="text-sm leading-relaxed text-fg-faint">Entries you write will collect here.</p>
+        <p className="text-sm leading-relaxed text-fg-faint">{voice.recentEmpty}</p>
       ) : (
         <ul className="-mx-2">
           {items.map((e) => (
@@ -45,7 +47,7 @@ export function RecentRail({ today, excludeId }: { today: string; excludeId?: st
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs text-fg-faint">{relativeDay(e.entryDate, today)}</span>
-                  <span className="block truncate font-serif text-[0.98rem] text-fg">
+                  <span className="block truncate type-heading text-excerpt text-fg">
                     {e.title.trim() || e.excerpt || 'Untitled'}
                   </span>
                 </span>

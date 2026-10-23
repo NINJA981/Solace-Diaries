@@ -1,0 +1,171 @@
+/*
+ * Lamplight — "ink & lamplight", the default world.
+ * Writing at night by a brass lamp; memories surface as stars.
+ *   canvas   deep indigo night (dark) / cool paper (light): never cream, never #000
+ *   accent   warm brass: the one accent for primary actions and the person's own voice
+ *   ai       soft violet: anything Solace contributes (memories, citations, insights)
+ * `:root` without a world or theme is Lamplight too (the pre-paint script couldn't run).
+ */
+
+:root:not([data-world]),
+[data-world='lamplight'] {
+  /* Type roles */
+  --font-display: 'Newsreader', ui-serif, Georgia, serif;
+  --font-heading: 'Newsreader', ui-serif, Georgia, serif;
+  --font-prose: 'Newsreader', ui-serif, Georgia, serif;
+  --font-ui: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --weight-display: 350;
+  --weight-title: 380;
+  --weight-heading: 400;
+  --stretch-display: normal;
+  --stretch-heading: normal;
+  --tracking-display: -0.022em;
+  --tracking-title: -0.015em;
+  --tracking-heading: 0em;
+  --tracking-brand: -0.01em;
+  --leading-display: 1.06;
+  --leading-body: 1.55;
+  --leading-prose: 1.72;
+  --leading-reading: 1.7;
+  --leading-markdown: 1.65;
+
+  /* Type scale (1.2 minor third), body 17px for comfortable long-form reading. */
+  --text-micro: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-xs: 0.8125rem;
+  --text-label: 0.875rem;
+  --text-sm: 0.9375rem;
+  --text-meta: 0.95rem;
+  --text-excerpt: 0.98rem;
+  --text-note: 1.02rem;
+  --text-reading: 1.06rem;
+  --text-base: 1.0625rem;
+  --text-prose: 1.1875rem;
+  --text-lg: 1.25rem;
+  --text-prose-lg: 1.3125rem;
+  --text-brand: 1.375rem;
+  --text-xl: 1.5rem;
+  --text-section: 1.6rem;
+  --text-title: 2.15rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: 2.16rem;
+  --text-4xl: 2.6rem;
+  --text-5xl: clamp(2.6rem, 6vw, 4.4rem);
+
+  /* Density */
+  --spacing: 0.25rem;
+
+  /* Radius: controls < cards < sheets; chips are pills. */
+  --radius-mark: 3px;
+  --radius-inner: 6px;
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 22px;
+  --radius-pill: 9999px;
+
+  /* Motion: slow, settling ease-outs; the spring never bounces. */
+  --dur-1: 150ms;
+  --dur-2: 180ms;
+  --dur-3: 260ms;
+  --dur-4: 900ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  /* springToLinear({ stiffness: 120, damping: 22, mass: 1 }) */
+  --dur-spring: 782ms;
+  --ease-spring: linear(0, 0.005 1.3%, 0.02 2.5%, 0.079 5.4%, 0.16 8.3%, 0.452 17.9%, 0.552 21.7%, 0.629 25%, 0.695 28.3%, 0.752 31.7%, 0.804 35.4%, 0.846 39.2%, 0.886 43.8%, 0.919 48.8%, 0.944 54.2%, 0.964 60.4%, 0.987 75%, 1);
+
+  /* Focus ring */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-radius: 4px;
+
+  /* Texture: none. Lamplight's one bold move is its sky, not its surface. */
+  --texture-size: auto;
+  --texture-blend: normal;
+}
+
+/* ── Dark (the default identity) ───────────────────────────── */
+:root:not([data-theme]),
+[data-world='lamplight'][data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #131a2c;
+  --surface: #1a2238;
+  --raised: #222b45;
+  --sunken: #0f1524;
+  --line: #2e3858;
+  --line-strong: #46527a;
+  --fg: #ebe8f3;
+  --fg-muted: #b3afc6;
+  --fg-faint: #9894b0;
+  --accent: #e3b65e;
+  --accent-fg: #1b1608;
+  --accent-soft: rgb(227 182 94 / 0.14);
+  --accent-glow: rgb(227 182 94 / 0.55);
+  --ai: #a99cf0;
+  --ai-soft: rgb(169 156 240 / 0.14);
+  --danger: #f29a8f;
+  --danger-soft: rgb(242 154 143 / 0.14);
+  --success: #8fd4a8;
+  --focus: #f0cb7e;
+  --mood-1: #6f86d6;
+  --mood-2: #9a9ee0;
+  --mood-3: #c4bdd6;
+  --mood-4: #e2c27e;
+  --mood-5: #f2a640;
+  --shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 32px -18px rgb(5 8 20 / 0.9);
+  --shadow-2: 0 24px 48px -24px rgb(5 8 20 / 0.8);
+  --shadow-3: 0 30px 80px -30px rgb(5 8 20 / 0.7);
+  --shadow-overlay: 0 40px 90px -30px rgb(5 8 20 / 0.8);
+  --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.18);
+  --texture: none;
+  --texture-opacity: 0;
+}
+
+/* ── Light: cool paper, the same ink family ────────────────── */
+[data-world='lamplight'][data-theme='light'] {
+  color-scheme: light;
+  --canvas: #f4f3f8;
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --sunken: #ebe9f2;
+  --line: #dcd9e7;
+  --line-strong: #b9b4cc;
+  --fg: #1a2036;
+  --fg-muted: #4b4f68;
+  --fg-faint: #5d6078;
+  --accent: #8a5f12;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(138 95 18 / 0.09);
+  --accent-glow: rgb(138 95 18 / 0.35);
+  --ai: #5a47b8;
+  --ai-soft: rgb(90 71 184 / 0.09);
+  --danger: #b3261e;
+  --danger-soft: rgb(179 38 30 / 0.08);
+  --success: #19683a;
+  --focus: #8a5f12;
+  --mood-1: #3f58b0;
+  --mood-2: #7470c4;
+  --mood-3: #a39cb8;
+  --mood-4: #c08a2a;
+  --mood-5: #d9730f;
+  --shadow-1: 0 1px 2px rgb(26 32 54 / 0.06), 0 10px 28px -16px rgb(26 32 54 / 0.22);
+  --shadow-2: 0 24px 48px -24px rgb(5 8 20 / 0.8);
+  --shadow-3: 0 30px 80px -30px rgb(5 8 20 / 0.7);
+  --shadow-overlay: 0 40px 90px -30px rgb(5 8 20 / 0.8);
+  --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.18);
+  --texture: none;
+  --texture-opacity: 0;
+}
+
+/* No pre-paint script (JavaScript off): follow the OS with the essentials for the notice. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --canvas: #f4f3f8;
+    --surface: #ffffff;
+    --fg: #1a2036;
+    --fg-muted: #4b4f68;
+    --accent: #8a5f12;
+  }
+}

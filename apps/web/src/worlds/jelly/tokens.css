@@ -1,0 +1,151 @@
+/*
+ * Jelly — grape soda, bubblegum and mint. Gummy, tactile and a little bouncy.
+ * SKELETON: a provisional palette and type pairing; the Jelly world pass finishes the art.
+ *   canvas   deep grape (dark) / pale lilac milk (light)
+ *   accent   bubblegum pink (dark) / berry (light): primary actions, the person's own voice
+ *   ai       mint: anything Solace contributes
+ * Its one bold move (to come): a squishy companion blob that reacts to writing.
+ */
+
+[data-world='jelly'] {
+  --font-display: 'Fredoka', ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
+  --font-heading: 'Fredoka', ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
+  --font-prose: 'Onest', ui-sans-serif, system-ui, sans-serif;
+  --font-ui: 'Onest', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --weight-display: 600;
+  --weight-title: 600;
+  --weight-heading: 500;
+  --stretch-display: normal;
+  --stretch-heading: normal;
+  --tracking-display: -0.012em;
+  --tracking-title: -0.006em;
+  --tracking-heading: 0em;
+  --tracking-brand: 0em;
+  --leading-display: 1.04;
+  --leading-body: 1.55;
+  --leading-prose: 1.7;
+  --leading-reading: 1.66;
+  --leading-markdown: 1.62;
+
+  --text-micro: 0.625rem;
+  --text-caption: 0.6875rem;
+  --text-xs: 0.8125rem;
+  --text-label: 0.875rem;
+  --text-sm: 0.9375rem;
+  --text-meta: 0.95rem;
+  --text-excerpt: 0.98rem;
+  --text-note: 1.02rem;
+  --text-reading: 1.06rem;
+  --text-base: 1.0625rem;
+  --text-prose: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-prose-lg: 1.25rem;
+  --text-brand: 1.375rem;
+  --text-xl: 1.5rem;
+  --text-section: 1.6rem;
+  --text-title: 2.15rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: 2.16rem;
+  --text-4xl: 2.6rem;
+  --text-5xl: clamp(2.6rem, 6vw, 4.4rem);
+
+  /* Roomier than Lamplight: everything breathes a little more. */
+  --spacing: 0.26rem;
+
+  /* Gummy: generous, soft corners everywhere. */
+  --radius-mark: 5px;
+  --radius-inner: 12px;
+  --radius-control: 14px;
+  --radius-card: 22px;
+  --radius-sheet: 30px;
+  --radius-pill: 9999px;
+
+  /* Squash and stretch: springs overshoot, entrances pop. */
+  --dur-1: 140ms;
+  --dur-2: 220ms;
+  --dur-3: 320ms;
+  --dur-4: 700ms;
+  --ease-standard: cubic-bezier(0.3, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* springToLinear({ stiffness: 420, damping: 18, mass: 1 }) */
+  --dur-spring: 703ms;
+  --ease-spring: linear(0, 0.007 0.8%, 0.041 2.1%, 0.077 2.9%, 0.148 4.2%, 0.297 6.3%, 0.64 10.4%, 0.77 12.1%, 0.887 13.8%, 0.988 15.4%, 1.07 17.1%, 1.133 18.8%, 1.177 20.4%, 1.204 22.1%, 1.215 24.6%, 1.2 27.1%, 1.166 29.6%, 1.058 35.8%, 1.009 39.2%, 0.975 42.5%, 0.956 46.3%, 0.957 51.2%, 0.997 62.9%, 1.009 69.6%, 1);
+
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 3px;
+  --focus-ring-radius: 12px;
+
+  --texture-size: auto;
+  --texture-blend: normal;
+}
+
+[data-world='jelly'][data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #1d1430;
+  --surface: #271c3f;
+  --raised: #31244d;
+  --sunken: #160f25;
+  --line: #3d2f5c;
+  --line-strong: #5a4785;
+  --fg: #f7f0ff;
+  --fg-muted: #cbbfe6;
+  --fg-faint: #a898c9;
+  --accent: #ff8ac6;
+  --accent-fg: #2b0a1c;
+  --accent-soft: rgb(255 138 198 / 0.16);
+  --accent-glow: rgb(255 138 198 / 0.5);
+  --ai: #6fe7c8;
+  --ai-soft: rgb(111 231 200 / 0.14);
+  --danger: #ff9b8a;
+  --danger-soft: rgb(255 155 138 / 0.15);
+  --success: #b5f07a;
+  --focus: #ffd166;
+  --mood-1: #6f8cff;
+  --mood-2: #a78bfa;
+  --mood-3: #e9d5ff;
+  --mood-4: #ffb86b;
+  --mood-5: #ffe066;
+  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 14px 30px -16px rgb(10 4 24 / 0.9);
+  --shadow-2: 0 22px 44px -20px rgb(10 4 24 / 0.85);
+  --shadow-3: 0 32px 70px -28px rgb(10 4 24 / 0.8);
+  --shadow-overlay: 0 40px 90px -30px rgb(10 4 24 / 0.85);
+  --highlight-inset: inset 0 2px 0 rgb(255 255 255 / 0.28);
+  --texture: none;
+  --texture-opacity: 0;
+}
+
+[data-world='jelly'][data-theme='light'] {
+  color-scheme: light;
+  --canvas: #fbf3ff;
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --sunken: #f3e8fb;
+  --line: #e9d8f5;
+  --line-strong: #cdb3e6;
+  --fg: #2a1740;
+  --fg-muted: #574270;
+  --fg-faint: #6b5785;
+  --accent: #b81f74;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(184 31 116 / 0.09);
+  --accent-glow: rgb(184 31 116 / 0.3);
+  --ai: #0a7560;
+  --ai-soft: rgb(10 117 96 / 0.09);
+  --danger: #c0261b;
+  --danger-soft: rgb(192 38 27 / 0.08);
+  --success: #2f7d16;
+  --focus: #7a3fd0;
+  --mood-1: #4c5fd5;
+  --mood-2: #8b5cf6;
+  --mood-3: #b8a1d9;
+  --mood-4: #e58a2b;
+  --mood-5: #e0b100;
+  --shadow-1: 0 2px 0 rgb(42 23 64 / 0.05), 0 12px 26px -14px rgb(42 23 64 / 0.28);
+  --shadow-2: 0 20px 40px -18px rgb(42 23 64 / 0.35);
+  --shadow-3: 0 30px 64px -26px rgb(42 23 64 / 0.4);
+  --shadow-overlay: 0 40px 90px -30px rgb(42 23 64 / 0.45);
+  --highlight-inset: inset 0 2px 0 rgb(255 255 255 / 0.35);
+  --texture: none;
+  --texture-opacity: 0;
+}
