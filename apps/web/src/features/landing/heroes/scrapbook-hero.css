@@ -1,0 +1,302 @@
+/* Scrapbook's landing hero: a collage page. Class names are sb-*; it only mounts in the Scrapbook world. */
+.sb-hero {
+  padding-bottom: 1.5rem;
+}
+.sb-page {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  grid-template-areas:
+    'photo stamp'
+    'photo entry'
+    'note entry';
+  align-items: start;
+  column-gap: 1.75rem;
+  row-gap: 0.75rem;
+  padding: 2.6rem 1.9rem 3.6rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+  transform: rotate(-0.7deg);
+}
+
+/* Washi tape */
+.sb-tape {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  width: 5.6rem;
+  height: 1.55rem;
+  background:
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.22) 0 5px, transparent 5px 11px),
+    var(--tape-a);
+  clip-path: polygon(0 0, 100% 0, 98% 25%, 100% 50%, 98% 75%, 100% 100%, 0 100%, 2% 75%, 0 50%, 2% 25%);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.08);
+  transform-origin: 0 50%;
+}
+.sb-tape-top {
+  top: -0.8rem;
+  left: 50%;
+  width: 7rem;
+  margin-left: -3.5rem;
+  transform: rotate(-2deg);
+  background:
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.22) 0 5px, transparent 5px 11px),
+    var(--tape-b);
+}
+.sb-tape-a {
+  top: -0.8rem;
+  left: -1.6rem;
+  transform: rotate(-38deg);
+}
+.sb-tape-b {
+  top: -0.7rem;
+  right: -1.8rem;
+  transform: rotate(34deg);
+  background:
+    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.22) 0 5px, transparent 5px 11px),
+    var(--tape-b);
+}
+
+/* The print */
+.sb-photo {
+  position: relative;
+  grid-area: photo;
+  margin: 0.4rem 0.2rem 0;
+  padding: 0.55rem 0.55rem 2.3rem;
+  background: #fffdf7;
+  box-shadow:
+    0 1px 1px rgb(43 38 32 / 0.18),
+    0 14px 24px -14px rgb(43 38 32 / 0.5);
+  transform: rotate(-3deg);
+}
+.sb-print {
+  display: block;
+  width: 100%;
+  aspect-ratio: 10 / 7;
+}
+.sb-caption {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.55rem;
+  color: #4a4236;
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  transform: rotate(-1.5deg);
+}
+
+/* The date stamp */
+.sb-stamp {
+  grid-area: stamp;
+  justify-self: end;
+  padding: 0.18rem 0.6rem 0.12rem;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px var(--surface), inset 0 0 0 3px var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.92;
+  transform: rotate(5deg);
+}
+
+/* The typed entry on ruled lines */
+.sb-entry {
+  grid-area: entry;
+  margin: 0.3rem 0 0;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.75em - 1px), var(--line) calc(1.75em - 1px) 1.75em);
+  color: var(--fg);
+  font-family: var(--font-prose);
+  font-size: var(--text-sm);
+  line-height: 1.75;
+}
+
+/* The handwritten margin note */
+.sb-note {
+  position: relative;
+  grid-area: note;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0 0.6rem;
+  color: var(--ai);
+  font-family: var(--font-display);
+  font-size: var(--text-label);
+  font-weight: 500;
+  line-height: 1.25;
+  transform: rotate(-2.5deg);
+}
+.sb-arrow {
+  flex: none;
+  width: 3.6rem;
+  height: 2.6rem;
+  margin-top: -2.4rem;
+  fill: none;
+  stroke: var(--ai);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  overflow: visible;
+}
+
+/* The sticker cat, pressed on the corner of the page */
+.sb-cat {
+  position: absolute;
+  right: 0.8rem;
+  bottom: -1.5rem;
+  z-index: 4;
+  width: 5.2rem;
+  transform: rotate(5deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Assembly, once. Everything starts hidden until the hero first scrolls into view. */
+  .sb-hero[data-played='false'] :is(.sb-page, .sb-in, .sb-word, .sb-note) {
+    opacity: 0;
+  }
+  .sb-hero[data-played='true'] .sb-page {
+    animation: sb-settle 700ms var(--ease-emphasized) both;
+  }
+  .sb-hero[data-played='true'] .sb-tape-top {
+    animation: sb-tape 320ms var(--ease-standard) 350ms both;
+  }
+  .sb-hero[data-played='true'] .sb-photo {
+    animation: sb-slap 560ms var(--ease-emphasized) 450ms both;
+  }
+  .sb-hero[data-played='true'] .sb-photo .sb-tape {
+    animation: sb-tape 280ms var(--ease-standard) 950ms both;
+  }
+  .sb-hero[data-played='true'] .sb-photo .sb-tape-b {
+    animation-delay: 1080ms;
+  }
+  .sb-hero[data-played='true'] .sb-stamp {
+    animation: sb-thunk 380ms cubic-bezier(0.5, 0, 0.7, 1) 1450ms both;
+  }
+  .sb-hero[data-played='true'] .sb-word {
+    animation: sb-type 60ms linear both;
+    animation-delay: calc(1850ms + var(--w, 0) * 55ms);
+  }
+  .sb-hero[data-played='true'] .sb-note {
+    animation: sb-ink 500ms ease-out 3250ms both;
+  }
+  .sb-hero[data-played='true'] .sb-arrow path {
+    animation: sb-draw 650ms ease-out 3250ms both;
+  }
+  .sb-hero[data-played='true'] .sb-cat {
+    animation: sb-slap-cat 520ms var(--ease-emphasized) 3800ms both;
+  }
+  .sb-hero[data-played='false'] .sb-arrow path {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes sb-settle {
+  from {
+    opacity: 0;
+    transform: translateY(-22px) rotate(2deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-0.7deg);
+  }
+}
+@keyframes sb-slap {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.18) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-3deg);
+  }
+}
+@keyframes sb-slap-cat {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(1.25) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(5deg);
+  }
+}
+@keyframes sb-tape {
+  from {
+    opacity: 0;
+    clip-path: polygon(0 0, 0 0, 0 25%, 0 50%, 0 75%, 0 100%, 0 100%, 0 75%, 0 50%, 0 25%);
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sb-thunk {
+  0% {
+    opacity: 0;
+    transform: scale(2.4) rotate(16deg);
+  }
+  60% {
+    opacity: 0.95;
+    transform: scale(0.94) rotate(4deg);
+  }
+  100% {
+    opacity: 0.92;
+    transform: rotate(5deg);
+  }
+}
+@keyframes sb-type {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sb-ink {
+  from {
+    opacity: 0;
+    transform: translateY(4px) rotate(-2.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-2.5deg);
+  }
+}
+@keyframes sb-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (max-width: 40rem) {
+  .sb-page {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'photo photo'
+      'stamp stamp'
+      'entry entry'
+      'note note';
+    padding: 2.4rem 1.25rem 2.2rem;
+  }
+  .sb-photo {
+    max-width: 17rem;
+    justify-self: center;
+  }
+  .sb-stamp {
+    justify-self: start;
+    margin-left: 0.4rem;
+  }
+  .sb-cat {
+    width: 4.2rem;
+  }
+  .sb-note {
+    padding-right: 4rem;
+  }
+}

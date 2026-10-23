@@ -1,0 +1,202 @@
+/*
+ * Patch, Scrapbook's sticker cat. The fur colour is --cat (marmalade), the die-cut border is
+ * paper white, the ink is --cat-ink; all set per theme in the Scrapbook tokens, with fallbacks.
+ */
+.cat {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.cat-companion {
+  display: inline-block;
+  line-height: 0;
+  transform: rotate(-3deg);
+}
+.cat-cut {
+  fill: #fffdf7;
+  stroke: #fffdf7;
+  stroke-width: 9;
+  stroke-linejoin: round;
+}
+.cat-fur {
+  fill: var(--cat, #e8a35c);
+  stroke: none;
+}
+.cat-ear {
+  fill: #f2a3a0;
+}
+.cat-belly,
+.cat-paw {
+  fill: #fff3df;
+}
+.cat-stripes {
+  fill: none;
+  stroke: var(--cat-ink, #4a2c12);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.4;
+}
+.cat-ink {
+  fill: var(--cat-ink, #2b2620);
+}
+.cat-nose {
+  fill: #e0707a;
+  stroke: #e0707a;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.cat-mouth,
+.cat-whiskers {
+  fill: none;
+  stroke: var(--cat-ink, #2b2620);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.cat-whiskers {
+  opacity: 0.55;
+  stroke-width: 1.4;
+}
+.cat-eyes-happy path {
+  fill: none;
+  stroke: var(--cat-ink, #2b2620);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+}
+.cat-shadow {
+  fill: #2b2620;
+  opacity: 0.2;
+}
+.cat-heart {
+  fill: var(--accent);
+  stroke: #fffdf7;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  opacity: 0;
+}
+.cat-confetti {
+  opacity: 0;
+}
+.cat[data-state='celebrate'] .cat-confetti {
+  opacity: 1;
+}
+.cat[data-state='saved'] .cat-heart {
+  opacity: 1;
+}
+
+.cat-sticker,
+.cat-tail,
+.cat-eyes,
+.cat-heart,
+.cat-confetti {
+  transform-box: fill-box;
+}
+.cat-sticker {
+  transform-origin: 50% 100%;
+}
+.cat-tail {
+  transform-origin: 8% 92%;
+}
+.cat-eyes {
+  transform-origin: 50% 50%;
+}
+.cat-heart,
+.cat-confetti {
+  transform-origin: 50% 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-visible='true'] .cat[data-state='idle'] .cat-tail {
+    animation: cat-wag 3.4s ease-in-out infinite;
+  }
+  [data-visible='true'] .cat[data-state='idle'] .cat-eyes {
+    animation: cat-blink 6s infinite;
+  }
+  /* Paper settles: a small press-down, never a bounce. */
+  .cat[data-state='saved'] .cat-sticker {
+    animation: cat-press 520ms var(--ease-emphasized, cubic-bezier(0.2, 0.9, 0.3, 1.08)) 1;
+  }
+  .cat[data-state='saved'] .cat-heart {
+    animation: cat-stamp 1.4s var(--ease-emphasized, cubic-bezier(0.2, 0.9, 0.3, 1.08)) 1 both;
+  }
+  .cat[data-state='celebrate'] .cat-sticker {
+    animation: cat-hop 640ms var(--ease-standard, ease-out) 3;
+  }
+  .cat[data-state='celebrate'] .cat-confetti {
+    animation: cat-confetti 1.8s ease-out 1 both;
+  }
+  .cat[data-state='celebrate'] .cat-tail {
+    animation: cat-wag 0.5s ease-in-out 4;
+  }
+}
+
+@keyframes cat-wag {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(9deg);
+  }
+}
+@keyframes cat-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes cat-press {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.03, 0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes cat-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2) rotate(-14deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) scale(1) rotate(-6deg);
+  }
+}
+@keyframes cat-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-14%) rotate(2deg);
+  }
+}
+@keyframes cat-confetti {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(1.1);
+  }
+}

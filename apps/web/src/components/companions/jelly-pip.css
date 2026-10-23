@@ -1,0 +1,152 @@
+/*
+ * Pip, Jelly's blob. Colours come from the world's tokens (--accent body, --jelly-deep shade),
+ * so Pip is pink in Jelly's dark and berry in its light theme. Everything animates with
+ * transform/opacity only; idle motion pauses off screen and stops under reduced motion.
+ */
+.pip {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.pip-companion {
+  display: inline-block;
+  line-height: 0;
+}
+.pip-fill {
+  fill: var(--accent);
+}
+.pip-deep {
+  fill: var(--jelly-deep, #7d1250);
+  opacity: 0.4;
+}
+.pip-gloss {
+  fill: #fff;
+  opacity: 0.55;
+}
+.pip-cheek {
+  fill: #fff;
+  opacity: 0.38;
+}
+.pip-eye {
+  fill: var(--pip-ink, #2b0a1c);
+}
+.pip-shine {
+  fill: #fff;
+}
+.pip-mouth {
+  fill: none;
+  stroke: var(--pip-ink, #2b0a1c);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.pip-mouth-open {
+  fill: var(--pip-ink, #2b0a1c);
+  stroke: var(--pip-ink, #2b0a1c);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.pip-eyes-happy path {
+  fill: none;
+  stroke: var(--pip-ink, #2b0a1c);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+}
+.pip-shadow {
+  fill: var(--jelly-deep, #7d1250);
+  opacity: 0.22;
+}
+.pip-sparkles {
+  fill: var(--pop, #c6f432);
+  opacity: 0;
+}
+.pip[data-state='celebrate'] .pip-sparkles {
+  opacity: 1;
+}
+
+.pip-squish,
+.pip-body,
+.pip-eyes,
+.pip-pupils,
+.pip-sparkles {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.pip-eyes,
+.pip-pupils,
+.pip-sparkles {
+  transform-origin: 50% 50%;
+}
+.pip-pupils {
+  transform: translate(calc(var(--gaze-x, 0) * 2.2px), calc(var(--gaze-y, 0) * 2px));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Idle: a slow breath (squash and stretch, no layout) and the odd blink. */
+  [data-visible='true'] .pip[data-state='idle'] .pip-body {
+    animation: pip-breathe 3.6s ease-in-out infinite;
+  }
+  [data-visible='true'] .pip[data-state='idle'] .pip-eyes {
+    animation: pip-blink 5.2s infinite;
+  }
+  .pip[data-state='saved'] .pip-squish {
+    animation: pip-hop 620ms var(--ease-emphasized, cubic-bezier(0.34, 1.4, 0.64, 1)) 1;
+  }
+  .pip[data-state='celebrate'] .pip-squish {
+    animation: pip-hop 560ms var(--ease-emphasized, cubic-bezier(0.34, 1.4, 0.64, 1)) 3;
+  }
+  .pip[data-state='celebrate'] .pip-sparkles {
+    animation: pip-sparkle 1.7s ease-out 1 both;
+  }
+}
+
+@keyframes pip-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.035, 0.955);
+  }
+}
+@keyframes pip-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes pip-hop {
+  0% {
+    transform: scale(1, 1) translateY(0);
+  }
+  22% {
+    transform: scale(1.16, 0.8) translateY(0);
+  }
+  52% {
+    transform: scale(0.92, 1.14) translateY(-20%);
+  }
+  76% {
+    transform: scale(1.06, 0.94) translateY(0);
+  }
+  100% {
+    transform: scale(1, 1) translateY(0);
+  }
+}
+@keyframes pip-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
