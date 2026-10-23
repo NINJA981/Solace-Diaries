@@ -17,6 +17,7 @@ import { memoriesRouter } from './routes/memories';
 import { promptsRouter } from './routes/prompts';
 import { searchRouter } from './routes/search';
 import { threadsRouter } from './routes/threads';
+import { v3Router } from './routes/v3';
 
 export type AppOptions = { rateLimits?: Partial<RateLimitConfig> };
 
@@ -77,6 +78,7 @@ export function createApp(opts: AppOptions = {}): Express {
   // Routers declare full paths from the shared route table (e.g. '/entries/:id').
   api.use(meRouter, entriesRouter, attachmentsRouter);
   api.use(searchRouter, threadsRouter, insightsRouter, memoriesRouter, promptsRouter);
+  api.use(v3Router);
 
   app.use('/api', api);
   app.use(notFoundHandler);

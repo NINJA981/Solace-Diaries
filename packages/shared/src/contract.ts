@@ -291,8 +291,14 @@ export const chatMessage = z.object({
 });
 export type ChatMessage = z.infer<typeof chatMessage>;
 
+/** Guided reflection scripts; 'open' is a free conversation. */
+export const THREAD_MODES = ['open', 'gratitude', 'reframe', 'unsent_letter', 'sunday_review'] as const;
+export const threadMode = z.enum(THREAD_MODES);
+export type ThreadMode = z.infer<typeof threadMode>;
+
 export const thread = z.object({
   id: uuid,
+  mode: threadMode.optional(),
   title: z.string(),
   createdAt: timestamp,
   updatedAt: timestamp,
@@ -304,7 +310,10 @@ export type ThreadWithMessages = z.infer<typeof threadWithMessages>;
 
 export const threadList = z.object({ items: z.array(thread) });
 
-export const createThreadInput = z.object({ title: z.string().trim().max(120).optional() });
+export const createThreadInput = z.object({
+  title: z.string().trim().max(120).optional(),
+  mode: threadMode.optional(),
+});
 
 export const sendMessageInput = z.object({
   content: z.string().trim().min(1).max(LIMITS.chatMessageMax),
