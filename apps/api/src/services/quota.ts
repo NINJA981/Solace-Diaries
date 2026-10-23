@@ -3,11 +3,30 @@
  * `AI_DAILY_QUOTA`; bring-your-own-key calls are counted but never limited.
  */
 import { sql } from 'drizzle-orm';
+import type { AiUsage } from '@solace/shared';
 import { config } from '../config';
 import { db } from '../db/client';
 import { quotaExceeded } from '../http/errors';
 
 const TODAY = sql`(now() at time zone 'utc')::date`;
+
+/**
+ * Today's budgets for the Settings meter. `used` never reads above `limit` (calls made with
+ * a person's own key are counted in the same row but are not capped).
+ */
+export async function getUsage(userId: string, opts: { ownKey: boolean }): Promise<AiUsage> {
+  const rows = await db.execute<{ calls: number; enrich_runs: number }>(sql`
+    select calls, enrich_runs from ai_usage where user_id = ${userId} and day = ${TODAY}`);
+  const row = rows[0];
+  const budget = (used: number, limit: number) => ({ used: Math.min(used, limit), limit });
+  return {
+    tier: config.AI_TIER,
+    ownKey: opts.ownKey,
+    interactive: budget(Number(row?.calls ?? 0), config.AI_DAILY_QUOTA),
+    enrichment: budget(Number(row?.enrich_runs ?? 0), config.ENRICH_DAILY_QUOTA),
+    resetsAt: nextUtcDay().toISOString(),
+  };
+}
 
 /** Count one AI call; throws `quotaExceeded()` (429) when the server-key budget is spent. */
 export async function consumeAiQuota(
@@ -39,6 +58,13 @@ export async function consumeEnrichmentBudget(userId: string): Promise<boolean> 
     where ai_usage.enrich_runs < ${limit}
     returning enrich_runs`);
   return rows.length > 0;
+}
+
+/** Give back one enrichment run that Gemini refused (never below zero). */
+export async function refundEnrichmentBudget(userId: string): Promise<void> {
+  await db.execute(sql`
+    update ai_usage set enrich_runs = greatest(enrich_runs - 1, 0)
+    where user_id = ${userId} and day = ${TODAY}`);
 }
 
 /** Midnight UTC at the start of the next UTC day (when daily budgets reset). */

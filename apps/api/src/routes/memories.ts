@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { listMemoriesQuery, updateMemoryInput } from '@solace/shared';
 import { mapAiErrors } from '../ai/errors';
+import { interactiveAi } from '../http/ai-options';
 import { notFound } from '../http/errors';
 import { authOf } from '../http/types';
 import { parseBody, parseQuery, uuidParam } from '../middleware/validate';
@@ -22,7 +23,7 @@ memoriesRouter.patch('/memories/:id', async (req, res) => {
   const { userId } = authOf(req);
   const id = uuidParam(req);
   const input = parseBody(req, updateMemoryInput);
-  res.json(await updateMemory(userId, id, input, { apiKey: req.geminiKey }));
+  res.json(await updateMemory(userId, id, input, interactiveAi(req, res)));
 });
 
 memoriesRouter.delete('/memories/:id', async (req, res) => {

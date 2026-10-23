@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { localDate, type DailyPrompt } from '@solace/shared';
-import { generateText, type AiOptions } from '../ai/gemini';
+import { aiConfigured, aiPausedMs, generateText, type AiOptions } from '../ai/gemini';
 import { dataBlock } from '../ai/untrusted';
 import { db } from '../db/client';
 import { memories, prompts } from '../db/schema';
@@ -145,19 +145,23 @@ async function composePrompt(
     .orderBy(desc(memories.salience), desc(memories.lastSeen))
     .limit(5);
 
-  if (candidates.length > 0) {
+  // A request known to fail (no key, model paused by Gemini) would only spend the budget.
+  const aiReady = aiConfigured(ai.apiKey) && aiPausedMs('batch', ai.apiKey) === 0;
+  if (candidates.length > 0 && aiReady) {
     const m = candidates[seededIndex(`${userId}:${date}:memory`, candidates.length)]!;
     try {
       await consumeAiQuota(userId, { usingOwnKey: Boolean(ai.apiKey) });
       const text = cleanQuestion(
         await generateText(
           {
+            task: 'batch',
             system: MEMORY_PROMPT_SYSTEM,
             temperature: 0.8,
             maxOutputTokens: 80,
             user: dataBlock('memory', { kind: m.kind }, m.content, 400),
           },
-          { ...ai, userId, timeoutMs: MEMORY_PROMPT_TIMEOUT_MS },
+          // Quick fallback to a curated prompt: no long sleeping on a rate limit.
+          { ...ai, userId, timeoutMs: MEMORY_PROMPT_TIMEOUT_MS, maxInlineWaitMs: 1_000 },
         ),
       );
       if (text) return { text, source: 'memory', memoryId: m.id };

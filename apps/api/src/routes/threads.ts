@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createThreadInput, encodeSse, sendMessageInput } from '@solace/shared';
-import { aiConfigured } from '../ai/gemini';
+import { aiConfigured, assertAiNotPaused } from '../ai/gemini';
 import { mapAiErrors } from '../ai/errors';
 import { aiUnavailable } from '../http/errors';
 import { authOf } from '../http/types';
@@ -39,8 +39,9 @@ threadsRouter.delete('/threads/:id', async (req, res) => {
 
 /**
  * Streams one answer as server-sent events (see `chatStreamEvent`). Everything that can be
- * rejected up front (validation, unknown thread, no AI key, quota) fails as plain JSON
- * before the stream opens; after that, failures arrive as a terminal `error` event.
+ * rejected up front (validation, unknown thread, no AI key, a spent daily budget, a model
+ * Gemini has paused) fails as plain JSON before the stream opens — a spent budget is a 429
+ * `ai_quota_exceeded` — and after that, failures arrive as a terminal `error` event.
  */
 threadsRouter.post('/threads/:id/messages', async (req, res) => {
   const { userId } = authOf(req);
@@ -48,6 +49,8 @@ threadsRouter.post('/threads/:id/messages', async (req, res) => {
   const input = parseBody(req, sendMessageInput);
   if (!aiConfigured(req.geminiKey)) throw aiUnavailable();
   await getThread(userId, threadId); // 404 before anything is consumed or stored
+  // Retrieval embeds the question, then the answer streams from the chat model.
+  assertAiNotPaused(['embed', 'chat'], req.geminiKey);
   await consumeAiQuota(userId, { usingOwnKey: Boolean(req.geminiKey) });
   const turn = await prepareTurn(userId, threadId, input);
 

@@ -7,7 +7,7 @@ import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import type { Mood, SearchHit, SearchQuery, SearchResult } from '@solace/shared';
 import { daysBetween, ERROR_CODES } from '@solace/shared';
 import { AiUnavailableError } from '../ai/errors';
-import { embedModel, embedText, type AiOptions } from '../ai/gemini';
+import { aiConfigured, aiPausedMs, embedModel, embedText, type AiOptions } from '../ai/gemini';
 import { HttpError } from '../http/errors';
 import { config } from '../config';
 import { db } from '../db/client';
@@ -193,7 +193,9 @@ export async function searchEntries(
   if (query.mode === 'keyword') return keywordOnly();
 
   // Search must keep working without AI: if the model is unreachable or today's quota is
-  // spent, answer with exact-word results and say so via `mode: 'keyword'`.
+  // spent, answer with exact-word results and say so via `mode: 'keyword'`. A request that
+  // is known to fail (no key, embedding model paused by Gemini) isn't charged to the budget.
+  if (!aiConfigured(ai.apiKey) || aiPausedMs('embed', ai.apiKey) > 0) return keywordOnly();
   let vector: number[];
   try {
     await consumeAiQuota(userId, { usingOwnKey: Boolean(ai.apiKey) });

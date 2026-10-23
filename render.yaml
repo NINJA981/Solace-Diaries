@@ -30,14 +30,40 @@ services:
         sync: false # e.g. https://solace.vercel.app (comma-separate extra origins)
       - key: GEMINI_API_KEY
         sync: false
+      # Free-tier key: Google may use what is sent, and each model allows a small number of
+      # requests per day per project, shared by ALL users, so every task runs on its own model
+      # (its own quota) and the per-user budgets below are small.
+      # On a paid key set AI_TIER=paid here AND VITE_AI_TIER=paid in the web build (Vercel):
+      # the public pages read the web variable, not this one. The models can then all be the same.
+      - key: AI_TIER
+        value: free
+      # Models chosen from a live check: gemini-3.6-flash gave 503 "high demand" and
+      # gemini-3.8-flash streamed nothing for 90s; these passed (chat: streamed in production).
       - key: GEMINI_CHAT_MODEL
         value: gemini-2.5-flash
+      - key: GEMINI_MODEL_ENRICH
+        value: gemini-3.5-flash-lite
+      - key: GEMINI_MODEL_CHAT
+        value: gemini-2.5-flash
+      - key: GEMINI_MODEL_BATCH
+        value: gemini-3.1-flash-lite
+      - key: GEMINI_MODEL_VISION
+        value: gemini-3.1-flash-lite
       - key: GEMINI_EMBED_MODEL
         value: gemini-embedding-001
+      # Reflect gives up when no text arrives within this long (ms).
+      - key: AI_FIRST_TOKEN_MS
+        value: '20000'
+      # Free tier: the provider's daily limit per model is shared by everyone, so cap each
+      # person (a paid key can use 200 / 150).
       - key: AI_DAILY_QUOTA
-        value: '200'
+        value: '25'
       - key: ENRICH_DAILY_QUOTA
-        value: '150'
+        value: '40'
+      # Quiet time after the last save before analysing, so pauses while writing don't each
+      # cost an enrichment request (paid keys can go back to the 20000 default).
+      - key: ENRICH_DEBOUNCE_MS
+        value: '45000'
       # Retrieval thresholds calibrated for gemini-embedding-001 (768 dims).
       - key: SEARCH_MIN_SIMILARITY
         value: '0.6'

@@ -95,17 +95,28 @@ async function markDone(id: string): Promise<void> {
     where id = ${id} and status = 'running'`);
 }
 
+/**
+ * Record a failed run. Returns true when the job was requeued because a newer payload was
+ * enqueued while it ran (updated_at moved past locked_at): that payload has never been
+ * tried, so it gets a fresh run with fresh attempts instead of dying with the old one.
+ */
 async function markFailed(
   id: string,
   dead: boolean,
   error: string,
   delayMs: number,
-): Promise<void> {
-  await db.execute(sql`
-    update jobs set status = ${dead ? 'dead' : 'queued'},
-      run_after = now() + ${delayMs} * interval '1 millisecond',
+): Promise<boolean> {
+  const rows = await db.execute<{ superseded: boolean }>(sql`
+    update jobs set
+      status = case when ${dead}::boolean and p.newer then 'queued' else ${dead ? 'dead' : 'queued'}::text end,
+      attempts = case when ${dead}::boolean and p.newer then 0 else jobs.attempts end,
+      run_after = case when ${dead}::boolean and p.newer then now()
+                       else now() + ${delayMs} * interval '1 millisecond' end,
       last_error = ${error.slice(0, ERROR_MAX)}, locked_at = null, updated_at = now()
-    where id = ${id} and status = 'running'`);
+    from (select id, updated_at > locked_at as newer from jobs where id = ${id} for update) p
+    where jobs.id = p.id and jobs.status = 'running'
+    returning (${dead}::boolean and p.newer) as superseded`);
+  return rows[0]?.superseded === true;
 }
 
 /** Requeue until `until` without counting the attempt (the handler asked to wait). */
@@ -208,7 +219,11 @@ export async function runJob(
     }
     const dead = err instanceof PermanentJobError || job.attempts >= job.maxAttempts;
     const text = timeout.aborted ? 'Job timed out' : errorText(err);
-    await markFailed(job.id, dead, text, dead ? 0 : backoffMs(job.attempts));
+    const superseded = await markFailed(job.id, dead, text, dead ? 0 : backoffMs(job.attempts));
+    if (superseded) {
+      log.info({ error: text.slice(0, 300) }, 'job failed, but newer content is queued');
+      return 'retry';
+    }
     if (!dead) {
       log.warn({ error: text.slice(0, 300) }, 'job failed, will retry');
       return 'retry';

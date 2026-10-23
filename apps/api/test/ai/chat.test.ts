@@ -11,7 +11,7 @@ import {
 import { createApp } from '../../src/app';
 import { config } from '../../src/config';
 import { db } from '../../src/db/client';
-import { chatMessages } from '../../src/db/schema';
+import { aiUsage, chatMessages } from '../../src/db/schema';
 import type { ChunkHit } from '../../src/services/search';
 import {
   MAX_CHUNKS_PER_ENTRY,
@@ -20,7 +20,7 @@ import {
   titleFrom,
 } from '../../src/services/chat';
 import { resetDb, testApi, type TestUser } from '../helpers';
-import { httpError, installFakeAi, userText, type FakeAi } from './fake-ai';
+import { httpError, installFakeAi, quotaSpent, userText, type FakeAi } from './fake-ai';
 import { seedEnriched, seedUser } from './seed';
 
 const api = testApi();
@@ -262,6 +262,63 @@ describe('POST /threads/:id/messages', () => {
       .set({ ...user.headers, 'x-gemini-key': 'my-own-key' })
       .send({ content: 'hi' });
     expect(ok.status).toBe(200);
+  });
+
+  it('answers 429 ai_quota_exceeded before streaming once today’s budget is spent', async () => {
+    const user = await seedUser();
+    const t = await newThread(user);
+    await db.insert(aiUsage).values({
+      userId: user.id,
+      day: new Date().toISOString().slice(0, 10),
+      calls: config.AI_DAILY_QUOTA,
+    });
+    const res = await api
+      .post(`/api/threads/${t.id}/messages`)
+      .set(user.headers)
+      .send({ content: 'What made me happy?' });
+    expect(res.status).toBe(429);
+    expect(res.headers['content-type']).toMatch(/^application\/json/);
+    expect(res.body.code).toBe('ai_quota_exceeded');
+    expect(fake.embedCalls).toHaveLength(0);
+    expect(fake.streamCalls).toHaveLength(0);
+    expect(await db.select().from(chatMessages).where(eq(chatMessages.threadId, t.id))).toEqual([]);
+
+    // A person's own key isn't limited by the server budget.
+    const own = await send(
+      { ...user, headers: { ...user.headers, 'x-gemini-key': 'mine' } } as TestUser,
+      t.id,
+      {
+        content: 'What made me happy?',
+      },
+    );
+    expect(own.status).toBe(200);
+  });
+
+  it('stops before streaming, without spending the budget, while Gemini has paused the chat model', async () => {
+    const user = await seedUser();
+    const t = await newThread(user);
+    fake.failures = [undefined, quotaSpent(4 * 3_600)]; // the embedding works, the answer is refused
+    const first = parseEvents(
+      (await send(user, t.id, { content: 'Anything about rain?' })).body as string,
+    );
+    expect(first.map((e) => e.event)).toEqual(['sources', 'error']);
+    const err = first[1]!;
+    if (err.event === 'error') expect(err.data.code).toBe('ai_quota_exceeded');
+    const spent = async () =>
+      (await db.select().from(aiUsage).where(eq(aiUsage.userId, user.id)))[0]!.calls;
+    expect(await spent()).toBe(1);
+
+    const res = await api
+      .post(`/api/threads/${t.id}/messages`)
+      .set(user.headers)
+      .send({ content: 'And snow?' });
+    expect(res.status).toBe(429);
+    expect(res.body.code).toBe('ai_quota_exceeded');
+    expect(res.body.error).toMatch(/own Gemini key/);
+    expect(fake.streamCalls).toHaveLength(1);
+    expect(await spent()).toBe(1);
+    const stored = await db.select().from(chatMessages).where(eq(chatMessages.threadId, t.id));
+    expect(stored.map((m) => m.content)).toEqual(['Anything about rain?']);
   });
 
   it('stops generating when the client disconnects and keeps the partial answer', async () => {

@@ -9,7 +9,7 @@ import {
 } from '@solace/shared';
 import { config } from '../../src/config';
 import { db } from '../../src/db/client';
-import { entries, insightReports } from '../../src/db/schema';
+import { aiUsage, entries, insightReports } from '../../src/db/schema';
 import { cleanLetter, weekWindow } from '../../src/services/insights';
 import {
   buildDays,
@@ -240,6 +240,65 @@ describe('weekly letter', () => {
     expect(res.letter).toMatchObject({ content: 'A fresh letter.', stale: false });
     const rows = await db.select().from(insightReports).where(eq(insightReports.userId, user.id));
     expect(rows).toHaveLength(1);
+  });
+
+  async function weekWithLetter() {
+    const user = await seedUser();
+    const today = localDate(new Date(), 'UTC');
+    const first = await seedEntry(user.id, { body: 'Rain all morning.', entryDate: today });
+    await seedEntry(user.id, { body: 'Sunny walk later.', entryDate: today });
+    const res = weeklyLetterResponse.parse(
+      (await api.get('/api/insights/weekly').set(user.headers).expect(200)).body,
+    );
+    return { user, first, letter: res.letter! };
+  }
+  const spendBudget = (userId: string) =>
+    db
+      .insert(aiUsage)
+      .values({ userId, day: new Date().toISOString().slice(0, 10), calls: config.AI_DAILY_QUOTA })
+      .onConflictDoUpdate({
+        target: [aiUsage.userId, aiUsage.day],
+        set: { calls: config.AI_DAILY_QUOTA },
+      });
+
+  it('does not rewrite a letter nothing has changed since', async () => {
+    const { user, letter } = await weekWithLetter();
+    const res = weeklyLetterResponse.parse(
+      (await api.post('/api/insights/weekly/refresh').set(user.headers).expect(200)).body,
+    );
+    expect(res.letter).toEqual(letter);
+    expect(fake.calls('weekly')).toHaveLength(1);
+  });
+
+  it('keeps serving the stale letter on GET, while a refresh that cannot work says why', async () => {
+    const { user, first, letter } = await weekWithLetter();
+    await db.update(entries).set({ body: 'Edited.' }).where(eq(entries.id, first.id));
+    await spendBudget(user.id);
+
+    const res = await api.post('/api/insights/weekly/refresh').set(user.headers);
+    expect(res.status).toBe(429);
+    expect(res.body.code).toBe('ai_quota_exceeded');
+    const read = await api.get('/api/insights/weekly').set(user.headers).expect(200);
+    expect(weeklyLetterResponse.parse(read.body).letter).toEqual({ ...letter, stale: true });
+
+    // The same when the AI can't be reached at all.
+    (config as { GEMINI_API_KEY: string }).GEMINI_API_KEY = '';
+    const offline = await api.post('/api/insights/weekly/refresh').set(user.headers);
+    expect(offline.status).toBe(503);
+    expect(offline.body.code).toBe('ai_unavailable');
+    expect(fake.calls('weekly')).toHaveLength(1);
+  });
+
+  it('says so with a 429 when there is no letter to fall back on and the budget is spent', async () => {
+    const user = await seedUser();
+    const today = localDate(new Date(), 'UTC');
+    await seedEntry(user.id, { body: 'a', entryDate: today });
+    await seedEntry(user.id, { body: 'b', entryDate: today });
+    await spendBudget(user.id);
+    const res = await api.get('/api/insights/weekly').set(user.headers);
+    expect(res.status).toBe(429);
+    expect(res.body.code).toBe('ai_quota_exceeded');
+    expect(fake.calls('weekly')).toHaveLength(0);
   });
 
   it('maps AI failure to 503', async () => {

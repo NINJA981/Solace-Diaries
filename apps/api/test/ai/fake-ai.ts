@@ -48,15 +48,12 @@ export function fakeEmbedding(text: string, dims = 768): number[] {
   return v;
 }
 
-export type Task =
-  'analysis' | 'memories' | 'graph' | 'weekly' | 'dailyPrompt' | 'photo' | 'chat' | 'other';
+export type Task = 'enrich' | 'weekly' | 'dailyPrompt' | 'photo' | 'chat' | 'other';
 
 /** Identify which of our prompts a request came from (by a phrase in its system instruction). */
 export function taskOf(req: GenerateRequest): Task {
   const s = req.system ?? '';
-  if (s.includes('light-touch analysis')) return 'analysis';
-  if (s.includes('long-term memories')) return 'memories';
-  if (s.includes('constellation')) return 'graph';
+  if (s.includes('You enrich one private journal entry')) return 'enrich';
   if (s.includes('weekly letter')) return 'weekly';
   if (s.includes('journaling prompt')) return 'dailyPrompt';
   if (s.includes('describe a photo')) return 'photo';
@@ -72,17 +69,62 @@ export const userText = (req: GenerateRequest) =>
 
 type Reply = (req: GenerateRequest) => string | Promise<string>;
 
+/** The one structured enrichment answer (see services/enrichment.ts). */
+export type EnrichAnswer = {
+  mood: string;
+  tags: string[];
+  summary: string;
+  memoryOps: Array<Record<string, unknown> | unknown>;
+  entities: Array<{ name: string; kind: string } | unknown>;
+  relations: Array<{ from: string; to: string } | unknown>;
+};
+
+/** An enrichment reply: a calm, quiet day with nothing to remember, unless overridden. */
+export const enrichReply = (over: Partial<EnrichAnswer> = {}) =>
+  JSON.stringify({
+    mood: 'calm',
+    tags: ['Daily Life'],
+    summary: 'You had a quiet day.',
+    memoryOps: [],
+    entities: [],
+    relations: [],
+    ...over,
+  });
+
+/** The memory blocks the model was shown, as `handle → content`. */
+export function memoryHandles(req: GenerateRequest): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of userText(req).matchAll(
+    /<memory id="(m\d+)" kind="\w+">\n([^\n]*)\n<\/memory>/g,
+  )) {
+    out.set(m[1]!, m[2]!);
+  }
+  return out;
+}
+
 const DEFAULT_REPLIES: Record<Task, Reply> = {
-  analysis: () =>
-    JSON.stringify({ mood: 'calm', tags: ['Daily Life'], summary: 'You had a quiet day.' }),
-  memories: () => JSON.stringify({ ops: [] }),
-  graph: () => JSON.stringify({ entities: [] }),
+  enrich: () => enrichReply(),
   weekly: () => '### Your week\nYou showed up for yourself this week.',
   dailyPrompt: () => 'How is your training going this week?',
   photo: () => 'A dog running along a sandy beach at sunset.',
   chat: () => 'Here is what I found [1].',
   other: () => 'ok',
 };
+
+/** Like a real transport, a slow stream stops waiting the moment its request is aborted. */
+const sleepUnlessAborted = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const t = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(t);
+      reject(signal.reason);
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
 
 export class FakeAi {
   generateCalls: GenerateRequest[] = [];
@@ -120,7 +162,7 @@ export class FakeAi {
     const full = await (this.replies.chat ?? DEFAULT_REPLIES.chat)(req);
     const pieces = this.streamPieces?.(req) ?? full.split(/(?<= )/);
     for (const text of pieces) {
-      if (this.streamDelayMs) await new Promise((r) => setTimeout(r, this.streamDelayMs));
+      if (this.streamDelayMs) await sleepUnlessAborted(this.streamDelayMs, req.signal);
       req.signal.throwIfAborted();
       yield { text, tokens: 5 };
     }
@@ -155,3 +197,32 @@ export function installFakeAi(): FakeAi {
 }
 
 export const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+/** The @google/genai error for a spent free-tier daily quota: 429 with a RetryInfo delay. */
+export const quotaSpent = (retryDelaySeconds: number) =>
+  Object.assign(
+    new Error(
+      `got status: 429 Too Many Requests. {"error":{"code":429,"status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"${retryDelaySeconds}s"}]}}`,
+    ),
+    { status: 429 },
+  );
+
+/**
+ * A free-tier per-day quota 429 as Google reports it: a QuotaFailure naming the per-day
+ * quota, often with a SHORT RetryInfo ("retry in 22s") or none at all.
+ */
+export const quotaPerDay = (retryDelaySeconds?: number) =>
+  Object.assign(
+    new Error(
+      `got status: 429 Too Many Requests. {"error":{"code":429,"status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}${
+        retryDelaySeconds === undefined
+          ? ''
+          : `,{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"${retryDelaySeconds}s"}`
+      }]}}`,
+    ),
+    { status: 429 },
+  );
+
+/** A burst (per-minute) 429 that asks for a short wait. */
+export const burstLimited = (retryDelaySeconds: number) =>
+  Object.assign(new Error(`Please retry in ${retryDelaySeconds}s.`), { status: 429 });

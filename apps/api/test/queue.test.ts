@@ -76,6 +76,41 @@ describe('enqueue', () => {
   });
 });
 
+describe('a newer payload enqueued while a job runs', () => {
+  it('is not dead-lettered with the old one: it gets a fresh run and fresh attempts', async () => {
+    await enqueue(db, JOB.enrichEntry, { version: 1 }, { dedupeKey: 'enrich:c', maxAttempts: 2 });
+    const job = await claimOrFail();
+    const dead = vi.fn();
+    const outcome = await runJob(
+      job,
+      opts(
+        async () => {
+          await enqueue(db, JOB.enrichEntry, { version: 2 }, { dedupeKey: 'enrich:c' });
+          throw new PermanentJobError('v1 is unusable');
+        },
+        { onJobDead: dead },
+      ),
+    );
+    expect(outcome).toBe('retry');
+    expect(dead).not.toHaveBeenCalled(); // v2's entry is not marked failed
+    expect(await jobById(job.id)).toMatchObject({
+      status: 'queued',
+      attempts: 0,
+      payload: { version: 2 },
+    });
+
+    // Without a newer payload the same failure still dead-letters.
+    await db.delete(jobs);
+    await enqueue(db, JOB.enrichEntry, { version: 1 }, { dedupeKey: 'enrich:d' });
+    const plain = await claimOrFail();
+    const bad: JobHandler = async () => {
+      throw new PermanentJobError('nope');
+    };
+    expect(await runJob(plain, opts(bad, { onJobDead: dead }))).toBe('dead');
+    expect(dead).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('claim', () => {
   it('only claims due jobs, oldest first', async () => {
     await enqueue(

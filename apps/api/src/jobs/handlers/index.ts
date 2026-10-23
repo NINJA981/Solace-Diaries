@@ -1,8 +1,8 @@
 /** Job handler registry (intelligence layer). The platform worker claims jobs and calls these. */
-import { AiUnavailableError } from '../../ai/errors';
+import { AiBadOutputError, AiUnavailableError } from '../../ai/errors';
 import { logger } from '../../logger';
 import { describeAttachment, enrichEntry, markEnrichmentFailed } from '../../services/enrichment';
-import { DeferJobError, JOB, type JobHandler, type JobType } from '../types';
+import { DeferJobError, JOB, PermanentJobError, type JobHandler, type JobType } from '../types';
 
 const MIN_RATE_LIMIT_WAIT_MS = 60_000;
 const MAX_RATE_LIMIT_WAIT_MS = 24 * 60 * 60_000;
@@ -26,9 +26,32 @@ export function deferOnRateLimit(handler: JobHandler): JobHandler {
   };
 }
 
+/** Attempts after which an answer the model keeps getting wrong stops being retried. */
+export const BAD_OUTPUT_ATTEMPTS = 2;
+
+/**
+ * Output that failed validation even after the gateway's repair round rarely fixes itself,
+ * and each attempt costs up to two requests from a small daily quota. Give it one more try,
+ * then fail for good (the entry shows as failed and can be retried by hand).
+ */
+export function giveUpOnBadOutput(handler: JobHandler): JobHandler {
+  return async (payload, ctx) => {
+    try {
+      await handler(payload, ctx);
+    } catch (err) {
+      if (err instanceof AiBadOutputError && ctx.attempt >= BAD_OUTPUT_ATTEMPTS) {
+        throw new PermanentJobError(`Unusable model output: ${err.message}`);
+      }
+      throw err;
+    }
+  };
+}
+
+const aiJob = (handler: JobHandler) => deferOnRateLimit(giveUpOnBadOutput(handler));
+
 export const handlers: Partial<Record<JobType, JobHandler>> = {
-  [JOB.enrichEntry]: deferOnRateLimit((payload, ctx) => enrichEntry(payload, ctx.signal)),
-  [JOB.describeAttachment]: deferOnRateLimit((payload, ctx) => describeAttachment(payload, ctx.signal)),
+  [JOB.enrichEntry]: aiJob((payload, ctx) => enrichEntry(payload, ctx.signal)),
+  [JOB.describeAttachment]: aiJob((payload, ctx) => describeAttachment(payload, ctx.signal)),
 };
 
 /** Called by the worker once a job is dead-lettered. */

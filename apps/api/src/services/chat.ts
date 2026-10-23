@@ -13,7 +13,7 @@ import {
   type Thread,
   type ThreadWithMessages,
 } from '@solace/shared';
-import { AiBadOutputError, AiUnavailableError } from '../ai/errors';
+import { AiBadOutputError, AiUnavailableError, providerLimitError } from '../ai/errors';
 import { embedModel, embedText, streamText, type AiOptions, type Turn } from '../ai/gemini';
 import { DATA_POLICY, dataBlock, sanitize } from '../ai/untrusted';
 import { db } from '../db/client';
@@ -349,7 +349,11 @@ export function referencedCitations(answer: string, citations: Citation[]): Cita
 
 export type Emit = (event: 'sources' | 'token' | 'done' | 'error', data: unknown) => void;
 
-export function toApiError(err: unknown, requestId?: string): ApiError {
+export function toApiError(err: unknown, requestId?: string, ownKey = false): ApiError {
+  if (err instanceof AiUnavailableError && err.status === 429) {
+    const limit = providerLimitError(err, ownKey);
+    return { error: limit.message, code: limit.code, requestId };
+  }
   if (err instanceof AiUnavailableError || err instanceof AiBadOutputError) {
     return {
       error: 'Solace could not reach its AI service. Try again in a moment.',
@@ -413,6 +417,7 @@ export async function runTurn(args: {
     const today = new Date().toISOString().slice(0, 10);
     const stream = streamText(
       {
+        task: 'chat',
         system: systemPrompt(await aiStyleOf(userId), today),
         history: historyTurns(turn.history),
         user: userTurn(turn.question, retrieved),
@@ -445,6 +450,6 @@ export async function runTurn(args: {
       return;
     }
     logger.warn({ err, threadId }, 'reflect turn failed');
-    emit('error', toApiError(err, args.requestId));
+    emit('error', toApiError(err, args.requestId, Boolean(args.ai.apiKey)));
   }
 }

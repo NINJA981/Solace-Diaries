@@ -33,6 +33,7 @@ import {
   type ListEntriesQuery,
   type UpdateEntryInput,
 } from '@solace/shared';
+import { config } from '../config';
 import { db, type DbOrTx, type Tx } from '../db/client';
 import {
   attachments,
@@ -53,8 +54,11 @@ import type { ProcessedImage } from '../storage/image';
 import { toAttachment, toEntry, toEntrySummary } from './entry-dto';
 import { getTimezone } from './profiles';
 
-/** Autosave fires every few seconds while typing; wait for a pause before re-enriching. */
-const ENRICH_DEBOUNCE_MS = 20_000;
+/**
+ * Autosave fires every few seconds while typing: wait for a pause (ENRICH_DEBOUNCE_MS)
+ * before enriching, from the first save on, so a writing session costs one enrichment.
+ */
+const afterDebounce = () => new Date(Date.now() + config.ENRICH_DEBOUNCE_MS);
 
 // Every entry column except the generated tsvector, which is large and never sent.
 const { search: _search, ...entryColumns } = getTableColumns(entries);
@@ -256,7 +260,7 @@ export async function createEntry(userId: string, input: CreateEntryInput): Prom
         .set({ status: 'answered', entryId: inserted.id })
         .where(and(eq(prompts.id, promptId), eq(prompts.userId, userId)));
     }
-    if (shouldEnrich) await enqueueEnrichment(tx, inserted);
+    if (shouldEnrich) await enqueueEnrichment(tx, inserted, afterDebounce());
     return inserted;
   });
 
@@ -327,7 +331,7 @@ export async function updateEntry(
       );
     }
     if (updated.version !== expectedVersion) {
-      await enqueueEnrichment(tx, updated, new Date(Date.now() + ENRICH_DEBOUNCE_MS));
+      await enqueueEnrichment(tx, updated, afterDebounce());
     }
     return updated;
   });

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { entryPage, entry as entrySchema, localDate } from '@solace/shared';
+import { config } from '../src/config';
 import { db } from '../src/db/client';
 import {
   entries,
@@ -53,6 +54,32 @@ describe('create', () => {
     const queued = await enrichJobs(e.id);
     expect(queued).toHaveLength(1);
     expect(queued[0]!.payload).toEqual({ entryId: e.id, userId: user.id, version: 1 });
+    // The first autosave is usually a few words: wait for a pause in writing, like edits do.
+    expect(queued[0]!.runAfter.getTime()).toBeGreaterThan(Date.now() + 10_000);
+  });
+
+  it('waits ENRICH_DEBOUNCE_MS before enriching, on create and on update (0 = at once)', async () => {
+    const saved = config.ENRICH_DEBOUNCE_MS;
+    try {
+      const user = await createTestUser();
+      (config as { ENRICH_DEBOUNCE_MS: number }).ENRICH_DEBOUNCE_MS = 45_000;
+      const e = await create(user, { body: 'one two three' });
+      const wait = async () => (await enrichJobs(e.id))[0]!.runAfter.getTime() - Date.now();
+      expect(await wait()).toBeGreaterThan(44_000);
+      expect(await wait()).toBeLessThanOrEqual(45_000);
+
+      await db.delete(jobs).where(eq(jobs.dedupeKey, `enrich:${e.id}`));
+      (config as { ENRICH_DEBOUNCE_MS: number }).ENRICH_DEBOUNCE_MS = 0;
+      await api
+        .patch(`/api/entries/${e.id}`)
+        .set(user.headers)
+        .set('If-Match', '1')
+        .send({ body: 'one two three four' })
+        .expect(200);
+      expect(Math.abs(await wait())).toBeLessThan(2_000);
+    } finally {
+      (config as { ENRICH_DEBOUNCE_MS: number }).ENRICH_DEBOUNCE_MS = saved;
+    }
   });
 
   it('uses the profile timezone for the default entry date', async () => {

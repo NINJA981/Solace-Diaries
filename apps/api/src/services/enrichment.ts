@@ -1,12 +1,23 @@
 /**
- * Background enrichment of journal entries: analyze (mood, tags, summary) → chunk →
- * batch-embed → one version-checked transaction → best-effort memories and graph. Also
- * photo description, which feeds the entry's searchable attachment text.
+ * Background enrichment of journal entries, at a fixed AI cost of one generation request and
+ * one embedding request per entry: pick related memories → one structured call (mood, tags,
+ * summary, memory ops, entities, relations) → one embedding batch (passages + new memory
+ * sentences) → one version-checked transaction → best-effort memories and graph. Also photo
+ * description, which feeds the entry's searchable attachment text.
  */
 import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { MOODS, countWords } from '@solace/shared';
-import { embedModel, embedTexts, generateJson, generateText, type AiOptions } from '../ai/gemini';
+import { AiUnavailableError } from '../ai/errors';
+import {
+  aiPausedMs,
+  embedModel,
+  embedTexts,
+  generateJson,
+  generateText,
+  type AiOptions,
+  type Lane,
+} from '../ai/gemini';
 import { DATA_POLICY, dataBlock, sanitize } from '../ai/untrusted';
 import { db } from '../db/client';
 import { attachments, entries, entryChunks } from '../db/schema';
@@ -15,13 +26,30 @@ import { DeferJobError, JOB, PermanentJobError } from '../jobs/types';
 import { logger } from '../logger';
 import { getObject } from '../storage/index';
 import { chunkEntry, type Chunk } from './chunker';
-import { extractGraph } from './graph';
-import { extractMemories } from './memories';
-import { consumeEnrichmentBudget, nextUtcDay } from './quota';
+import {
+  GRAPH_INSTRUCTIONS,
+  entitySchema,
+  recordEntities,
+  relationSchema,
+  type Entity,
+  type Relation,
+} from './graph';
+import {
+  MEMORY_INSTRUCTIONS,
+  applyMemoryOps,
+  memoryContext,
+  opTexts,
+  planMemoryOps,
+  rawMemoryOp,
+  type MemoryContext,
+  type MemoryOp,
+} from './memories';
+import { consumeEnrichmentBudget, nextUtcDay, refundEnrichmentBudget } from './quota';
 
 /** Below this many words there is nothing meaningful to analyze or embed. */
 export const MIN_WORDS_FOR_AI = 4;
 const MAX_TAGS = 6;
+const MAX_DEFER_MS = 24 * 60 * 60_000;
 
 type EntryRow = typeof entries.$inferSelect;
 
@@ -44,25 +72,78 @@ async function spendBudgetOrDefer(userId: string, what: Record<string, string>):
   throw new DeferJobError(until, 'Daily enrichment budget spent');
 }
 
+/**
+ * When Gemini has already said a model's quota is spent (see aiPausedMs), wait it out
+ * before spending the person's budget on a request that would only be refused.
+ */
+function deferWhilePaused(lanes: Lane[], what: Record<string, string>): void {
+  const wait = Math.min(MAX_DEFER_MS, Math.max(0, ...lanes.map((lane) => aiPausedMs(lane))));
+  if (wait <= 0) return;
+  const until = new Date(Date.now() + wait);
+  logger.info({ ...what, until: until.toISOString() }, 'gemini quota spent; deferring');
+  throw new DeferJobError(until, 'AI provider quota spent');
+}
+
+/**
+ * A run Gemini refused with a 429 did no work: give the unit back, so the job's deferred
+ * re-run (or a pause on the model) never drains the person's daily enrichment budget.
+ */
+async function refundIfRefused(userId: string, err: unknown): Promise<void> {
+  if (!(err instanceof AiUnavailableError) || err.status !== 429) return;
+  await refundEnrichmentBudget(userId).catch((e: unknown) =>
+    logger.warn({ err: e }, 'could not refund enrichment budget'),
+  );
+}
+
 function parsePayload<S extends z.ZodType>(schema: S, payload: unknown): z.output<S> {
   const parsed = schema.safeParse(payload);
   if (!parsed.success) throw new PermanentJobError(`Invalid job payload: ${parsed.error.message}`);
   return parsed.data;
 }
 
-// ───────────────────────── analysis ─────────────────────────
+// ───────────────────────── the enrichment call ─────────────────────────
 
-const analysisSchema = z.object({
+/**
+ * Keep the items that validate and drop the rest: one malformed memory op or entity must
+ * not sink the mood, summary and passages (or cost a repair request).
+ */
+const validItems = <T extends z.ZodType>(item: T) =>
+  z.preprocess(
+    // A list the model left out or wrote as null/an object is "nothing", not a failed answer.
+    (v) => (Array.isArray(v) ? v : []),
+    z
+      .array(item.optional().catch(undefined))
+      .transform((items) => items.filter((x): x is NonNullable<typeof x> => x !== undefined)),
+  );
+
+/** Background AI calls never sleep long on a 429: it is rethrown and the job is deferred. */
+const JOB_INLINE_WAIT_MS = 2_000;
+
+const enrichmentSchema = z.object({
   mood: z.enum(MOODS),
-  tags: z.array(z.string()).max(12),
+  tags: z.array(z.string()),
   summary: z.string().min(1),
+  memoryOps: validItems(rawMemoryOp),
+  entities: validItems(entitySchema),
+  relations: validItems(relationSchema),
 });
+
 export type Analysis = { mood: (typeof MOODS)[number]; tags: string[]; summary: string };
 
-const ANALYZE_SYSTEM = `You read one private journal entry and return a light-touch analysis as JSON.
+/** Everything one enrichment call yields, already validated and mapped back from handles. */
+export type EntryReading = {
+  analysis: Analysis;
+  memoryOps: MemoryOp[];
+  entities: Entity[];
+  relations: Relation[];
+};
+
+const ENRICH_SYSTEM = `You enrich one private journal entry for the person who wrote it. You receive the entry and the existing memories most related to it. Reply with one JSON object with these fields:
 - mood: the single best fit from: ${MOODS.join(', ')}.
 - tags: up to ${MAX_TAGS} short lowercase topic tags (1-2 words each, e.g. "work", "family", "sleep", "running") describing what the entry is about. No mood words, no full sentences.
 - summary: exactly one gentle sentence in second person ("You…"), at most 30 words, describing what happened and how it felt. No advice, no judgement, no diagnosis.
+${MEMORY_INSTRUCTIONS}
+${GRAPH_INSTRUCTIONS}
 ${DATA_POLICY}`;
 
 export function cleanTags(tags: string[]): string[] {
@@ -93,22 +174,36 @@ export function entryText(row: Pick<EntryRow, 'body' | 'attachmentText'>): strin
   return photos ? `${row.body}\n\nPhotos:\n${photos}` : row.body;
 }
 
-export async function analyzeEntry(row: EntryRow, opts: AiOptions): Promise<Analysis> {
+/**
+ * The single generation request for an entry. The entry and memories travel as delimited
+ * data blocks; memories carry handles (m1…), and only ops naming one of them survive.
+ */
+export async function analyzeEntry(
+  row: EntryRow,
+  context: MemoryContext,
+  opts: AiOptions,
+): Promise<EntryReading> {
   const raw = await generateJson(
-    analysisSchema,
+    enrichmentSchema,
     {
-      system: ANALYZE_SYSTEM,
+      task: 'enrich',
+      system: ENRICH_SYSTEM,
       temperature: 0.2,
-      user: dataBlock(
-        'entry',
-        { date: row.entryDate },
-        `${row.title}\n\n${entryText(row)}`,
-        12_000,
-      ),
+      user: [
+        `Existing memories related to this entry (${context.blocks.length}):`,
+        context.blocks.join('\n') || '(none yet)',
+        'New journal entry:',
+        dataBlock('entry', { date: row.entryDate }, `${row.title}\n\n${entryText(row)}`, 12_000),
+      ].join('\n\n'),
     },
     opts,
   );
-  return { mood: raw.mood, tags: cleanTags(raw.tags), summary: cleanSummary(raw.summary) };
+  return {
+    analysis: { mood: raw.mood, tags: cleanTags(raw.tags), summary: cleanSummary(raw.summary) },
+    memoryOps: planMemoryOps(raw.memoryOps, context.handles),
+    entities: raw.entities,
+    relations: raw.relations,
+  };
 }
 
 // ───────────────────────── enrichEntry job ─────────────────────────
@@ -194,13 +289,6 @@ async function commit(
   });
 }
 
-function meanVector(vectors: number[][]): number[] {
-  const out = new Array<number>(vectors[0]!.length).fill(0);
-  for (const v of vectors) for (let i = 0; i < v.length; i++) out[i]! += v[i]!;
-  const norm = Math.hypot(...out) || 1;
-  return out.map((x) => x / norm);
-}
-
 export async function enrichEntry(payload: unknown, signal?: AbortSignal): Promise<void> {
   const p = parsePayload(enrichPayload, payload);
   const [row] = await db
@@ -214,6 +302,7 @@ export async function enrichEntry(payload: unknown, signal?: AbortSignal): Promi
   const needsAi = words >= MIN_WORDS_FOR_AI;
   if (needsAi) {
     try {
+      deferWhilePaused(['enrich', 'embed'], { entryId: row.id });
       await spendBudgetOrDefer(row.userId, { entryId: row.id });
     } catch (err) {
       // A crash may have left it 'processing'; waiting for the budget is 'pending'.
@@ -223,45 +312,47 @@ export async function enrichEntry(payload: unknown, signal?: AbortSignal): Promi
   }
 
   await setStatus(row.userId, row.id, row.version, row.enrichmentStatus, 'processing');
-  const ai: AiOptions = { userId: row.userId, signal };
+  const ai: AiOptions = { userId: row.userId, signal, maxInlineWaitMs: JOB_INLINE_WAIT_MS };
   let committed: boolean;
-  let vectors: number[][] = [];
+  let reading: EntryReading | null = null;
+  let opVectors: number[][] = [];
   try {
     if (!needsAi) {
       committed = await commit(row, null, [], []);
     } else {
-      const analysis = await analyzeEntry(row, ai);
       const chunks = chunkEntry({
         title: row.title,
         entryDate: row.entryDate,
         body: row.body,
         attachmentText: row.attachmentText,
       });
-      vectors = await embedTexts(
-        chunks.map((c) => c.embedText),
+      const context = await memoryContext(row.userId, {
+        id: row.id,
+        text: `${row.title}\n${entryText(row)}`,
+      });
+      reading = await analyzeEntry(row, context, ai);
+      // The passages and any new or corrected memory sentences share one embedding request.
+      const vectors = await embedTexts(
+        [...chunks.map((c) => c.embedText), ...opTexts(reading.memoryOps)],
         'RETRIEVAL_DOCUMENT',
         ai,
       );
-      committed = await commit(row, analysis, chunks, vectors);
+      opVectors = vectors.slice(chunks.length);
+      committed = await commit(row, reading.analysis, chunks, vectors.slice(0, chunks.length));
     }
   } catch (err) {
     // Let the UI show "pending" between retries rather than a stuck "processing".
     await setStatus(row.userId, row.id, row.version, 'processing', 'pending').catch(() => {});
+    await refundIfRefused(row.userId, err);
     throw err;
   }
-  if (!committed || vectors.length === 0) return;
+  if (!committed || !reading) return;
 
-  // Best effort: the entry is already searchable; memories and graph can catch up next edit.
-  const input = {
-    userId: row.userId,
-    entryId: row.id,
-    entryDate: row.entryDate,
-    title: row.title,
-    text: entryText(row),
-  };
+  // Best effort, no further AI calls: the entry is already analysed and searchable;
+  // memories and graph can catch up on the next edit.
   const results = await Promise.allSettled([
-    extractMemories({ ...input, entryVector: meanVector(vectors) }, ai),
-    extractGraph(input, ai),
+    applyMemoryOps(row.userId, row.id, reading.memoryOps, opVectors),
+    recordEntities(row.userId, row.id, reading.entities, reading.relations),
   ]);
   for (const [i, r] of results.entries()) {
     if (r.status === 'rejected') {
@@ -307,11 +398,13 @@ export async function describeAttachment(payload: unknown, signal?: AbortSignal)
     .where(and(eq(attachments.id, p.attachmentId), eq(attachments.userId, p.userId)));
   if (!att) throw new PermanentJobError('Attachment no longer exists');
   if (att.description) return;
+  deferWhilePaused(['vision'], { attachmentId: att.id });
   await spendBudgetOrDefer(p.userId, { attachmentId: att.id });
 
   const bytes = await getObject(att.storagePath);
   const text = await generateText(
     {
+      task: 'vision',
       system: PHOTO_SYSTEM,
       temperature: 0.2,
       maxOutputTokens: 200,
@@ -320,8 +413,11 @@ export async function describeAttachment(payload: unknown, signal?: AbortSignal)
         { text: 'Describe this photo.' },
       ],
     },
-    { userId: p.userId, signal },
-  );
+    { userId: p.userId, signal, maxInlineWaitMs: JOB_INLINE_WAIT_MS },
+  ).catch(async (err: unknown) => {
+    await refundIfRefused(p.userId, err);
+    throw err;
+  });
   const description = sanitize(text.replace(/\s+/g, ' '), 400);
 
   await db.transaction(async (tx) => {

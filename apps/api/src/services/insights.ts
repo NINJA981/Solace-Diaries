@@ -1,6 +1,10 @@
 /**
  * The weekly letter: a short, warm reflection on the current week (Monday-start in the
- * user's timezone), generated from that week's entries only and cached per week.
+ * user's timezone), generated from that week's entries only and cached per week. A letter
+ * is only (re)written when there is none yet or the week's entries changed. Reading never
+ * rewrites a letter that exists (it is served, flagged stale); an explicit refresh that can't
+ * be written (budget spent, model paused, AI unavailable) fails with the real error, so the
+ * page stops offering a refresh that cannot work.
  */
 import { and, asc, between, eq, sql } from 'drizzle-orm';
 import {
@@ -11,7 +15,8 @@ import {
   type WeeklyLetter,
   type WeeklyLetterResponse,
 } from '@solace/shared';
-import { generateText, type AiOptions } from '../ai/gemini';
+import { AiUnavailableError } from '../ai/errors';
+import { aiConfigured, assertAiNotPaused, generateText, type AiOptions } from '../ai/gemini';
 import { DATA_POLICY, dataBlock } from '../ai/untrusted';
 import { db } from '../db/client';
 import { entries, insightReports, profiles } from '../db/schema';
@@ -94,6 +99,9 @@ async function generate(
   end: string,
   ai: AiOptions,
 ): Promise<WeeklyLetter> {
+  // Requests known to fail are refused before they spend the person's budget.
+  if (!aiConfigured(ai.apiKey)) throw new AiUnavailableError('No Gemini API key is configured.');
+  assertAiNotPaused(['batch'], ai.apiKey);
   await consumeAiQuota(userId, { usingOwnKey: Boolean(ai.apiKey) });
   const [profile] = await db
     .select({ aiStyle: profiles.aiStyle })
@@ -128,6 +136,7 @@ async function generate(
   const content = cleanLetter(
     await generateText(
       {
+        task: 'batch',
         system: system(profile?.aiStyle ?? 'gentle'),
         temperature: 0.7,
         maxOutputTokens: 700,
@@ -148,9 +157,24 @@ async function generate(
   return toLetter(row!, false);
 }
 
+/** The letter already written for the week starting `start`, flagged stale if entries changed since. */
+async function cachedLetter(
+  userId: string,
+  start: string,
+  end: string,
+): Promise<WeeklyLetter | null> {
+  const [report] = await db
+    .select()
+    .from(insightReports)
+    .where(and(eq(insightReports.userId, userId), eq(insightReports.weekStart, start)));
+  return report ? toLetter(report, await isStale(userId, report, end)) : null;
+}
+
 /**
  * The cached letter for the current week. When there is none yet and the week has enough
  * entries, it is generated on first view, so `letter: null` always means "too few entries".
+ * A cached letter is served as is (flagged stale when entries changed); only a refresh
+ * rewrites it.
  */
 export async function getWeeklyLetter(
   userId: string,
@@ -158,20 +182,19 @@ export async function getWeeklyLetter(
   ai: AiOptions = {},
 ): Promise<WeeklyLetterResponse> {
   const { start, end } = weekWindow(tz);
-  const [report] = await db
-    .select()
-    .from(insightReports)
-    .where(and(eq(insightReports.userId, userId), eq(insightReports.weekStart, start)));
-  if (report)
-    return {
-      letter: toLetter(report, await isStale(userId, report, end)),
-      minEntries: MIN_WEEKLY_ENTRIES,
-    };
+  const cached = await cachedLetter(userId, start, end);
+  if (cached) return { letter: cached, minEntries: MIN_WEEKLY_ENTRIES };
   const snap = await weekSnapshot(userId, start, end);
   if (snap.count < MIN_WEEKLY_ENTRIES) return { letter: null, minEntries: MIN_WEEKLY_ENTRIES };
   return { letter: await generate(userId, start, end, ai), minEntries: MIN_WEEKLY_ENTRIES };
 }
 
+/**
+ * Rewrite the week's letter — only when it would change (no letter yet, or entries changed
+ * since). When it can't be written now the error is returned as is (429 `ai_quota_exceeded`
+ * or `rate_limited`, 503 `ai_unavailable`); the cached letter stays available, flagged
+ * stale, from `getWeeklyLetter`.
+ */
 export async function refreshWeeklyLetter(
   userId: string,
   tz: string,
@@ -180,5 +203,7 @@ export async function refreshWeeklyLetter(
   const { start, end } = weekWindow(tz);
   const snap = await weekSnapshot(userId, start, end);
   if (snap.count < MIN_WEEKLY_ENTRIES) return { letter: null, minEntries: MIN_WEEKLY_ENTRIES };
+  const cached = await cachedLetter(userId, start, end);
+  if (cached && !cached.stale) return { letter: cached, minEntries: MIN_WEEKLY_ENTRIES };
   return { letter: await generate(userId, start, end, ai), minEntries: MIN_WEEKLY_ENTRIES };
 }
