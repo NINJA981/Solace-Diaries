@@ -7,6 +7,10 @@ export const JOB = {
   enrichEntry: 'entry.enrich',
   /** payload: { attachmentId, userId } â€” describe a photo, then re-enrich its entry. */
   describeAttachment: 'attachment.describe',
+  /** payload: { userId } — rebuild the user's life chapters (one batch call). */
+  buildChapters: 'chapters.build',
+  /** payload: { userId } — write this week's growth note (one batch call). */
+  buildGrowth: 'growth.build',
 } as const;
 export type JobType = (typeof JOB)[keyof typeof JOB];
 

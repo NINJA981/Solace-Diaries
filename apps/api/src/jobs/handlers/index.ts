@@ -1,6 +1,8 @@
 /** Job handler registry (intelligence layer). The platform worker claims jobs and calls these. */
 import { AiBadOutputError, AiUnavailableError } from '../../ai/errors';
 import { logger } from '../../logger';
+import { buildChapters } from '../../services/chapters';
+import { buildGrowthNote } from '../../services/growth';
 import { describeAttachment, enrichEntry, markEnrichmentFailed } from '../../services/enrichment';
 import { DeferJobError, JOB, PermanentJobError, type JobHandler, type JobType } from '../types';
 
@@ -52,6 +54,8 @@ const aiJob = (handler: JobHandler) => deferOnRateLimit(giveUpOnBadOutput(handle
 export const handlers: Partial<Record<JobType, JobHandler>> = {
   [JOB.enrichEntry]: aiJob((payload, ctx) => enrichEntry(payload, ctx.signal)),
   [JOB.describeAttachment]: aiJob((payload, ctx) => describeAttachment(payload, ctx.signal)),
+  [JOB.buildChapters]: aiJob((payload, ctx) => buildChapters(payload, { signal: ctx.signal })),
+  [JOB.buildGrowth]: aiJob((payload, ctx) => buildGrowthNote(payload, { signal: ctx.signal })),
 };
 
 /** Called by the worker once a job is dead-lettered. */

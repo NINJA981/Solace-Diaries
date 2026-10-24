@@ -11,6 +11,7 @@ import {
   type ChatMessage,
   type Citation,
   type Thread,
+  type ThreadMode,
   type ThreadWithMessages,
 } from '@solace/shared';
 import { AiBadOutputError, AiUnavailableError, providerLimitError } from '../ai/errors';
@@ -21,6 +22,7 @@ import { chatMessages, chatThreads, entries, profiles } from '../db/schema';
 import { HttpError, badRequest, notFound } from '../http/errors';
 import { logger } from '../logger';
 import { excerptOf } from './entry-dto';
+import { MODE_TITLES, modeScript } from './guided';
 import { similarMemories, type ScoredMemory } from './memories';
 import { minSimilarity, rrf, vectorChunks, type ChunkHit } from './search';
 
@@ -39,6 +41,7 @@ type ThreadRow = typeof chatThreads.$inferSelect;
 
 export const toThread = (t: ThreadRow): Thread => ({
   id: t.id,
+  mode: t.mode,
   title: t.title,
   createdAt: t.createdAt.toISOString(),
   updatedAt: t.updatedAt.toISOString(),
@@ -62,10 +65,14 @@ export async function listThreads(userId: string): Promise<Thread[]> {
   return rows.map(toThread);
 }
 
-export async function createThread(userId: string, title?: string): Promise<Thread> {
+export async function createThread(
+  userId: string,
+  title?: string,
+  mode: ThreadMode = 'open',
+): Promise<Thread> {
   const [row] = await db
     .insert(chatThreads)
-    .values({ userId, title: title?.trim() || DEFAULT_THREAD_TITLE })
+    .values({ userId, mode, title: title?.trim() || MODE_TITLES[mode] })
     .returning();
   return toThread(row!);
 }
@@ -113,6 +120,8 @@ export type PreparedTurn = {
   userMessage: ChatMessage | null;
   /** Earlier messages, oldest first, excluding the question being answered. */
   history: MessageRow[];
+  /** The thread's guided script ('open' for a free conversation). */
+  mode: ThreadMode;
 };
 
 /**
@@ -170,7 +179,7 @@ export async function prepareTurn(
       .where(and(scope, ne(chatMessages.id, current.id)))
       .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
       .limit(HISTORY_MESSAGES);
-    return { question: current.content, userMessage, history: recent.reverse() };
+    return { question: current.content, userMessage, history: recent.reverse(), mode: thread.mode };
   });
 }
 
@@ -285,7 +294,7 @@ const STYLE: Record<AiStyle, string> = {
     'Calm and grounded, in the spirit of Stoic reflection: focus on what is within their control.',
 };
 
-export function systemPrompt(style: AiStyle, today: string): string {
+export function systemPrompt(style: AiStyle, today: string, mode: ThreadMode = 'open'): string {
   return `You are Solace, a warm, thoughtful companion inside the user's private journal. You help them reflect on their own past entries.
 Voice: ${STYLE[style]}
 Ground rules:
@@ -295,7 +304,7 @@ Ground rules:
 - Be concise: usually two to five short paragraphs, or a few bullets. Speak to the user as "you". Plain Markdown only: no headings, images, links or HTML.
 - You are not a therapist. Never diagnose or label conditions, and don't give medical, legal or financial instructions.
 - If the user expresses thoughts of suicide, self-harm, or being in danger, respond with warmth first, encourage them to contact local emergency services or a crisis line right now (for example, call or text 988 in the US, or the local equivalent) or someone they trust, and keep everything else brief.
-- Today's date is ${today}.
+- Today's date is ${today}.${modeScript(mode)}
 ${DATA_POLICY}`;
 }
 
@@ -418,7 +427,7 @@ export async function runTurn(args: {
     const stream = streamText(
       {
         task: 'chat',
-        system: systemPrompt(await aiStyleOf(userId), today),
+        system: systemPrompt(await aiStyleOf(userId), today, turn.mode),
         history: historyTurns(turn.history),
         user: userTurn(turn.question, retrieved),
         temperature: 0.6,

@@ -1,4 +1,9 @@
 import { Router } from 'express';
+import { authOf } from '../http/types';
+import { getGrowthNotes } from '../services/growth';
 
-// STUB: filled in by the v3 feature agent that owns this router. Declare full /api-relative paths.
 export const growthRouter: Router = Router();
+
+growthRouter.get('/growth', async (req, res) => {
+  res.json({ items: await getGrowthNotes(authOf(req).userId) });
+});

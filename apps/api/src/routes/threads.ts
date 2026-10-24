@@ -24,8 +24,8 @@ threadsRouter.get('/threads', async (req, res) => {
 });
 
 threadsRouter.post('/threads', async (req, res) => {
-  const { title } = parseBody(req, createThreadInput);
-  res.status(201).json(await createThread(authOf(req).userId, title));
+  const { title, mode } = parseBody(req, createThreadInput);
+  res.status(201).json(await createThread(authOf(req).userId, title, mode));
 });
 
 threadsRouter.get('/threads/:id', async (req, res) => {
