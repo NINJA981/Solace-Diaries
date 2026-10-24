@@ -1,4 +1,11 @@
 import { Router } from 'express';
+import { routes, statsQuery } from '@solace/shared';
+import { authOf } from '../http/types';
+import { parseQuery } from '../middleware/validate';
+import { getCorrelations } from '../services/correlations';
 
-// STUB: filled in by the v3 feature agent that owns this router. Declare full /api-relative paths.
 export const correlationsRouter: Router = Router();
+
+correlationsRouter.get(routes.correlations.path, async (req, res) => {
+  res.json(await getCorrelations(authOf(req).userId, parseQuery(req, statsQuery).tz));
+});

@@ -292,3 +292,23 @@ export const consentView = z.object({
 export type ConsentView = z.infer<typeof consentView>;
 export const consentDecisionInput = z.object({ decision: z.enum(['grant', 'deny', 'revoke']) });
 
+
+// ───────────────────────── response/input types ─────────────────────────
+// Inferred types for schemas that were only exported as values.
+export type CapsuleList = z.infer<typeof capsuleList>;
+export type ResurfaceResponse = z.infer<typeof resurfaceResponse>;
+export type ReplyToLetterInput = z.infer<typeof replyToLetterInput>;
+export type GrowthNoteList = z.infer<typeof growthNoteList>;
+export type IntentionKind = z.infer<typeof intentionKind>;
+export type IntentionCadence = z.infer<typeof intentionCadence>;
+export type IntentionStatus = z.infer<typeof intentionStatus>;
+export type IntentionCheckin = z.infer<typeof intentionCheckin>;
+export type IntentionList = z.infer<typeof intentionList>;
+export type CheckinInput = z.infer<typeof checkinInput>;
+export type IntentionSuggestions = z.infer<typeof intentionSuggestions>;
+export type WeeklyRitualResult = z.infer<typeof weeklyRitualResult>;
+export type CompanionResponse = z.infer<typeof companionResponse>;
+export type CorrelationList = z.infer<typeof correlationList>;
+export type ConsentRequestInput = z.infer<typeof consentRequestInput>;
+export type ConsentRequestResult = z.infer<typeof consentRequestResult>;
+export type ConsentDecisionInput = z.infer<typeof consentDecisionInput>;

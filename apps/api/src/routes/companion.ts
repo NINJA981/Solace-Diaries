@@ -1,4 +1,11 @@
 import { Router } from 'express';
+import { routes, statsQuery } from '@solace/shared';
+import { authOf } from '../http/types';
+import { parseQuery } from '../middleware/validate';
+import { getCompanion } from '../services/companion';
 
-// STUB: filled in by the v3 feature agent that owns this router. Declare full /api-relative paths.
 export const companionRouter: Router = Router();
+
+companionRouter.get(routes.companion.path, async (req, res) => {
+  res.json(await getCompanion(authOf(req).userId, parseQuery(req, statsQuery).tz));
+});
