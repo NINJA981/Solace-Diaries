@@ -189,7 +189,7 @@ export default function LandingPage() {
                 </p>
                 <Link
                   to="/privacy"
-                  className="mt-6 inline-block text-sm font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                  className="mt-6 inline-flex min-h-11 items-center text-sm font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent sm:min-h-0"
                 >
                   Read the privacy policy
                 </Link>

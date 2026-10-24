@@ -20,6 +20,7 @@ import { RememberWhen } from '../resurface/RememberWhen';
 import { WeeklyReviewCard } from '../ritual/WeeklyReviewCard';
 import { PromptCard } from './PromptCard';
 import { RecentRail } from './RecentRail';
+import { useTeenFlags } from '@/features/teen/flags';
 import { visibleStreak } from './streak';
 import { useTodayEntry } from './useTodayEntry';
 
@@ -114,7 +115,8 @@ export default function TodayPage() {
   // Teen mode never shows streak counts.
   const streak = visibleStreak(profile?.mode, stats.data?.currentStreak);
   const wroteToday = (todays.data?.pages[0]?.items.length ?? 0) > 0 || isCreated;
-  const reminderHour = profile?.reminderHour ?? null;
+  const { nudges } = useTeenFlags();
+  const reminderHour = nudges ? (profile?.reminderHour ?? null) : null;
   const showNudge =
     reminderHour !== null && hour >= reminderHour && !wroteToday && todays.isSuccess && !hasText;
   const showPrompt = prompt.data && prompt.data.status === 'pending' && !promptSeeded;

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { Download, KeyRound, LogOut } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/Dialog';
 import { Input, Select } from '@/components/ui/fields';
@@ -35,6 +35,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'gemini', label: 'Gemini key' },
   { id: 'data', label: 'Your data' },
+  { id: 'rhythm', label: 'Looking back' },
   { id: 'help', label: 'Need to talk to someone?' },
   { id: 'account', label: 'Account' },
   { id: 'danger', label: 'Delete account' },
@@ -453,6 +454,27 @@ function AccountSection() {
   );
 }
 
+function RhythmSection() {
+  const links = [
+    { to: '/app/ritual', title: 'Weekly review', body: 'A short look back at your week: highs, lows and one intention.' },
+    { to: '/app/journal/capsules', title: 'Time capsules', body: 'Letters to your future self, sealed until a date you choose.' },
+  ];
+  return (
+    <Section id="rhythm" title="Looking back" description="Gentle ways to pause and revisit. Nothing here is a task.">
+      <ul className="grid max-w-2xl gap-3 sm:grid-cols-2">
+        {links.map((l) => (
+          <li key={l.to}>
+            <Link to={l.to} className="flex h-full min-h-14 flex-col rounded-card border border-line bg-surface px-4 py-3 transition-colors hover:border-fg-faint hover:bg-sunken">
+              <span className="font-medium text-fg">{l.title}</span>
+              <span className="mt-0.5 text-sm leading-relaxed text-fg-muted">{l.body}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
 function HelpSection() {
   return (
     <Section id="help" title="Need to talk to someone?" description="Free, private help lines. You don’t need to be in crisis to call.">
@@ -533,7 +555,7 @@ export default function SettingsPage() {
       <div className="mt-10 grid gap-10 lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-14">
         <nav aria-label="Settings sections" className="hidden lg:block">
           <ul className="sticky top-8 flex flex-col gap-1 text-sm">
-            {(profile.mode === 'teen' ? [...SECTIONS.slice(0, 6), { id: 'teen', label: 'Teen account' }, ...SECTIONS.slice(6)] : SECTIONS).map((s) => (
+            {(profile.mode === 'teen' ? [...SECTIONS.slice(0, 7), { id: 'teen', label: 'Teen account' }, ...SECTIONS.slice(7)] : SECTIONS).map((s) => (
               <li key={s.id}>
                 <a
                   href={`#${s.id}`}
@@ -554,6 +576,7 @@ export default function SettingsPage() {
           <AppearanceSection profile={profile} />
           <GeminiSection />
           <DataSection />
+          <RhythmSection />
           <HelpSection />
           {profile.mode === 'teen' && <TeenSection profile={profile} />}
           <AccountSection />

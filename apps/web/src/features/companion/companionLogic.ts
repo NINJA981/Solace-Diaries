@@ -28,6 +28,14 @@ export function readSeen(userId: string): string[] | null {
   }
 }
 
+export function clearSeen(userId: string): void {
+  try {
+    localStorage.removeItem(`${KEY}:${userId}`);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function writeSeen(userId: string, keys: readonly string[]): void {
   try {
     localStorage.setItem(`${KEY}:${userId}`, JSON.stringify(keys));

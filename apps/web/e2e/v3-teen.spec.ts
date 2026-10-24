@@ -99,7 +99,7 @@ test.describe('age gate', () => {
     expect(await axe(page)).toEqual([]);
   });
 
-  test('a teen answer shows the parent hint and moves to the consent screen', async ({ page, context }) => {
+  test('the gate is neutral until submit: a teen answer shows no hint, then moves to the consent screen', async ({ page, context }) => {
     await signIn(context);
     const state: State = { ageConfirmed: false, onboardingDone: false };
     await mockApi(page, state, (m, p) => {
@@ -111,7 +111,9 @@ test.describe('age gate', () => {
     await page.goto('/age');
     await page.getByLabel('Month').selectOption('12');
     await page.getByLabel('Year').selectOption(String(new Date().getFullYear() - 15));
-    await expect(page.getByText('a parent or guardian will need to say yes')).toBeVisible();
+    // No live hint about the 13-17 band before the answer is sent.
+    await expect(page.getByText(/need to say yes/i)).toHaveCount(0);
+    await expect(page.getByRole('status')).toHaveCount(0);
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page).toHaveURL(/\/teen$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Ask a parent or guardian' })).toBeVisible();
@@ -140,7 +142,7 @@ test.describe('teen consent flow', () => {
 
     // The parent approves; the next poll (here triggered by returning to the tab) unlocks the app.
     Object.assign(state, { consentStatus: 'granted' });
-    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
     await expect(page).toHaveURL(/\/app\/today/, { timeout: 15_000 });
   });
 
@@ -215,6 +217,7 @@ test.describe('the parent page', () => {
     await page.goto('/consent/tok_valid_0123456789abcdef');
     await page.getByRole('button', { name: 'Decline', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Go back' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden(); // let it finish closing before the next open
     expect(calls).toEqual([]);
     await page.getByRole('button', { name: 'Decline', exact: true }).click();
     await page.getByRole('button', { name: 'Yes, decline' }).click();

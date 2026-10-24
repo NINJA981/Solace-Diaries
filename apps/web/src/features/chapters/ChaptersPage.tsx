@@ -1,27 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, BookOpen, Minus, Plus, RefreshCw } from 'lucide-react';
-import { localDate, type Chapter } from '@solace/shared';
+import { localDate, type Chapter, type EntrySummary } from '@solace/shared';
 import { Button, EmptyState, Skeleton, VisuallyHidden, buttonClasses, toast } from '@/components/ui';
 import { ApiRequestError, errorMessage } from '@/lib/api';
 import { useTimezone } from '@/lib/session';
 import { useVoice } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { formatShortDay, plural } from '../journal-core/format';
+import { useTeenFlags } from '../teen/flags';
+import { qk } from '../journal-core/queries';
 import { useChapters, useRefreshChapters } from '../journal-core/queries-v3b';
 import { LANE_GAP, LANE_H, ZOOMS, clampZoom, layoutChapters, roleVar } from './layout';
+
+/** Entry titles already in the query cache (from Journal or Today), so key-entry links can say more than a number. */
+function useCachedTitles(): Map<string, string> {
+  const qc = useQueryClient();
+  const out = new Map<string, string>();
+  for (const [, data] of qc.getQueriesData<{ pages?: { items: EntrySummary[] }[] }>({ queryKey: qk.entriesAll })) {
+    for (const page of data?.pages ?? []) for (const e of page.items) if (e.title?.trim()) out.set(e.id, e.title.trim());
+  }
+  return out;
+}
 
 function range(c: Chapter): string {
   return c.to ? `${formatShortDay(c.from)} to ${formatShortDay(c.to)}` : `${formatShortDay(c.from)} to now`;
 }
 
 function ChapterBody({ c, compact = false }: { c: Chapter; compact?: boolean }) {
+  const titles = useCachedTitles();
+  const { peopleMap } = useTeenFlags();
   return (
     <>
       <h3 className="type-heading text-lg leading-snug text-fg">{c.title}</h3>
       <p className="mt-0.5 text-xs text-fg-muted">{range(c)}</p>
       <p className={`mt-2 font-prose text-note text-fg-muted ${compact ? 'line-clamp-3' : ''}`}>{c.summary}</p>
-      {c.cast.length > 0 && (
+      {peopleMap && c.cast.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Who appears">
           {c.cast.map((n) => (
             <li key={n} className="rounded-full border border-line bg-sunken px-2.5 py-0.5 text-xs text-fg">
@@ -34,8 +49,8 @@ function ChapterBody({ c, compact = false }: { c: Chapter; compact?: boolean }) 
         <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="text-fg-faint">Key entries</span>
           {c.keyEntryIds.slice(0, 4).map((id, i) => (
-            <Link key={id} to={`/app/entries/${id}`} className="inline-flex min-h-8 items-center font-medium text-accent underline underline-offset-2 max-sm:min-h-11">
-              Entry {i + 1}
+            <Link key={id} to={`/app/entries/${id}`} className="inline-flex min-h-8 max-w-[16ch] items-center truncate font-medium text-accent underline underline-offset-2 max-sm:min-h-11">
+              {titles.get(id) ?? `Entry ${i + 1}`}
             </Link>
           ))}
         </p>
@@ -177,7 +192,7 @@ export default function ChaptersPage() {
             </div>
 
             <details className="mt-6">
-              <summary className="cursor-pointer text-sm text-fg-muted hover:text-fg">Read as a list</summary>
+              <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm text-fg-muted hover:text-fg sm:min-h-8">Read as a list</summary>
               <ol className="mt-4 space-y-5">
                 {items
                   .slice()

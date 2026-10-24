@@ -77,6 +77,16 @@ export function clearDraft(userId: string): void {
   }
 }
 
+/** Forget everything the weekly review keeps on this device for `userId` (private text). */
+export function clearRitualData(userId: string): void {
+  try {
+    localStorage.removeItem(`${DRAFT_KEY}:${userId}`);
+    localStorage.removeItem(`${DONE_KEY}:${userId}`);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function markDone(userId: string, week: string): void {
   try {
     localStorage.setItem(`${DONE_KEY}:${userId}`, week);

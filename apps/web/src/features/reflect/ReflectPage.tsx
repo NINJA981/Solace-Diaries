@@ -13,6 +13,7 @@ import { useCreateModeThread } from '../journal-core/queries-v3b';
 import { aiErrorCopy } from '../letters/aiErrors';
 import { clearStream, retryStream, sendMessage, stopStream, useStream, type StreamState } from './chatStore';
 import { Composer } from './Composer';
+import { CrisisResources } from '../teen/CrisisResources';
 import { Answer, RegenerateButton, UserBubble } from './Messages';
 import { ThreadList } from './ThreadList';
 import { MODE_OPTIONS, createThreadPayload, modeLabel } from './modes';
@@ -45,6 +46,7 @@ export default function ReflectPage() {
   const create = useCreateModeThread();
   const [mode, setMode] = useState<ThreadMode>('open');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -337,11 +339,22 @@ export default function ReflectPage() {
             onSend={(t) => void ask(t)}
             onStop={() => threadId && stopStream(threadId)}
           />
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            className="mt-1 -ml-2 inline-flex min-h-11 items-center rounded-control px-2 text-xs text-fg-muted underline-offset-2 hover:text-fg hover:underline sm:min-h-8"
+          >
+            Need to talk to someone?
+          </button>
         </div>
         <p className="sr-only" role="status" aria-live="polite">
           {liveText}
         </p>
       </section>
+
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen} title="Need to talk to someone?">
+        <CrisisResources headingLevel={3} title="Free, private help lines" />
+      </Dialog>
 
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen} title="Past reflections">
         <ThreadList activeId={threadId} onNavigate={() => setSheetOpen(false)} />

@@ -107,6 +107,34 @@ test.describe('Unwrapped', () => {
     await expect(page.getByRole('button', { name: /Streak/ })).toHaveCount(0);
   });
 
+  test('is a real modal: the app behind is inert, Escape in a picker does not leak, focus returns', async ({ page }) => {
+    await setup(page);
+    await page.goto('/app/insights');
+    const entry = page.getByRole('link', { name: /Your September, unwrapped/ });
+    await entry.focus();
+    await entry.press('Enter');
+    const dialog = page.getByRole('dialog', { name: /Unwrapped/ });
+    await expect(dialog).toBeVisible();
+    // Nothing behind the story can be reached or read.
+    await expect(page.locator('#root')).toHaveAttribute('inert', '');
+    for (let i = 0; i < 25; i++) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => !document.activeElement?.closest('#root'))).toBe(true);
+    }
+    expect(await axe(page)).toEqual([]);
+    // Escape meant for the open month picker must not close the story.
+    const picker = dialog.getByLabel('Month', { exact: true });
+    await picker.focus();
+    await picker.press('Escape');
+    await expect(dialog).toBeVisible();
+    // Escape from the story itself closes it and gives focus back.
+    await dialog.getByRole('region').focus();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\/app\/insights$/);
+    await expect(page.locator('#root')).not.toHaveAttribute('inert', '');
+    await expect(page.getByRole('link', { name: /Your September, unwrapped/ })).toBeVisible();
+  });
+
   test('explains the minimum when there is not enough', async ({ page }) => {
     await setup(page, { unwrappedThin: true });
     await page.goto('/app/insights/unwrapped?period=month&at=2026-09');

@@ -2,10 +2,13 @@
  * What this browser keeps for a signed-in person, and how it is cleaned up when they leave,
  * so the next account on a shared browser starts clean:
  *  - the BYOK Gemini key (localStorage),
+ *  - weekly-review drafts and the companion's seen-milestones marker (localStorage, per user),
  *  - journal drafts, the offline queue and the Today pointer (IndexedDB, per user).
  *
  * The editor registry is imported lazily so public pages don't pay for it.
  */
+import { clearSeen } from '@/features/companion/companionLogic';
+import { clearRitualData } from '@/features/ritual/ritualLogic';
 import { setGeminiKey } from './byok';
 
 const registry = () => import('@/features/journal-core/editor/registry');
@@ -30,6 +33,9 @@ export async function clearDeviceData(
 ): Promise<void> {
   setGeminiKey(null);
   if (!userId) return;
+  // Weekly-review answers are private text: they never outlive a sign-out, even a normal one.
+  clearRitualData(userId);
+  clearSeen(userId);
   try {
     await (await registry()).forgetUserOnDevice(userId, opts);
   } catch {

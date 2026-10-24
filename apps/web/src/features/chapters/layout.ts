@@ -38,7 +38,8 @@ export function layoutChapters(chapters: Chapter[], today: string, pxPerDay: num
 function monthTicks(from: string, to: string, pxPerDay: number): Tick[] {
   const ticks: Tick[] = [];
   let cursor = `${from.slice(0, 7)}-01`;
-  const step = pxPerDay >= 1.2 ? 1 : pxPerDay >= 0.5 ? 3 : 12;
+  // Label only as many months as fit: a "Jan 2026" tick needs about 72px before the next one.
+  const step = [1, 2, 3, 6, 12].find((n) => n * 30.4 * pxPerDay >= 72) ?? 12;
   let guard = 0;
   while (cursor <= to && guard++ < 600) {
     const month = Number(cursor.slice(5, 7));

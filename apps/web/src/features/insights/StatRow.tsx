@@ -2,10 +2,14 @@ import type { Stats } from '@solace/shared';
 import { compactNumber } from '../journal-core/format';
 
 /** Four quiet figures in one row: proportional numerals, sans, labels underneath. */
-export function StatRow({ stats }: { stats: Stats }) {
+export function StatRow({ stats, streaks = true }: { stats: Stats; streaks?: boolean }) {
   const items = [
-    { label: stats.currentStreak === 1 ? 'Day streak' : 'Days in a row', value: stats.currentStreak },
-    { label: 'Longest streak', value: stats.longestStreak },
+    ...(streaks
+      ? [
+          { label: stats.currentStreak === 1 ? 'Day streak' : 'Days in a row', value: stats.currentStreak },
+          { label: 'Longest streak', value: stats.longestStreak },
+        ]
+      : []),
     { label: stats.totalEntries === 1 ? 'Entry' : 'Entries', value: stats.totalEntries },
     { label: 'Words written', value: stats.totalWords },
   ];

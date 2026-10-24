@@ -8,7 +8,7 @@ import { AuthLayout, FormError } from '@/features/auth/AuthLayout';
 import { api } from '@/lib/api';
 import { errorMessage, isApiError } from '@/lib/errors';
 import { ME_QUERY_KEY, useProfile, useSession } from '@/lib/session';
-import { MONTHS, birthYearOptions, conservativeAge, gateTarget, isTeenAge, parseBirth } from './age';
+import { MONTHS, birthYearOptions, gateTarget, parseBirth } from './age';
 
 const MONTH_OPTIONS = [
   { value: '', label: 'Choose a month' },
@@ -29,7 +29,6 @@ function AgeGate() {
   if (profile?.ageConfirmed) return <Navigate to={gateTarget(profile) ?? '/app/today'} replace />;
 
   const birth = parseBirth(year, month);
-  const asTeen = birth ? isTeenAge(conservativeAge(birth.birthYear, birth.birthMonth)) : false;
   const yearOptions = [
     { value: '', label: 'Choose a year' },
     ...birthYearOptions().map((y) => ({ value: String(y), label: String(y) })),
@@ -76,12 +75,6 @@ function AgeGate() {
           We use this once to work out an age range, then forget it. We never keep your birth date, and you can’t
           change the range later.
         </p>
-        {asTeen && (
-          <p role="status" className="rounded-control border border-line bg-sunken px-3.5 py-2.5 text-sm leading-relaxed text-fg">
-            Because you’re under 18, a parent or guardian will need to say yes before you can use Solace. We’ll
-            help you ask them on the next screen.
-          </p>
-        )}
         <div>
           <Button type="submit" className="h-11 px-6 text-base" loading={saving}>
             Continue

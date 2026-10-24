@@ -138,7 +138,7 @@ export async function mockV3(page: Page, context: BrowserContext, sc: Scenario =
       /* no body */
     }
     if (m !== 'GET') calls.push({ method: m, path: p, body });
-    const prof = { ...profile, world: sc.world ?? 'lamplight', mode: sc.mode ?? 'adult' };
+    const prof = { ...profile, world: sc.world ?? 'lamplight', mode: sc.mode ?? 'adult', consentStatus: sc.mode === 'teen' ? 'granted' : 'not_required' };
 
     if (p === '/me') return json(route, prof);
     if (p === '/entries') return json(route, { items: [], nextCursor: null });

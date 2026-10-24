@@ -19,9 +19,9 @@ export function RememberWhen({ tz, today }: { tz: string; today: string }) {
       <h2 id="remember-when" className="mb-2 text-sm font-medium text-fg-muted">
         {voice.rememberWhenTitle}
       </h2>
-      <ul className="grid gap-2 sm:grid-cols-3">
+      <ul className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
         {cards.map((c) => (
-          <li key={c.id}>
+          <li key={c.id} className="w-[78%] shrink-0 snap-start sm:w-auto">
             <Link
               to={`/app/entries/${c.id}`}
               className="flex h-full min-h-11 flex-col rounded-card border border-line bg-surface px-3.5 py-3 transition-colors hover:border-line-strong"

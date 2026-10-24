@@ -30,7 +30,7 @@ function profile(world: string, mode: 'adult' | 'teen' = 'adult') {
   return {
     id: USER, email: 'sam@example.com', displayName: 'Sam Rivera', timezone: 'Europe/London', onboardingDone: true, aiStyle: 'gentle',
     reminderHour: null, world, soundEnabled: false, hapticsEnabled: false, companionName: '', mode, ageConfirmed: true,
-    consentStatus: 'not_required', createdAt: '2025-09-01T10:00:00.000Z',
+    consentStatus: mode === 'teen' ? 'granted' : 'not_required', createdAt: '2025-09-01T10:00:00.000Z',
   };
 }
 

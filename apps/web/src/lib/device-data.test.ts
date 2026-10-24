@@ -3,6 +3,7 @@ import { getGeminiKey, setGeminiKey } from './byok';
 import { clearDeviceData } from './device-data';
 import { draftStoreFor } from '@/features/journal-core/editor/registry';
 import { loadTodayPointer, saveTodayPointer } from '@/features/journal-core/editor/draftStore';
+import { markDone, isDone, saveDraft } from '@/features/ritual/ritualLogic';
 import { emptyFields } from '@/features/journal-core/editor/syncEngine';
 
 const draft = (id: string, body: string) => ({
@@ -42,5 +43,15 @@ describe('clearDeviceData', () => {
     await clearDeviceData(null);
     expect(getGeminiKey()).toBeNull();
     expect(await draftStoreFor('expired').list()).toHaveLength(1);
+  });
+
+  it('clears the user’s private weekly-review draft and done marker on sign-out, and nobody else’s', async () => {
+    saveDraft('leaving', { highs: 'a hard week', lows: '' } as never);
+    saveDraft('staying', { highs: 'theirs', lows: '' } as never);
+    markDone('leaving', '2026-10-12');
+    await clearDeviceData('leaving', { keepUnsyncedDrafts: true });
+    expect(localStorage.getItem('solace.ritual-draft:leaving')).toBeNull();
+    expect(isDone('leaving', '2026-10-12')).toBe(false);
+    expect(localStorage.getItem('solace.ritual-draft:staying')).not.toBeNull();
   });
 });

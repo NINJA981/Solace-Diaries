@@ -7,6 +7,7 @@ import { useTimezone } from '@/lib/session';
 import { useVoice } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { useGraph, useStats } from '../journal-core/queries';
+import { useTeenFlags } from '../teen/flags';
 import { Threads } from '../intentions/Threads';
 import { UnwrappedCard } from '../unwrapped/UnwrappedCard';
 import { LamplightSkyHeader } from './skins/lamplightSkyHeader';
@@ -39,6 +40,7 @@ export default function InsightsPage() {
   const graph = useGraph();
   const voice = useVoice();
   const skin = useConstellationSkin();
+  const flags = useTeenFlags();
   const s = stats.data;
   const hasMoods = !!s?.moodTrend.some((w) => w.avgScore !== null);
   // A brand-new journal gets one invitation, not a stack of empty sections.
@@ -70,7 +72,7 @@ export default function InsightsPage() {
           />
         ) : s ? (
           <>
-            <StatRow stats={s} />
+            <StatRow stats={s} streaks={flags.streaks} />
 
             <Section id="year" title="Your year" intro="Each square is a day. Color shows the mood of that day’s entries.">
               <YearHeatmap days={s.days} today={s.today} />
@@ -126,27 +128,29 @@ export default function InsightsPage() {
               </Link>
             </Section>
 
-            <Section
-              id="constellation"
-              title="Memory constellation"
-              intro="The people, places, goals and feelings that keep coming up in your entries, and how they connect."
-            >
-              {graph.isPending ? (
-                <div aria-hidden="true" className="h-72 animate-pulse rounded-card bg-sunken" />
-              ) : graph.isError ? (
-                <InlineError message="Couldn’t load the constellation." onRetry={() => void graph.refetch()} />
-              ) : graph.data.nodes.length < 3 ? (
-                <div className="rounded-card border border-line bg-sunken">
-                  <EmptyState
-                    icon={<Sparkles />}
-                    title={voice.skyEmptyTitle}
-                    description={voice.skyEmptyBody}
-                  />
-                </div>
-              ) : (
-                <Constellation graph={graph.data} skin={skin} />
-              )}
-            </Section>
+            {flags.peopleMap && (
+              <Section
+                id="constellation"
+                title="Memory constellation"
+                intro="The people, places, goals and feelings that keep coming up in your entries, and how they connect."
+              >
+                {graph.isPending ? (
+                  <div aria-hidden="true" className="h-72 animate-pulse rounded-card bg-sunken" />
+                ) : graph.isError ? (
+                  <InlineError message="Couldn’t load the constellation." onRetry={() => void graph.refetch()} />
+                ) : graph.data.nodes.length < 3 ? (
+                  <div className="rounded-card border border-line bg-sunken">
+                    <EmptyState
+                      icon={<Sparkles />}
+                      title={voice.skyEmptyTitle}
+                      description={voice.skyEmptyBody}
+                    />
+                  </div>
+                ) : (
+                  <Constellation graph={graph.data} skin={skin} />
+                )}
+              </Section>
+            )}
 
             <Section
               id="memories"

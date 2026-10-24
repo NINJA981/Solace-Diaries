@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useReducer, useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -301,8 +302,12 @@ function Story({ data, teen, onClose }: { data: Unwrapped; teen: boolean; onClos
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'Escape') return onClose();
       const t = e.target instanceof HTMLElement ? e.target : null;
+      // Escape closes the story, but not when it was meant for an open picker or another dialog.
+      if (e.key === 'Escape') {
+        if (e.defaultPrevented || t?.closest('select,input,textarea,[role="dialog"]:not(.unwrapped-stage)')) return;
+        return onClose();
+      }
       // Leave the period pickers and buttons alone, except for the arrows that move the story.
       if (t?.closest('select,input,textarea')) return;
       const a = keyToNav(e.key);
@@ -343,7 +348,7 @@ function Story({ data, teen, onClose }: { data: Unwrapped; teen: boolean; onClos
           role="group"
           aria-roledescription="slide"
           aria-label={`${index + 1} of ${story.length}: ${current.label}`}
-          className="unwrapped-slide mx-auto w-full max-w-4xl"
+          className="unwrapped-slide mx-auto w-full max-w-3xl"
         >
           {current.kind === 'persona' ? <PersonaBody persona={current.persona} /> : <SlideBody slide={current.slide} label={current.label} />}
         </div>
@@ -440,15 +445,35 @@ export default function UnwrappedPage() {
     <Story key={`${period}-${at}`} data={data} teen={teen} onClose={() => navigate(closeTo)} />
   );
 
-  return (
-    <div className="unwrapped-stage fixed inset-0 z-50 flex flex-col">
+  const stage = useRef<HTMLDivElement>(null);
+  // A real modal: the app behind it is inert (no tab stops, hidden from screen readers), focus moves
+  // in, and goes back to where it was when the story closes.
+  useEffect(() => {
+    const root = document.getElementById('root');
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    root?.setAttribute('inert', '');
+    stage.current?.focus({ preventScroll: true });
+    return () => {
+      root?.removeAttribute('inert');
+      if (before?.isConnected) before.focus({ preventScroll: true });
+    };
+  }, []);
+
+  return createPortal(
+    <div
+      ref={stage}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unwrapped-title"
+      tabIndex={-1}
+      className="unwrapped-stage fixed inset-0 z-50 flex flex-col outline-none">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-4 py-3 sm:px-8">
         <Link to={closeTo} className={buttonClasses('ghost', 'sm', '-ml-2')} aria-label="Close Unwrapped">
           <ArrowLeft className="size-4 sm:hidden" aria-hidden="true" />
           <X className="size-4 max-sm:hidden" aria-hidden="true" />
           <span className="max-sm:sr-only">Close</span>
         </Link>
-        <h1 className="type-heading min-w-0 flex-1 truncate text-lg text-fg">
+        <h1 id="unwrapped-title" className="type-heading min-w-[11rem] flex-1 truncate text-lg text-fg">
           Unwrapped <span className="text-fg-muted">· {period === 'year' ? at : monthName(at)}</span>
         </h1>
         <div className="flex items-center gap-2">
@@ -472,6 +497,7 @@ export default function UnwrappedPage() {
         </div>
       </header>
       {body}
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -6,6 +6,7 @@ import { errorMessage } from '@/lib/api';
 import { useVoice, voiceNow } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { plural } from '../journal-core/format';
+import { useTeenFlags } from '../teen/flags';
 import { useDeleteMemory, useMemories, useUpdateMemory, type MemoryStatus } from '../journal-core/queries';
 import '../journal-core/journal.css';
 
@@ -155,10 +156,11 @@ export function Memories() {
   const [status, setStatus] = useState<MemoryStatus>('active');
   const q = useMemories(status);
   const voice = useVoice();
+  const { peopleMap } = useTeenFlags();
   const groups = useMemo(() => {
     const items = q.data ?? [];
-    return MEMORY_KINDS.map((k) => ({ kind: k, items: items.filter((m) => m.kind === k) })).filter((g) => g.items.length);
-  }, [q.data]);
+    return MEMORY_KINDS.filter((k) => peopleMap || (k !== 'person' && k !== 'place')).map((k) => ({ kind: k, items: items.filter((m) => m.kind === k) })).filter((g) => g.items.length);
+  }, [q.data, peopleMap]);
 
   return (
     <div>

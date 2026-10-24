@@ -96,7 +96,7 @@ function ThreadCard({ intention, today, teen }: { intention: Intention; today: s
               Resume
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setConfirm(true)} icon={<Trash2 className="size-3.5" aria-hidden="true" />} aria-label={`Delete ${intention.title}`}>
+          <Button variant="ghost" size="sm" className="max-sm:min-w-11" onClick={() => setConfirm(true)} icon={<Trash2 className="size-3.5" aria-hidden="true" />} aria-label={`Delete ${intention.title}`}>
             <span className="sr-only">Delete</span>
           </Button>
         </div>
@@ -240,7 +240,7 @@ export function Threads() {
                     >
                       Add as a thread
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => dismiss(s.memoryId)} icon={<X className="size-3.5" aria-hidden="true" />} aria-label={`Not now: ${s.title}`}>
+                    <Button size="sm" variant="ghost" className="max-sm:min-w-11" onClick={() => dismiss(s.memoryId)} icon={<X className="size-3.5" aria-hidden="true" />} aria-label={`Not now: ${s.title}`}>
                       <span className="sr-only">Not now</span>
                     </Button>
                   </div>

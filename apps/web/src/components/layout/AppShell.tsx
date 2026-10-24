@@ -14,6 +14,7 @@ import { CommandPalette, isMac, openCommandPalette } from './CommandPalette';
 import { Wordmark } from './Logo';
 import { NAV_ITEMS, isActive } from './nav';
 import { SkipLink } from './SkipLink';
+import { useTeenFlags } from '@/features/teen/flags';
 
 function Rail() {
   const { pathname } = useLocation();
@@ -152,7 +153,8 @@ function useReminderNudge() {
   const { profile } = useProfile();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const hour = profile?.reminderHour ?? null;
+  const { nudges } = useTeenFlags();
+  const hour = nudges ? (profile?.reminderHour ?? null) : null;
   const tz = profile?.timezone;
 
   useEffect(() => {

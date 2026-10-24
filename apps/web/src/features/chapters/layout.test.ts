@@ -37,8 +37,11 @@ describe('chapter timeline layout', () => {
     expect(clampZoom(99)).toBe(3);
   });
   it('produces month ticks and falls back to the accent for unknown roles', () => {
-    const l = layoutChapters([ch(1, '2026-01-01', '2026-06-01')], '2026-06-01', 1.5);
+    const l = layoutChapters([ch(1, '2026-01-01', '2026-06-01')], '2026-06-01', 2.8);
     expect(l.ticks.length).toBe(6);
+    // Zoomed out, labels thin out so a "Jan 2026" tick never runs into the next one.
+    const thin = layoutChapters([ch(1, '2025-11-01', '2026-10-01')], '2026-10-01', 1.4);
+    for (let i = 1; i < thin.ticks.length; i++) expect(thin.ticks[i]!.left - thin.ticks[i - 1]!.left).toBeGreaterThanOrEqual(72);
     expect(roleVar('mood-2')).toBe('var(--mood-2)');
     expect(roleVar('#ff0000')).toBe('var(--accent)');
   });
