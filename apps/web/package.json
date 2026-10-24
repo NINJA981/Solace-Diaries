@@ -19,6 +19,7 @@
     "@fontsource-variable/newsreader": "^5.3.0",
     "@fontsource-variable/onest": "^5.3.1",
     "@fontsource-variable/playpen-sans": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
     "@fontsource/courier-prime": "^5.3.0",
     "@solace/shared": "*",
     "@supabase/supabase-js": "^2.117.3",

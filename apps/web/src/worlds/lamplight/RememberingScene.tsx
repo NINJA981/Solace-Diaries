@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { LamplightSky } from '@/features/landing/heroes/lamplightSky';
 import './hero.css';
 
 /**
@@ -38,6 +39,7 @@ const EDGES: [StarId, StarId][] = [
   ['run', 'dad'],
   ['dad', 'visit'],
 ];
+const MOON_AT = { x: 0.93, y: 0.14 };
 const ORDER: StarId[] = ['lake', 'maya', 'run', 'dad', 'visit']; // reading order in the entry
 
 // Faint background stars: deterministic so every render (and screenshot) matches.
@@ -228,6 +230,7 @@ export function RememberingScene({ className }: { className?: string }) {
       />
 
       <div ref={skyRef} aria-hidden="true" className="relative h-[180px] sm:h-[230px] lg:h-[250px]">
+        <LamplightSky density={0.9} moonAt={MOON_AT} />
         <svg className="absolute inset-0 size-full" viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice">
           {DUST.map((d, i) => (
             <circle

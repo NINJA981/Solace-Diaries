@@ -1,0 +1,97 @@
+/*
+ * Chrome's liquid glass. Loaded with the world (manifest.loadFonts), so it costs nothing in other
+ * worlds. Until it arrives, and wherever it can't apply, every surface keeps its solid token fill.
+ *
+ *   - backdrop-filter unsupported       -> solid fills stay (no @supports match)
+ *   - prefers-reduced-transparency      -> solid fills return, no blur
+ *   - touch / no hover                  -> no pointer sheen (the vars below never leave their rest value)
+ *
+ * Glass fills are the surface colour at ~70% alpha over the canvas and a faint aurora, so body
+ * text keeps its AA ratio (the aurora is at most ~14% of a hue; checked in the world's screenshots).
+ */
+
+/* The aurora: two or three slow colour pools behind everything, so the glass has something to refract. */
+[data-world='chrome'] body {
+  background:
+    radial-gradient(56rem 34rem at 88% -6%, var(--aurora-a), transparent 62%),
+    radial-gradient(48rem 32rem at 2% 6%, var(--aurora-b), transparent 62%),
+    radial-gradient(42rem 28rem at 60% 108%, var(--aurora-c), transparent 62%),
+    var(--canvas);
+  background-attachment: fixed;
+  font-variant-numeric: tabular-nums;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-world='chrome'] :is(.bg-surface, .bg-raised) {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    /* Specular edge, then the pointer-following sheen (fixed to the viewport so it reads as one light). */
+    background-image: radial-gradient(
+      280px circle at var(--chrome-px, -9999px) var(--chrome-py, -9999px),
+      var(--glass-sheen),
+      transparent 70%
+    );
+    background-attachment: fixed;
+    box-shadow:
+      inset 0 0 0 1px var(--glass-edge),
+      var(--highlight-inset),
+      var(--shadow-1);
+  }
+  [data-world='chrome'] .bg-surface {
+    background-color: var(--glass-fill);
+  }
+  [data-world='chrome'] .bg-raised {
+    background-color: var(--glass-raised-fill);
+  }
+  /* Menus, toasts and dialogs sit higher: stronger shadow. */
+  [data-world='chrome'] :is(.shadow-2, .shadow-3, .shadow-overlay) {
+    box-shadow:
+      inset 0 0 0 1px var(--glass-edge),
+      var(--highlight-inset),
+      var(--shadow-2);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    [data-world='chrome'] :is(.bg-surface, .bg-raised) {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-image: none;
+    }
+    [data-world='chrome'] .bg-surface {
+      background-color: var(--surface);
+    }
+    [data-world='chrome'] .bg-raised {
+      background-color: var(--raised);
+    }
+    [data-world='chrome'] body {
+      background: var(--canvas);
+    }
+  }
+}
+
+/* Holographic hairline: used under display headings and on the hero card edge. */
+[data-world='chrome'] .holo-edge {
+  position: relative;
+}
+[data-world='chrome'] .holo-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--holo);
+  background-size: 200% 100%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  [data-world='chrome'] body {
+    background: var(--canvas);
+  }
+}

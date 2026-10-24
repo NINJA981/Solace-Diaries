@@ -1,29 +1,30 @@
 /*
- * Chrome — graphite, ice and a holographic sheen. Precise, quick, data-forward.
- * SKELETON: a provisional palette and type pairing; the Chrome world pass finishes the art.
+ * Chrome: graphite, ice and a holographic sheen. Precise, quick, data-forward.
  *   canvas   graphite (dark) / brushed aluminium (light)
  *   accent   ice cyan (dark) / deep cyan (light): primary actions, the person's own voice
  *   ai       holographic violet: anything Solace contributes
- * Its one bold move (to come): liquid-glass surfaces whose specular sheen follows pointer and tilt.
+ * Type: Unbounded (wide display), Archivo (interface and prose), Martian Mono (numerals).
+ * Its one bold move: liquid-glass surfaces whose specular sheen follows the pointer (glass.css,
+ * loaded with the world; solid fills until then and wherever backdrop-filter is unavailable).
  */
 
 [data-world='chrome'] {
-  --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Unbounded', 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-heading: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-prose: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-ui: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Martian Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --weight-display: 640;
+  --weight-display: 520;
   --weight-title: 600;
   --weight-heading: 560;
-  /* Wide grotesk headlines; interface and prose stay at normal width. */
-  --stretch-display: 125%;
+  /* Unbounded for display; headings are wide Archivo; interface and prose stay at normal width. */
+  --stretch-display: normal;
   --stretch-heading: 112%;
-  --tracking-display: -0.02em;
+  --tracking-display: -0.035em;
   --tracking-title: -0.012em;
   --tracking-heading: -0.004em;
   --tracking-brand: 0.02em;
-  --leading-display: 1.02;
+  --leading-display: 1.08;
   --leading-body: 1.5;
   --leading-prose: 1.65;
   --leading-reading: 1.6;
@@ -48,8 +49,8 @@
   --text-title: 2rem;
   --text-2xl: 1.75rem;
   --text-3xl: 2rem;
-  --text-4xl: 2.4rem;
-  --text-5xl: clamp(2.4rem, 5.4vw, 4rem);
+  --text-4xl: 2.1rem;
+  --text-5xl: clamp(2.1rem, 4.6vw, 3.5rem);
 
   --spacing: 0.25rem;
 
@@ -76,6 +77,7 @@
   --focus-ring-offset: 2px;
   --focus-ring-radius: 6px;
 
+  --glass-blur: 16px;
   --texture-size: auto;
   --texture-blend: normal;
 }
@@ -111,6 +113,14 @@
   --shadow-3: 0 28px 70px -26px rgb(0 0 0 / 0.8);
   --shadow-overlay: 0 36px 90px -28px rgb(0 0 0 / 0.85);
   --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.35);
+  --glass-fill: rgb(27 32 41 / 0.66);
+  --glass-raised-fill: rgb(35 41 52 / 0.7);
+  --glass-edge: rgb(255 255 255 / 0.1);
+  --glass-sheen: rgb(255 255 255 / 0.08);
+  --aurora-a: rgb(126 224 255 / 0.13);
+  --aurora-b: rgb(195 166 255 / 0.14);
+  --aurora-c: rgb(255 143 208 / 0.06);
+  --holo: linear-gradient(115deg, #7ee0ff 0%, #a98bff 36%, #ff8fd0 64%, #ffd27a 88%, #7ee0ff 100%);
   --texture: none;
   --texture-opacity: 0;
 }
@@ -146,6 +156,14 @@
   --shadow-3: 0 26px 60px -24px rgb(16 21 29 / 0.32);
   --shadow-overlay: 0 32px 80px -28px rgb(16 21 29 / 0.36);
   --highlight-inset: inset 0 1px 0 rgb(255 255 255 / 0.6);
+  --glass-fill: rgb(248 249 251 / 0.7);
+  --glass-raised-fill: rgb(255 255 255 / 0.78);
+  --glass-edge: rgb(16 21 29 / 0.1);
+  --glass-sheen: rgb(255 255 255 / 0.55);
+  --aurora-a: rgb(7 90 128 / 0.08);
+  --aurora-b: rgb(100 56 204 / 0.07);
+  --aurora-c: rgb(210 70 150 / 0.04);
+  --holo: linear-gradient(115deg, #0a86b8 0%, #6a4ae0 36%, #d0449a 64%, #c98a0a 88%, #0a86b8 100%);
   --texture: none;
   --texture-opacity: 0;
 }
