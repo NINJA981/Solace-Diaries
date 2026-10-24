@@ -43,6 +43,8 @@ export async function similarMemories(
   limit: number,
   minSimilarity = -1,
   q: DbOrTx = db,
+  /** Kinds to leave out (teen accounts never see "person" memories, even legacy ones). */
+  excludeKinds: readonly MemoryKind[] = [],
 ): Promise<ScoredMemory[]> {
   const v = vectorLiteral(vector);
   const rows = await q.execute<{
@@ -54,6 +56,7 @@ export async function similarMemories(
     select id, kind, content, 1 - (embedding <=> ${v}) as similarity
     from memories
     where user_id = ${userId} and status = 'active' and model = ${embedModel()} and embedding is not null
+      ${excludeKinds.length ? sql`and kind not in (${sql.join(excludeKinds.map((k) => sql`${k}`), sql`, `)})` : sql``}
     order by embedding <=> ${v}
     limit ${limit}`);
   return rows

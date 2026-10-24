@@ -23,6 +23,7 @@ import { HttpError, badRequest, notFound } from '../http/errors';
 import { logger } from '../logger';
 import { excerptOf } from './entry-dto';
 import { MODE_TITLES, modeScript } from './guided';
+import { gateState } from './profiles';
 import { similarMemories, type ScoredMemory } from './memories';
 import { minSimilarity, rrf, vectorChunks, type ChunkHit } from './search';
 
@@ -246,10 +247,12 @@ async function retrieve(
     .map((m) => m.content.slice(0, 500))
     .join('\n');
   const vector = await embedText(`${context}\n${question}`.trim(), 'RETRIEVAL_QUERY', ai);
+  // Teen accounts get no memories about other people, even ones recorded before teen mode.
+  const teen = (await gateState(userId))?.mode === 'teen';
   const [vec, kw, memories] = await Promise.all([
     vectorChunks(userId, vector),
     keywordChunks(userId, question),
-    similarMemories(userId, vector, CHAT_MEMORIES, minSimilarity()),
+    similarMemories(userId, vector, CHAT_MEMORIES, minSimilarity(), db, teen ? ['person'] : []),
   ]);
   const chunks = selectChunks(vec, kw);
   if (chunks.length === 0) return { citations: [], passages: [], memories };

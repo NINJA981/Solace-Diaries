@@ -20,13 +20,13 @@ import {
 import { AiUnavailableError } from '../ai/errors';
 import { aiConfigured, assertAiNotPaused, generateText, type AiOptions } from '../ai/gemini';
 import { DATA_POLICY, dataBlock } from '../ai/untrusted';
-import { db } from '../db/client';
+import { db, type DbOrTx } from '../db/client';
 import { entries, pastLetters, profiles } from '../db/schema';
 import { conflict, notFound } from '../http/errors';
 import { createEntry, getEntry, updateEntry } from './entries';
 import { excerptOf } from './entry-dto';
 import { cleanLetter } from './insights';
-import { consumeAiQuota } from './quota';
+import { consumeAiQuota, refundAiQuota } from './quota';
 
 export const LETTER_MIN_ENTRIES = 6;
 /** Only entries at least this old are "your past self". */
@@ -155,19 +155,24 @@ export async function listLetters(userId: string, tz: string): Promise<PastLette
 
 // ───────────────────────── writing ─────────────────────────
 
-function system(style: AiStyle): string {
+function system(style: AiStyle, teen = false): string {
   return `You are helping a person hear from their own past. Write a short letter FROM their past self TO who they are today, using only the journal entries provided.
 - Write in the first person, as the person's earlier self ("I remember...", "back then I..."), speaking to "you" (the person today). Warm, honest and concrete.
 - Mention real moments from the entries and refer to them by their number in square brackets right after the sentence they support, like [1] or [2]. Only use numbers you were given. Never invent events, people or feelings.
-- Voice flavour: ${style}.
+- Voice flavour: ${style}.${teen ? `
+- The writer is a teenager: do not name other people (say "a friend" or "someone close" instead); only speak about the writer themself.` : ''}
 - Markdown, at most 250 words, short paragraphs. No images, links, tables or HTML. No headings.
 - End by asking exactly one question that invites the reader to reflect on how they have changed.
 - No diagnosis or clinical labels. If an entry suggests the person was unsafe, be gentle and encourage reaching out to someone they trust or a local crisis line.
 ${DATA_POLICY}`;
 }
 
-async function existing(userId: string, month: string): Promise<LetterRow | undefined> {
-  const [row] = await db
+async function existing(
+  userId: string,
+  month: string,
+  q: DbOrTx = db,
+): Promise<LetterRow | undefined> {
+  const [row] = await q
     .select()
     .from(pastLetters)
     .where(and(eq(pastLetters.userId, userId), eq(pastLetters.month, month)));
@@ -188,67 +193,82 @@ export async function writeLetter(
   const have = await existing(userId, month);
   if (have) return toPastLetter(have);
 
-  const cutoff = addDays(localDate(new Date(), tz), -LETTER_MIN_AGE_DAYS);
-  const rows = await db
-    .select({
-      id: entries.id,
-      title: entries.title,
-      body: entries.body,
-      entryDate: entries.entryDate,
-      mood: entries.mood,
-      wordCount: entries.wordCount,
-    })
-    .from(entries)
-    .where(eligible(userId, cutoff));
-  if (rows.length < LETTER_MIN_ENTRIES) {
-    throw conflict('Letters from your past self need a few older entries first.', 'not_enough_entries');
-  }
+  // One writer per user and month: a second request (double click, two tabs) waits here, then
+  // finds the first one's letter instead of spending another model call and quota unit.
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`letter:${userId}:${month}`}))`);
+    const raced = await existing(userId, month, tx);
+    if (raced) return toPastLetter(raced);
 
-  // Requests known to fail are refused before they spend the person's budget.
-  if (!aiConfigured(ai.apiKey)) throw new AiUnavailableError('No Gemini API key is configured.');
-  assertAiNotPaused(['batch'], ai.apiKey);
-  await consumeAiQuota(userId, { usingOwnKey: Boolean(ai.apiKey) });
+    const cutoff = addDays(localDate(new Date(), tz), -LETTER_MIN_AGE_DAYS);
+    const rows = await db
+      .select({
+        id: entries.id,
+        title: entries.title,
+        body: entries.body,
+        entryDate: entries.entryDate,
+        mood: entries.mood,
+        wordCount: entries.wordCount,
+      })
+      .from(entries)
+      .where(eligible(userId, cutoff));
+    if (rows.length < LETTER_MIN_ENTRIES) {
+      throw conflict('Letters from your past self need a few older entries first.', 'not_enough_entries');
+    }
 
-  const sources = pickLetterSources(userId, month, rows);
-  const [profile] = await db
-    .select({ aiStyle: profiles.aiStyle })
-    .from(profiles)
-    .where(eq(profiles.id, userId));
-  const sourceCitations: Citation[] = sources.map((e, i) => ({
-    n: i + 1,
-    entryId: e.id,
-    title: e.title || 'Untitled',
-    entryDate: e.entryDate,
-    snippet: excerptOf(e.body, 200),
-  }));
-  const blocks = sources.map((e, i) =>
-    dataBlock(
-      'entry',
-      { n: i + 1, date: e.entryDate, title: e.title || 'Untitled', mood: e.mood ?? 'unknown' },
-      e.body,
-      PER_ENTRY_CHARS,
-    ),
-  );
+    // Requests known to fail are refused before they spend the person's budget.
+    if (!aiConfigured(ai.apiKey)) throw new AiUnavailableError('No Gemini API key is configured.');
+    assertAiNotPaused(['batch'], ai.apiKey);
+    await consumeAiQuota(userId, { usingOwnKey: Boolean(ai.apiKey) });
 
-  const raw = await generateText(
-    {
-      task: 'batch',
-      system: system(profile?.aiStyle ?? 'gentle'),
-      temperature: 0.8,
-      maxOutputTokens: 700,
-      user: `Today is ${localDate(new Date(), tz)}. The entries your past self wrote:\n\n${blocks.join('\n')}`,
-    },
-    { ...ai, userId },
-  );
-  const { text, citations } = filterCitations(cleanLetter(raw), sourceCitations);
+    const sources = pickLetterSources(userId, month, rows);
+    const [profile] = await db
+      .select({ aiStyle: profiles.aiStyle, mode: profiles.mode })
+      .from(profiles)
+      .where(eq(profiles.id, userId));
+    const sourceCitations: Citation[] = sources.map((e, i) => ({
+      n: i + 1,
+      entryId: e.id,
+      title: e.title || 'Untitled',
+      entryDate: e.entryDate,
+      snippet: excerptOf(e.body, 200),
+    }));
+    const blocks = sources.map((e, i) =>
+      dataBlock(
+        'entry',
+        { n: i + 1, date: e.entryDate, title: e.title || 'Untitled', mood: e.mood ?? 'unknown' },
+        e.body,
+        PER_ENTRY_CHARS,
+      ),
+    );
 
-  const [inserted] = await db
-    .insert(pastLetters)
-    .values({ userId, month, content: text, citations })
-    .onConflictDoNothing({ target: [pastLetters.userId, pastLetters.month] })
-    .returning();
-  // A concurrent request won the race: serve its letter.
-  return toPastLetter(inserted ?? (await existing(userId, month))!);
+    let raw: string;
+    try {
+      raw = await generateText(
+      {
+        task: 'batch',
+        system: system(profile?.aiStyle ?? 'gentle', profile?.mode === 'teen'),
+        temperature: 0.8,
+        maxOutputTokens: 700,
+        user: `Today is ${localDate(new Date(), tz)}. The entries your past self wrote:\n\n${blocks.join('\n')}`,
+      },
+      { ...ai, userId },
+      );
+    } catch (err) {
+      // Nothing was written, so the person keeps their unit of today's budget.
+      await refundAiQuota(userId);
+      throw err;
+    }
+    const { text, citations } = filterCitations(cleanLetter(raw), sourceCitations);
+
+    const [inserted] = await db
+      .insert(pastLetters)
+      .values({ userId, month, content: text, citations })
+      .onConflictDoNothing({ target: [pastLetters.userId, pastLetters.month] })
+      .returning();
+    // A concurrent request won the race: serve its letter.
+    return toPastLetter(inserted ?? (await existing(userId, month, tx))!);
+  });
 }
 
 // ───────────────────────── reply ─────────────────────────

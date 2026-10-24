@@ -1,31 +1,129 @@
 /** Data ownership: full export (JSON / Markdown) and account deletion. */
-import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import type { Entry } from '@solace/shared';
 import { isTest } from '../config';
 import { db } from '../db/client';
-import { chatMessages, chatThreads, jobs, memories, memorySources, profiles } from '../db/schema';
+import {
+  capsules,
+  chapters,
+  chatMessages,
+  chatThreads,
+  growthNotes,
+  intentionCheckins,
+  intentions,
+  jobs,
+  memories,
+  memorySources,
+  parentalConsents,
+  pastLetters,
+  profiles,
+} from '../db/schema';
 import { deleteAuthUser } from '../auth/supabase-admin';
 import { badRequest } from '../http/errors';
 import type { AuthContext } from '../http/types';
 import { deletePrefix } from '../storage';
 import { entryPages } from './entries';
+import { toCapsule } from './capsules';
+import { toPastLetter } from './letters';
 import { forgetProfile, getProfile, toProfile } from './profiles';
 
 const THREAD_PAGE = 50;
+/** Bump when the shape of the JSON export changes. 2 added the v3 data (capsules and more). */
+export const EXPORT_VERSION = 2;
 
 // ── JSON export ────────────────────────────────────────────────────────
 
 /** Streams the export as JSON text chunks, a page at a time, so memory stays flat. */
 export async function* exportJson(userId: string): AsyncGenerator<string> {
-  const profile = toProfile(await getProfile(userId));
-  yield `{"format":"solace-export","version":1,"exportedAt":${JSON.stringify(new Date().toISOString())},`;
+  const profileRow = await getProfile(userId);
+  const profile = toProfile(profileRow);
+  yield `{"format":"solace-export","version":${EXPORT_VERSION},"exportedAt":${JSON.stringify(new Date().toISOString())},`;
   yield `"profile":${JSON.stringify(profile)},"entries":[`;
   yield* jsonArrayItems(entryPages(userId));
   yield `],"memories":[`;
   yield* jsonArrayItems(memoryPages(userId));
   yield `],"threads":[`;
   yield* jsonArrayItems(threadPages(userId));
-  yield `]}\n`;
+  const v3 = await v3Data(userId, profileRow.mode === 'teen');
+  yield `],"capsules":${JSON.stringify(v3.capsules)},"letters":${JSON.stringify(v3.letters)},`;
+  yield `"chapters":${JSON.stringify(v3.chapters)},"growthNotes":${JSON.stringify(v3.growthNotes)},`;
+  yield `"intentions":${JSON.stringify(v3.intentions)},"consent":${JSON.stringify(v3.consent)}}\n`;
+}
+
+/**
+ * Everything the v3 features add. Capsules go through `toCapsule`, so the body of a sealed
+ * (or ready but unopened) capsule is null: the export is not a way around the seal. Consent
+ * is a summary only (status and when it was decided), never the stored hashes.
+ */
+async function v3Data(userId: string, teen: boolean) {
+  const now = new Date();
+  const [capsuleRows, letterRows, chapterRows, noteRows, intentionRows, checkinRows, consentRows] =
+    await Promise.all([
+      db.select().from(capsules).where(eq(capsules.userId, userId)).orderBy(asc(capsules.unlockAt)),
+      db.select().from(pastLetters).where(eq(pastLetters.userId, userId)).orderBy(asc(pastLetters.month)),
+      db
+        .select()
+        .from(chapters)
+        .where(eq(chapters.userId, userId))
+        .orderBy(asc(chapters.fromDate), asc(chapters.createdAt)),
+      db.select().from(growthNotes).where(eq(growthNotes.userId, userId)).orderBy(asc(growthNotes.weekStart)),
+      db.select().from(intentions).where(eq(intentions.userId, userId)).orderBy(asc(intentions.createdAt)),
+      db
+        .select()
+        .from(intentionCheckins)
+        .where(eq(intentionCheckins.userId, userId))
+        .orderBy(asc(intentionCheckins.date)),
+      db
+        .select({ status: parentalConsents.status, decidedAt: parentalConsents.decidedAt })
+        .from(parentalConsents)
+        .where(eq(parentalConsents.userId, userId))
+        .orderBy(desc(parentalConsents.requestedAt))
+        .limit(1),
+    ]);
+  const checkinsBy = new Map<string, { date: string; note: string | null }[]>();
+  for (const c of checkinRows) {
+    const list = checkinsBy.get(c.intentionId) ?? [];
+    list.push({ date: c.date, note: c.note });
+    checkinsBy.set(c.intentionId, list);
+  }
+  const profile = await getProfile(userId);
+  return {
+    capsules: capsuleRows.map((r) => toCapsule(r, now)),
+    letters: letterRows.map(toPastLetter),
+    chapters: chapterRows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      summary: r.summary,
+      from: r.fromDate,
+      to: r.toDate,
+      color: r.color,
+      cast: teen ? [] : r.cast,
+      keyEntryIds: r.keyEntryIds,
+    })),
+    growthNotes: noteRows.map((r) => ({
+      id: r.id,
+      weekStart: r.weekStart,
+      text: r.text,
+      citations: r.citations,
+      createdAt: r.createdAt.toISOString(),
+    })),
+    intentions: intentionRows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      kind: r.kind,
+      cadence: r.cadence,
+      status: r.status,
+      source: r.source,
+      memoryId: r.memoryId,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
+      checkins: checkinsBy.get(r.id) ?? [],
+    })),
+    consent: {
+      status: profile.consentStatus,
+      decidedAt: consentRows[0]?.decidedAt?.toISOString() ?? null,
+    },
+  };
 }
 
 async function* jsonArrayItems(pages: AsyncIterable<unknown[]>): AsyncGenerator<string> {
@@ -116,7 +214,35 @@ export async function* exportMarkdown(userId: string): AsyncGenerator<string> {
   for await (const page of entryPages(userId)) {
     yield page.map(entryMarkdown).join('');
   }
+  yield* v3Markdown(userId);
 }
+
+const day = (iso: string) => iso.slice(0, 10);
+const NL = String.fromCharCode(10);
+const lines = (...parts: string[]) => parts.join(NL);
+
+/** Capsules (title and date only: never a body), letters from past self, and intentions. */
+async function* v3Markdown(userId: string): AsyncGenerator<string> {
+  const v3 = await v3Data(userId, false);
+  if (v3.capsules.length) {
+    yield lines('', '---', '', '# Time capsules', '', '_Letters to your future self. Their text stays out of this file._', '', '');
+    yield v3.capsules
+      .map((c) => `- **${oneLine(c.title)}** — unlocks ${day(c.unlockAt)} (${c.status})${NL}`)
+      .join('');
+  }
+  if (v3.letters.length) {
+    yield lines('', '---', '', '# Letters from your past self', '');
+    yield v3.letters.map((l) => lines('', `## ${l.month}`, '', l.content.trim(), '')).join('');
+  }
+  if (v3.intentions.length) {
+    yield lines('', '---', '', '# Intentions', '', '');
+    yield v3.intentions
+      .map((i) => `- **${oneLine(i.title)}** — ${i.kind}, ${i.status}, ${i.checkins.length} check-in(s)${NL}`)
+      .join('');
+  }
+}
+
+const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim() || 'Untitled';
 
 function entryMarkdown(e: Entry): string {
   const title = e.title.replace(/\s+/g, ' ').trim() || 'Untitled entry';

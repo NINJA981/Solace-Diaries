@@ -44,6 +44,13 @@ export async function consumeAiQuota(
   if (rows.length === 0) throw quotaExceeded();
 }
 
+/** Give back one interactive call whose model request failed (never below zero). */
+export async function refundAiQuota(userId: string): Promise<void> {
+  await db.execute(sql`
+    update ai_usage set calls = greatest(calls - 1, 0)
+    where user_id = ${userId} and day = ${TODAY}`);
+}
+
 /**
  * Count one background enrichment run (entry analysis or photo description) against the
  * user's day. Kept on its own counter so heavy Reflect/search use never stops new entries

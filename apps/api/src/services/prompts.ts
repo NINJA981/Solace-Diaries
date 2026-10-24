@@ -9,6 +9,7 @@ import { localDate, type DailyPrompt } from '@solace/shared';
 import { aiConfigured, aiPausedMs, generateText, type AiOptions } from '../ai/gemini';
 import { dataBlock } from '../ai/untrusted';
 import { db } from '../db/client';
+import { gateState } from './profiles';
 import { memories, prompts } from '../db/schema';
 import { notFound } from '../http/errors';
 import { logger } from '../logger';
@@ -131,6 +132,7 @@ async function composePrompt(
   date: string,
   ai: AiOptions,
 ): Promise<{ text: string; source: 'curated' | 'memory'; memoryId: string | null }> {
+  const teen = (await gateState(userId))?.mode === 'teen';
   const candidates = await db
     .select({ id: memories.id, kind: memories.kind, content: memories.content })
     .from(memories)
@@ -138,7 +140,10 @@ async function composePrompt(
       and(
         eq(memories.userId, userId),
         eq(memories.status, 'active'),
-        inArray(memories.kind, [...MEMORY_KINDS_FOR_PROMPTS]),
+        inArray(
+          memories.kind,
+          MEMORY_KINDS_FOR_PROMPTS.filter((k) => !(teen && k === 'person')),
+        ),
         gte(memories.salience, MIN_SALIENCE),
       ),
     )

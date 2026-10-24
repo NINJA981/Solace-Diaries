@@ -111,11 +111,12 @@ export async function getGrowthNotes(userId: string): Promise<GrowthNote[]> {
 
 // ───────────────────────── the job ─────────────────────────
 
-function system(): string {
+function system(teen = false): string {
   return `You are Solace. Compare two groups of a person's journal entries (older entries, then recent ones) and write ONE short observation of how they have changed or grown.
 - Gentle, specific and kind. Format like: "In March you wrote about ...; lately you ...". At most 80 words, plain text, no headings, lists, images or links.
 - Cite the entries you rely on by number in square brackets right after the claim, like [1] or [5]. Cite at least one older and one recent entry. Only use numbers you were given.
-- Never diagnose, label conditions, shame, compare the person to others or call anything a problem. If a change is hard, name it with compassion. Never invent events.
+- Never diagnose, label conditions, shame, compare the person to others or call anything a problem. If a change is hard, name it with compassion. Never invent events.${teen ? `
+- The writer is a teenager: do not name other people (say "a friend" instead); describe only the writer.` : ''}
 ${DATA_POLICY}`;
 }
 
@@ -159,7 +160,7 @@ export async function buildGrowthNote(
   assertAiNotPaused(['batch'], ai.apiKey);
 
   const [profile] = await db
-    .select({ aiStyle: profiles.aiStyle })
+    .select({ aiStyle: profiles.aiStyle, mode: profiles.mode })
     .from(profiles)
     .where(eq(profiles.id, userId));
   const all = [...older, ...recent];

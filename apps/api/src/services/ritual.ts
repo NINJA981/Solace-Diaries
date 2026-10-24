@@ -44,48 +44,53 @@ export async function weeklyRitual(
   const monday = weekStart(today);
   const body = ritualBody(input);
 
-  const [existing] = await db
-    .select({ id: entries.id, version: entries.version })
-    .from(entries)
-    .where(
-      and(
-        eq(entries.userId, userId),
-        arrayContains(entries.tags, [WEEKLY_TAG]),
-        gte(entries.entryDate, monday),
-        lte(entries.entryDate, addDays(monday, 6)),
-      ),
-    )
-    .orderBy(entries.createdAt)
-    .limit(1);
-
-  const entry = existing
-    ? await updateEntry(userId, existing.id, existing.version, { title: WEEKLY_TITLE, body })
-    : (
-        await createEntry(userId, {
-          title: WEEKLY_TITLE,
-          body,
-          entryDate: today,
-          tags: [WEEKLY_TAG],
-        })
-      ).entry;
-
-  let intention: Intention | null = null;
-  if (input.intention) {
-    // Redoing the ritual with the same words must not pile up duplicate intentions.
-    const [dup] = await db
-      .select()
-      .from(intentions)
+  // Serialise per user and week: a double-tap or a retry after a timeout must find the first
+  // request's entry and intention, not add a second pair.
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`ritual:${userId}:${monday}`}))`);
+    const [existing] = await db
+      .select({ id: entries.id, version: entries.version })
+      .from(entries)
       .where(
         and(
-          eq(intentions.userId, userId),
-          eq(intentions.status, 'active'),
-          sql`lower(${intentions.title}) = lower(${input.intention.title})`,
+          eq(entries.userId, userId),
+          arrayContains(entries.tags, [WEEKLY_TAG]),
+          gte(entries.entryDate, monday),
+          lte(entries.entryDate, addDays(monday, 6)),
         ),
       )
+      .orderBy(entries.createdAt)
       .limit(1);
-    intention = dup
-      ? await getIntention(userId, dup.id)
-      : toIntention(await insertIntention(userId, input.intention), []);
-  }
-  return { entry, intention };
+
+    const entry = existing
+      ? await updateEntry(userId, existing.id, existing.version, { title: WEEKLY_TITLE, body })
+      : (
+          await createEntry(userId, {
+            title: WEEKLY_TITLE,
+            body,
+            entryDate: today,
+            tags: [WEEKLY_TAG],
+          })
+        ).entry;
+
+    let intention: Intention | null = null;
+    if (input.intention) {
+      // Redoing the ritual with the same words must not pile up duplicate intentions.
+      const [dup] = await db
+        .select()
+        .from(intentions)
+        .where(
+          and(
+            eq(intentions.userId, userId),
+            eq(intentions.status, 'active'),
+            sql`lower(${intentions.title}) = lower(${input.intention.title})`,
+          ),
+        )
+        .limit(1);
+      intention = dup
+        ? await getIntention(userId, dup.id)
+        : toIntention(await insertIntention(userId, input.intention), []);
+    }
+    return { entry, intention };
+  });
 }

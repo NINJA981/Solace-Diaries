@@ -104,6 +104,7 @@ export async function ensureProfile(userId: string, email: string): Promise<void
 
 /** Drop a user from the cache (account deleted, or tests truncating tables). */
 export function forgetProfile(userId?: string): void {
+  gateEpoch += 1;
   if (userId) {
     known.delete(userId);
     gateCache.delete(userId);
@@ -119,22 +120,31 @@ export type GateState = Pick<ProfileRow, 'mode' | 'ageBand' | 'consentStatus'>;
 const gateCache = new Map<string, { at: number; state: GateState }>();
 const GATE_TTL_MS = 5_000;
 const GATE_MAX = 10_000;
+/**
+ * Bumped on every invalidation. A read that started before a bump may hold a row from before
+ * the change it was invalidated for, so it must not be cached.
+ */
+let gateEpoch = 0;
 
 /** The three fields the age/consent gate needs, cached briefly (changes call forgetGate). */
 export async function gateState(userId: string): Promise<GateState | undefined> {
   const hit = gateCache.get(userId);
   if (hit && Date.now() - hit.at < GATE_TTL_MS) return hit.state;
+  const epoch = gateEpoch;
   const [row] = await db
     .select({ mode: profiles.mode, ageBand: profiles.ageBand, consentStatus: profiles.consentStatus })
     .from(profiles)
     .where(eq(profiles.id, userId));
   if (!row) return undefined;
+  // Invalidated while we were reading (e.g. a parent's revoke committed): serve, don't cache.
+  if (epoch !== gateEpoch) return row;
   gateCache.set(userId, { at: Date.now(), state: row });
   if (gateCache.size > GATE_MAX) gateCache.delete(gateCache.keys().next().value!);
   return row;
 }
 
 export function forgetGate(userId: string): void {
+  gateEpoch += 1;
   gateCache.delete(userId);
 }
 

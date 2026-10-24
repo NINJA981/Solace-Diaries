@@ -84,6 +84,7 @@ export function createApp(opts: AppOptions = {}): Express {
   api.post('/threads/:id/messages', limit.ai);
   api.post('/insights/weekly/refresh', limit.ai);
   api.post('/letters', limit.ai);
+  api.post('/chapters/refresh', limit.ai);
   api.post('/entries/:id/attachments', limit.uploads);
 
   // Routers declare full paths from the shared route table (e.g. '/entries/:id').

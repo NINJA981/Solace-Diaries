@@ -177,6 +177,15 @@ export async function requestConsent(
   userId: string,
   parentEmail: string,
 ): Promise<ConsentRequestResult> {
+  // Same guard as the age gate: with no way to actually deliver the email (production without
+  // a mail provider) nothing is created and the teen is told the truth.
+  if (!teenSignupEnabled()) {
+    throw new HttpError(
+      503,
+      'Teen accounts are not open yet. We need a way to ask a parent first. Please check back soon.',
+      TEEN_ERROR_CODES.teenSignupUnavailable,
+    );
+  }
   const row = await getProfile(userId);
   if (row.mode !== 'teen') {
     throw new HttpError(403, 'Parental consent only applies to teen accounts.', 'forbidden');

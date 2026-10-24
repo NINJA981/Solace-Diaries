@@ -7,7 +7,7 @@ Policy version recorded with every consent: `2026-10` (`CONSENT_POLICY_VERSION` 
 ## 1. What happens, step by step
 
 1. After sign-up, the person must answer an age gate: birth **month and year** only. (needs legal review)
-2. Under 13: the request is refused (403 `age_restricted`) and the account is deleted immediately (database rows, photos, the Supabase sign-in user). The web shows a kind explanation. (needs legal review)
+2. Under 13: the request is refused (403 `age_restricted`) and deletion of the account (database rows, photos, the Supabase sign-in user) is attempted before answering. If a step of that deletion fails, the error is logged and the person still gets the refusal, so a partial clean-up is possible and is not retried automatically. The web shows a kind explanation. (needs legal review)
 3. 13-17: the account becomes a teen account with consent `pending`. Every part of the API except the allow-list below answers 403 `consent_required` until a parent says yes.
 4. The teen enters a parent or guardian email. Solace emails a one-time link (valid 7 days). The parent reads what is stored and chooses Approve or Decline. They can withdraw approval later from the same link.
 5. 18 and over: adult mode, no consent needed.
@@ -22,7 +22,7 @@ Routes reachable without consent: `GET/PATCH /me`, `POST /me/age`, `GET /me/usag
 | Age band (`13-15`, `16-17`, `18+`) | Yes, on the profile | Set once; later calls cannot change it. (needs legal review) |
 | Account mode (`adult` / `teen`) and consent status | Yes, on the profile | `pending`, `granted`, `revoked` (also used for "declined"), `not_required`. |
 | Parent email address | **No** | Only a SHA-256 hash of the lowercased address. It is sent to the email provider to deliver the message (see section 4). (needs legal review) |
-| Consent token | **No** (clear text) | 32 random bytes, only its SHA-256 is stored; the clear token exists only inside the emailed link. |
+| Consent token | **No** (clear text) | 32 random bytes, only its SHA-256 is stored; the clear token exists only inside the emailed link and, while the parent uses it, in the request URL. The API access log replaces the token in `/api/consent/:token` with a placeholder. Outside development the log mail transport never writes the link or the parent's address to the logs. |
 | Consent record | Yes | `parental_consents`: user id, parent email hash, token hash, status (`pending`/`granted`/`denied`/`revoked`), policy version, requested at, decided at, expires at. |
 | Parent identity | **No** | The link proves control of the email inbox, not who the person is. (see section 5) |
 
@@ -55,7 +55,7 @@ Under-13 attempts: nothing is retained, not even a log of the age answer. Standa
 
 ## 6. United States: COPPA (under 13)
 
-- Solace does not knowingly allow under-13 users. The age gate is neutral (month and year, nothing pre-filled, no hint about the cut-off before answering), and an under-13 answer deletes the account at once and keeps nothing. (needs legal review)
+- Solace does not knowingly allow under-13 users. The age gate is neutral (month and year, nothing pre-filled). Note: the web page currently shows a hint that a parent will be needed as soon as a 13-17 date is selected, i.e. before the answer is submitted, so the gate is not fully neutral until that hint is removed (open item in `apps/web/src/features/teen/AgeGatePage.tsx`), and an under-13 answer deletes the account at once and keeps nothing. (needs legal review)
 - Open questions: whether deleting immediately is sufficient when a child gives their age and email at sign-up; whether the sign-up email address was "collected" before deletion; whether a cookie-style device block is needed to stop a retry with a different birth year (not built: the gate can be retried with another account). (needs legal review)
 - State laws (for example age-appropriate design codes, parental-consent laws for minors' accounts) are not assessed. (needs legal review)
 
@@ -69,13 +69,15 @@ Under-13 attempts: nothing is retained, not even a log of the age answer. Standa
 ## 8. Behavioural-monitoring restrictions applied in teen mode
 
 - No streak counters, "days in a row" lines or streak slides.
-- No daily reminder and no in-app "you haven't written" nudges; the reminder setting is hidden and stored as off.
+- No daily reminder and no in-app "you haven't written" nudges; for accounts onboarded as teens the reminder setting is hidden and stored as off. A reminder hour saved before an account became a teen account is not cleared, and `PATCH /me` still accepts one.
 - No share cards.
 - No people/places constellation or "people" slides.
-- The enrichment AI is instructed not to create memories or graph entries about other people, and the server drops any it returns anyway (kinds `person`).
+- The enrichment AI is instructed not to create memories or graph entries about other people, and the server drops any it returns anyway (kinds `person`) for new entries.
+- Life chapters: no cast list is requested, the server stores and serves an empty cast for teens (including chapters built earlier). Letters from your past self and growth notes are told not to name other people; this is an instruction to the model, not a server-side filter.
+- Reflect and the memory-inspired daily prompt skip memories of kind `person` for teens, including ones recorded before the account became a teen account. The Memories list itself still shows any such legacy memory to its owner, and journal passages quoted in Reflect are the teen's own text, which may contain names.
 - The companion never punishes breaks (all accounts).
 
-Where other screens still need to apply the flags (`features/teen/flags.ts`) is tracked in the build report. (needs legal review for whether this list is sufficient)
+The web screens read these flags from `features/teen/flags.ts`. (needs legal review for whether this list is sufficient)
 
 ## 9. Rights and controls for the family
 
@@ -88,7 +90,8 @@ Where other screens still need to apply the flags (`features/teen/flags.ts`) is 
 
 - A teen can enter any email address, including a friend's. Solace cannot tell a parent from someone else. (needs legal review: see section 5)
 - Rate limits: 3 consent emails per teen per day; per-IP limit on the public consent link; tokens are unguessable and links answer the same generic 404 whether a token is wrong, expired or replaced.
-- Consent emails go out through a pluggable mailer (Resend in production). If no provider is configured in production, teen sign-up answers 503 `teen_signup_unavailable` and nothing is stored.
+- Consent emails go out through a pluggable mailer (Resend in production). If no provider is configured in production, both the age gate (for a 13-17 answer) and a later consent request answer 503 `teen_signup_unavailable` and nothing is stored or logged. The in-process gate cache (5 seconds) is invalidated when consent changes and a read racing that change is not cached; with several API instances another instance can still serve the old state for up to 5 seconds.
+- The data export includes a consent summary (status and decision time) but never the stored hashes.
 - Crisis resources (Tele-MANAS 14416, KIRAN 1800-599-0019, CHILDLINE 1098, 988, Samaritans 116 123, findahelpline.com) are listed with a "last checked" date in `apps/web/src/features/teen/crisis-data.ts`. They must be re-verified by a person before launch and periodically. (needs legal review)
 
 ## 11. Open questions for the lawyer

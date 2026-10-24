@@ -24,8 +24,13 @@ export class MailError extends Error {}
 async function sendLog(msg: MailMessage): Promise<void> {
   outbox.push(msg);
   if (outbox.length > OUTBOX_MAX) outbox.shift();
-  // Development convenience only: the log transport is never the production path.
-  logger.info({ to: msg.to, subject: msg.subject, body: msg.text }, 'mail (log transport)');
+  // Development convenience only. The body holds the live consent link and the recipient is a
+  // parent's address, so neither may reach the logs of a deployed environment.
+  if (config.NODE_ENV === 'development') {
+    logger.info({ to: msg.to, subject: msg.subject, body: msg.text }, 'mail (log transport)');
+  } else {
+    logger.warn({ subject: msg.subject }, 'mail not delivered: no mail provider configured');
+  }
 }
 
 async function sendResend(msg: MailMessage): Promise<void> {

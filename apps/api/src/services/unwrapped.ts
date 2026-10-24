@@ -35,15 +35,26 @@ const isMood = (m: string): m is Mood => (MOODS as readonly string[]).includes(m
 
 type EntryRow = typeof entries.$inferSelect;
 
+/** Years the SQL date range and the calendar maths handle without surprises. */
+const MIN_YEAR = 1900;
+const MAX_YEAR = 2999;
+
+function checkYear(year: number): void {
+  if (year < MIN_YEAR || year > MAX_YEAR)
+    throw badRequest(`Pick a year between ${MIN_YEAR} and ${MAX_YEAR}.`, { at: 'Year out of range' });
+}
+
 /** Resolve `at` for the period into local from/to dates and a label; 400 when it doesn't fit. */
 export function periodRange(period: 'month' | 'year', at: string) {
   if (period === 'year') {
     if (!/^\d{4}$/.test(at)) throw badRequest('For a year, use YYYY.', { at: 'Expected YYYY' });
+    checkYear(Number(at));
     return { from: `${at}-01-01`, to: `${at}-12-31`, label: at };
   }
   const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(at);
   if (!m) throw badRequest('For a month, use YYYY-MM.', { at: 'Expected YYYY-MM' });
   const year = Number(m[1]);
+  checkYear(year);
   const month = Number(m[2]);
   const next = month === 12 ? `${year + 1}-01-01` : `${m[1]}-${String(month + 1).padStart(2, '0')}-01`;
   return { from: `${at}-01`, to: addDays(next, -1), label: `${MONTH_NAMES[month - 1]} ${year}` };
