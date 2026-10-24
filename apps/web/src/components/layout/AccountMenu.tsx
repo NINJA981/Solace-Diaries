@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { Check, LogOut, Settings } from 'lucide-react';
+import { Check, HeartHandshake, LogOut, Settings } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { useProfile, useSession } from '@/lib/session';
@@ -136,6 +136,20 @@ export function AccountMenu({ placement = 'bottom', showIdentity = false }: { pl
           >
             <Settings aria-hidden="true" /> Settings
           </button>
+          {profile?.mode === 'teen' && (
+            <button
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              className={item}
+              onClick={() => {
+                close(false);
+                navigate('/app/settings#help');
+              }}
+            >
+              <HeartHandshake aria-hidden="true" /> Need to talk to someone?
+            </button>
+          )}
           <div role="group" aria-label="Theme" className="my-1 border-y border-line py-1">
             <p aria-hidden="true" className="px-3 pt-1.5 pb-1 text-xs text-fg-faint">
               Theme

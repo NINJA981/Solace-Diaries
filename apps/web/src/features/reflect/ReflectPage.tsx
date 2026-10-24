@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, MessagesSquare, RotateCcw } from 'lucide-react';
-import { localDate } from '@solace/shared';
+import { ArrowDown, Mail, MessagesSquare, RotateCcw } from 'lucide-react';
+import { localDate, type ThreadMode } from '@solace/shared';
 import { Button, Dialog, EmptyState, buttonClasses, toast } from '@/components/ui';
-import { errorMessage } from '@/lib/api';
+import { ApiRequestError, errorMessage } from '@/lib/api';
 import { useTimezone } from '@/lib/session';
 import { useVoice } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
-import { isNotFound, useCreateThread, useThread } from '../journal-core/queries';
+import { isNotFound, useThread } from '../journal-core/queries';
+import { useCreateModeThread } from '../journal-core/queries-v3b';
+import { aiErrorCopy } from '../letters/aiErrors';
 import { clearStream, retryStream, sendMessage, stopStream, useStream, type StreamState } from './chatStore';
 import { Composer } from './Composer';
 import { Answer, RegenerateButton, UserBubble } from './Messages';
 import { ThreadList } from './ThreadList';
+import { MODE_OPTIONS, createThreadPayload, modeLabel } from './modes';
 
 export const STARTERS = [
   'What has been on my mind this month?',
@@ -23,10 +26,10 @@ export const STARTERS = [
 
 function errorCopy(s: StreamState): string {
   const code = s.error?.code;
-  if (code === 'ai_quota_exceeded') return 'You’ve reached today’s limit for answers. It resets tomorrow.';
+  if (code === 'ai_quota_exceeded' || code === 'rate_limited' || s.error?.status === 429)
+    return aiErrorCopy(new ApiRequestError(s.error?.status ?? 429, s.error?.error ?? '', code === 'ai_quota_exceeded' ? code : 'rate_limited'), 'an answer').message;
   if (code === 'ai_unavailable' || s.error?.status === 503)
     return 'Solace can’t reach its AI service right now. Your question is kept; try again in a minute.';
-  if (code === 'rate_limited' || s.error?.status === 429) return 'That was a lot of questions at once. Wait a moment, then try again.';
   return s.error?.error ?? 'The answer didn’t come through. Try again.';
 }
 
@@ -39,7 +42,8 @@ export default function ReflectPage() {
   const today = localDate(new Date(), tz);
   const thread = useThread(threadId);
   const stream = useStream(threadId);
-  const create = useCreateThread();
+  const create = useCreateModeThread();
+  const [mode, setMode] = useState<ThreadMode>('open');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -107,13 +111,23 @@ export default function ReflectPage() {
     }
     setStarting(text);
     try {
-      const t = await create.mutateAsync(text.length > 80 ? `${text.slice(0, 77)}…` : text);
+      const t = await create.mutateAsync(createThreadPayload(mode, text));
       void sendMessage(qc, t.id, text);
       navigate(`/app/reflect/${t.id}`);
       // The live stream state takes over from the optimistic first question.
       setStarting(null);
     } catch (err) {
       setStarting(null);
+      toast(errorMessage(err), { tone: 'danger' });
+    }
+  };
+
+  const beginGuided = async () => {
+    try {
+      const label = MODE_OPTIONS.find((m) => m.mode === mode)?.label;
+      const t = await create.mutateAsync(createThreadPayload(mode, label));
+      navigate(`/app/reflect/${t.id}`);
+    } catch (err) {
       toast(errorMessage(err), { tone: 'danger' });
     }
   };
@@ -149,6 +163,10 @@ export default function ReflectPage() {
           <h1 id="reflect-title" className="min-w-0 truncate type-heading text-xl text-fg">
             {title}
           </h1>
+          {threadId && modeLabel(thread.data?.mode) && (
+            <span className="shrink-0 rounded-full border border-ai/30 bg-ai-soft px-2.5 py-0.5 text-xs font-medium text-ai">{modeLabel(thread.data?.mode)}</span>
+          )}
+          <span className="flex-1" />
           <Button variant="ghost" size="sm" className="shrink-0 max-md:h-11 md:hidden" icon={<MessagesSquare className="size-4" aria-hidden="true" />} onClick={() => setSheetOpen(true)}>
             Past reflections
           </Button>
@@ -162,6 +180,37 @@ export default function ReflectPage() {
                 <p className="mt-3 max-w-prose text-fg-muted">
                   {voice.reflectIntroBody}
                 </p>
+                <fieldset className="mt-8">
+                  <legend className="text-sm font-medium text-fg">How would you like to reflect?</legend>
+                  <p className="mt-0.5 text-sm text-fg-muted">{voice.guidedIntro}</p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {MODE_OPTIONS.map((m) => (
+                      <label
+                        key={m.mode}
+                        className="flex min-h-14 cursor-pointer flex-col rounded-card border border-line bg-surface px-4 py-3 transition-colors has-[:checked]:border-ai has-[:checked]:bg-ai-soft has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus hover:border-ai/50"
+                      >
+                        <input type="radio" name="reflect-mode" value={m.mode} checked={mode === m.mode} onChange={() => setMode(m.mode)} className="sr-only" />
+                        <span className="text-sm font-medium text-fg">{m.label}</span>
+                        <span className="mt-0.5 text-xs leading-relaxed text-fg-muted">{m.description}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {mode !== 'open' && (
+                    <Button className="mt-3" variant="primary" size="sm" onClick={() => void beginGuided()} loading={create.isPending}>
+                      Begin {MODE_OPTIONS.find((m) => m.mode === mode)?.label.toLowerCase()}
+                    </Button>
+                  )}
+                </fieldset>
+                <Link
+                  to="/app/reflect/letters"
+                  className="mt-4 flex items-center gap-3 rounded-card border border-ai/30 bg-ai-soft px-4 py-3 text-sm text-fg transition-colors hover:border-ai/60"
+                >
+                  <Mail className="size-4 shrink-0 text-ai" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">Letters from past you</span>
+                    <span className="block text-xs text-fg-muted">A monthly letter in your own voice, from older entries. You can write back.</span>
+                  </span>
+                </Link>
                 <ul className="mt-8 grid gap-2 sm:grid-cols-2" aria-label="Questions to start with">
                   {STARTERS.map((q) => (
                     <li key={q}>
@@ -246,7 +295,14 @@ export default function ReflectPage() {
             )}
             {s?.status === 'error' && (
               <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-fg">
-                <span className="min-w-0 flex-1">{errorCopy(s)}</span>
+                <span className="min-w-0 flex-1">
+                  {errorCopy(s)}{' '}
+                  {(s.error?.code === 'ai_quota_exceeded' || s.error?.code === 'rate_limited' || s.error?.status === 429) && (
+                    <Link to="/app/settings#gemini" className="font-medium underline underline-offset-2">
+                      Open Settings
+                    </Link>
+                  )}
+                </span>
                 <button
                   type="button"
                   onClick={() => threadId && void retryStream(qc, threadId)}

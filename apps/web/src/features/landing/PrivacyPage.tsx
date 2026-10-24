@@ -115,6 +115,46 @@ export default function PrivacyPage() {
         <p>Solace isn’t intended for anyone under [16]. If you believe a child has created an account, contact us and we’ll delete it.</p>
       </LegalSection>
 
+      <LegalSection title="Teen accounts (13 to 17)">
+        <p>
+          People aged 13 to 17 can use Solace with a parent or guardian’s approval. People under 13 can’t have an
+          account: if someone tells us they’re under 13, the account is deleted straight away.
+        </p>
+        <ul>
+          <li>
+            <strong>Age:</strong> at sign-up we ask for the month and year you were born, work out an age range (13 to 15,
+            16 to 17, or 18 and over), and keep only the range. We never store the birth date, and the range can’t be
+            changed afterwards.
+          </li>
+          <li>
+            <strong>Parent approval:</strong> a teen account stays locked until a parent or guardian approves it from an
+            emailed link. We store the time of their decision, the version of these terms, and a one-way fingerprint
+            (hash) of their email address and of the link, never the address itself. They can withdraw approval at any
+            time from the same link, which locks the account straight away. A teen can still download or delete their
+            journal.
+          </li>
+          <li>
+            <strong>What a parent can see:</strong> the teen’s first name and the status of the request. Parents can’t
+            read the journal.
+          </li>
+          <li>
+            <strong>What’s different:</strong> no streak counters or reminders, no share cards, no map of the people in
+            the journal, and the AI doesn’t record facts about other people, only the teen’s own goals, habits and
+            feelings. Help-line numbers are always one tap away.
+          </li>
+          <li>
+            <strong>AI processing:</strong> the same as for everyone else: entry text goes to Google Gemini
+            {config.aiTier === 'paid'
+              ? ', under paid terms that don’t allow Google to use it to improve its products.'
+              : ', on the free tier, where Google may use it to improve its products and reviewers may read it.'}
+          </li>
+        </ul>
+        <p>
+          Laws on children’s data differ by country (for example India’s DPDP rules and the EU’s GDPR, where the
+          age of digital consent is between 13 and 16). Teen sign-up is not yet available everywhere.
+        </p>
+      </LegalSection>
+
       <LegalSection title="Changes and contact">
         <p>
           If we change how we handle your data, we’ll update this page and tell you in the app before the change takes

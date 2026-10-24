@@ -1,0 +1,72 @@
+/* Unwrapped story: subtle per-world motion through tokens. Reduced motion becomes a plain crossfade. */
+@keyframes unwrapped-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--unwrapped-rise, 14px)) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes unwrapped-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes unwrapped-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes unwrapped-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.unwrapped-slide {
+  animation: unwrapped-in var(--dur-4, 420ms) var(--ease-emphasized, ease-out) both;
+}
+.unwrapped-slide .u-rise {
+  animation: unwrapped-in var(--dur-4, 420ms) var(--ease-emphasized, ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 80ms);
+}
+.unwrapped-slide .u-bar-y {
+  transform-origin: bottom;
+  transform-box: fill-box;
+  animation: unwrapped-grow var(--dur-4, 420ms) var(--ease-emphasized, ease-out) both;
+  animation-delay: calc(var(--i, 0) * 18ms + 120ms);
+}
+.unwrapped-slide .u-bar-x {
+  transform-origin: left;
+  animation: unwrapped-grow-x var(--dur-4, 420ms) var(--ease-emphasized, ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 160ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unwrapped-slide,
+  .unwrapped-slide .u-rise {
+    animation: unwrapped-fade 160ms linear both;
+    animation-delay: 0ms;
+  }
+  .unwrapped-slide .u-bar-y,
+  .unwrapped-slide .u-bar-x {
+    animation: none;
+  }
+}
+
+.unwrapped-stage {
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--ai) 14%, transparent), transparent 60%),
+    var(--canvas);
+}

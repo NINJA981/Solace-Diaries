@@ -127,6 +127,12 @@ test('journey: sign up → write → find → reflect → insights → export �
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Create account' }).click();
 
+    // The age gate comes first (an adult answer: 1990).
+    await expect(page).toHaveURL(/\/age$/);
+    await page.getByLabel('Month').selectOption('6');
+    await page.getByLabel('Year').selectOption('1990');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
     await expect(page).toHaveURL(/\/onboarding$/);
     await expect(page.getByRole('heading', { level: 1, name: 'What should Solace call you?' })).toBeVisible();
     await page.getByRole('textbox', { name: 'Your name' }).fill('Robin');

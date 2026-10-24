@@ -1,12 +1,17 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { Sparkles, Telescope } from 'lucide-react';
+import { ArrowRight, BookOpen, Sparkles, Telescope } from 'lucide-react';
 import { localDate } from '@solace/shared';
 import { EmptyState, buttonClasses } from '@/components/ui';
 import { useTimezone } from '@/lib/session';
 import { useVoice } from '@/lib/voice';
 import { InlineError } from '../journal-core/EntryCard';
 import { useGraph, useStats } from '../journal-core/queries';
+import { Threads } from '../intentions/Threads';
+import { UnwrappedCard } from '../unwrapped/UnwrappedCard';
+import { LamplightSkyHeader } from './skins/lamplightSkyHeader';
+import { GrowthNote } from './GrowthNote';
+import { Patterns } from './Patterns';
 import { Constellation } from './Constellation';
 import { useConstellationSkin } from './useConstellationSkin';
 import { Memories } from './Memories';
@@ -41,10 +46,13 @@ export default function InsightsPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-20 sm:px-8 sm:pt-10">
-      <h1 className="type-heading text-3xl text-fg sm:text-4xl">Insights</h1>
-      <p className="mt-2 max-w-prose text-fg-muted">What your writing looks like over time, and what Solace has picked up along the way.</p>
+      <LamplightSkyHeader>
+        <h1 className="type-heading text-3xl text-fg sm:text-4xl">Insights</h1>
+        <p className="mt-2 max-w-prose text-fg-muted">What your writing looks like over time, and what Solace has picked up along the way.</p>
+      </LamplightSkyHeader>
 
       <div className="mt-8 space-y-14">
+        {showDetail && <UnwrappedCard />}
         {stats.isPending ? (
           <StatRowSkeleton />
         ) : stats.isError ? (
@@ -94,6 +102,29 @@ export default function InsightsPage() {
         {showDetail && (
           <>
             <WeeklyLetter tz={tz} today={today} days={s?.days ?? []} />
+
+            <Section id="patterns" title="Mood patterns" intro={voice.patternsIntro}>
+              <Patterns />
+            </Section>
+
+            <Section id="growth" title="How you’ve grown" intro={voice.growthIntro}>
+              <GrowthNote />
+            </Section>
+
+            <Section id="threads" title="Threads" intro={voice.threadsIntro}>
+              <Threads />
+            </Section>
+
+            <Section id="chapters" title="Life chapters" intro="The seasons Solace sees in your writing, on a timeline you can scroll and zoom.">
+              <Link
+                to="/app/insights/chapters"
+                className="group inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-raised px-4 text-sm font-medium text-fg transition-colors hover:border-fg-faint hover:bg-sunken"
+              >
+                <BookOpen className="size-4 text-ai" aria-hidden="true" />
+                Open your chapters
+                <ArrowRight className="size-4 text-fg-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              </Link>
+            </Section>
 
             <Section
               id="constellation"

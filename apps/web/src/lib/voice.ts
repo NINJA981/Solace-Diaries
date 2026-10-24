@@ -80,6 +80,39 @@ export const baseVoice = {
   onboardingVoiceTitle: 'How should Solace talk with you?',
   onboardingVoiceIntro: 'This sets the tone of Reflect answers and your weekly letter. You can change it any time in Settings.',
   onboardingStart: 'Start writing',
+
+  // Insights: Unwrapped, patterns, threads, chapters, letters (W2)
+  unwrappedCardTitle: 'Your month, unwrapped',
+  unwrappedCardBody: 'A short story of what you wrote, how it felt and when. Made only from your own entries.',
+  unwrappedNotEnoughTitle: 'Not enough entries yet',
+  patternsIntro: 'Tags that tend to show up on calmer or heavier days. These are patterns in your writing, not reasons.',
+  patternsEmpty: 'Patterns appear once there are enough tagged entries with moods. Keep writing; there is no rush.',
+  growthIntro: 'A gentle look at how your writing has shifted, with the entries it comes from.',
+  growthEmpty: 'Solace will leave a note here once there is enough writing to compare across weeks.',
+  threadsIntro: 'Small things you want to keep coming back to. Tap a day to mark it; tap again to undo.',
+  threadsEmpty: 'Nothing here yet. Add something you would like to do more of, or adopt one Solace noticed.',
+  chaptersEmpty: 'Chapters appear when there is enough writing to see seasons in it.',
+  lettersEmpty: 'Your first letter from past you can be written once you have older entries to draw on.',
+  guidedIntro: 'Or pick a gentler shape for this reflection.',
+
+  // Time and memory: resurfacing, capsules, weekly ritual (W1)
+  rememberWhenTitle: 'Remember when',
+  capsuleLinkLabel: 'Write to future you',
+  capsuleLinkHint: 'Seal a letter that opens on a day you choose.',
+  weeklyReviewTitle: 'Your weekly review',
+  weeklyReviewBody: 'A few quiet minutes: what went well, what was hard, and one thing for next week.',
+  capsulesEmptyTitle: 'Nothing sealed yet',
+  capsulesEmptyBody: 'Write a letter to the person you’ll be later. It stays locked until the day you choose.',
+  capsuleSealed: (date: string): string => `Sealed. It opens on ${date}.`,
+  capsuleReadyLine: 'Ready to open',
+  capsuleRevealTitle: 'A letter from you, then',
+  capsuleDeleted: 'Capsule deleted',
+  ritualIntro: 'Look back on the week in your own time. Skip anything you like.',
+  ritualHighsTitle: 'What went well this week?',
+  ritualLowsTitle: 'What was hard?',
+  ritualIntentionTitle: 'One thing for next week',
+  ritualDoneTitle: 'Your week is saved',
+  ritualDoneBody: 'It’s in your journal now.',
 };
 
 export type VoicePack = typeof baseVoice;

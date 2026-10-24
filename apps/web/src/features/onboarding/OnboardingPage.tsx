@@ -18,6 +18,7 @@ import { ME_QUERY_KEY, browserTimezone, useProfile, useSession } from '@/lib/ses
 import { useTheme } from '@/lib/theme';
 import { useVoice } from '@/lib/voice';
 import { useWorld } from '@/lib/world';
+import { teenFlags } from '@/features/teen/flags';
 import { AiStylePicker, REMINDER_OPTIONS } from './choices';
 import { TimezoneSelect } from './TimezoneSelect';
 
@@ -81,6 +82,7 @@ function Onboarding() {
   const [aiStyle, setAiStyle] = useState<AiStyle>(profile?.aiStyle ?? 'gentle');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<'finish' | 'skip' | null>(null);
+  const flags = teenFlags(profile);
 
   if (profile?.onboardingDone) return <Navigate to="/app/today" replace />;
 
@@ -100,7 +102,7 @@ function Onboarding() {
         timezone,
         aiStyle,
         world,
-        reminderHour: reminder === '' ? null : Number(reminder),
+        reminderHour: !flags.nudges || reminder === '' ? null : Number(reminder),
         ...(trimmed ? { displayName: trimmed.slice(0, LIMITS.displayNameMax) } : {}),
       };
       const next = await api.updateMe({ body });
@@ -228,13 +230,20 @@ function Onboarding() {
                         onChange={setTimezone}
                         hint="We filled this in from your device."
                       />
-                      <Select
-                        label="Daily reminder"
-                        hint="If you haven’t written by this hour, Solace shows a gentle nudge inside the app. No emails, no push notifications."
-                        options={REMINDER_OPTIONS}
-                        value={reminder}
-                        onChange={(e) => setReminder(e.target.value)}
-                      />
+                      {flags.nudges ? (
+                        <Select
+                          label="Daily reminder"
+                          hint="If you haven’t written by this hour, Solace shows a gentle nudge inside the app. No emails, no push notifications."
+                          options={REMINDER_OPTIONS}
+                          value={reminder}
+                          onChange={(e) => setReminder(e.target.value)}
+                        />
+                      ) : (
+                        <p className="rounded-control border border-line bg-sunken px-3.5 py-2.5 text-sm leading-relaxed text-fg-muted">
+                          On a teen account Solace never nags you to write. Open it whenever you like, and miss days
+                          without anything being counted.
+                        </p>
+                      )}
                     </>
                   )}
                   {step === 3 && (

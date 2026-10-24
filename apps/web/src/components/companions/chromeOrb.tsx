@@ -21,7 +21,14 @@ const SIZE: Record<CompanionProps['placement'], string> = {
 
 const SAYS: Record<OrbMood, string> = { idle: '', saved: 'Saved.', celebrate: 'Nicely done.' };
 
-export function ChromeOrb({ name, placement, mood = 'idle' }: CompanionProps & { mood?: OrbMood }) {
+export function ChromeOrb({
+  name,
+  placement,
+  state,
+  mood: moodProp,
+}: CompanionProps & { mood?: OrbMood }) {
+  // The shared companion contract passes `state`; `mood` stays for direct use.
+  const mood: OrbMood = moodProp ?? state ?? 'idle';
   const label = name.trim() || 'Orb';
   const showName = placement !== 'today';
   return (

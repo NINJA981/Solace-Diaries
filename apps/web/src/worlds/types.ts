@@ -61,6 +61,8 @@ export type CompanionProps = {
   name: string;
   /** Where it appears, so it can size itself. */
   placement: 'today' | 'onboarding' | 'settings';
+  /** A brief reaction: just saved an entry, or a milestone to celebrate. Defaults to idle. */
+  state?: 'idle' | 'saved' | 'celebrate';
 };
 
 export type WorldManifest = {

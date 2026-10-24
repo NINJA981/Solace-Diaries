@@ -5,6 +5,7 @@ import { Navigate, useLocation, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { errorMessage } from '@/lib/errors';
+import { gateTarget } from '@/features/teen/age';
 import { ME_QUERY_KEY, browserTimezone, useProfile, useSession } from '@/lib/session';
 import { useProfileAppearanceSync } from '@/lib/world';
 
@@ -49,7 +50,16 @@ function useTimezoneAdoption() {
  * Gate for signed-in areas. Signed-out → /login?next=…; when `requireOnboarded`, people who
  * haven't finished onboarding go there first.
  */
-export function RequireAuth({ children, requireOnboarded = true }: { children: ReactNode; requireOnboarded?: boolean }) {
+export function RequireAuth({
+  children,
+  requireOnboarded = true,
+  enforceGates = true,
+}: {
+  children: ReactNode;
+  requireOnboarded?: boolean;
+  /** Send people who have not answered the age gate (or a teen without a parent's OK) to those screens. Off on those screens themselves. */
+  enforceGates?: boolean;
+}) {
   const { status } = useSession();
   const { profile, isLoading, error } = useProfile();
   const { pathname, search } = useLocation();
@@ -72,6 +82,8 @@ export function RequireAuth({ children, requireOnboarded = true }: { children: R
       </main>
     );
   }
+  const gate = enforceGates ? gateTarget(profile) : null;
+  if (gate) return <Navigate to={gate} replace />;
   if (requireOnboarded && !profile.onboardingDone) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }

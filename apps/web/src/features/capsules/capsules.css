@@ -1,0 +1,93 @@
+/*
+ * The opening ceremony. One seal, four ways of coming undone, picked by the world:
+ * Lamplight glows open, Jelly squishes and pops, Scrapbook's tape tears, Chrome sweeps a ring of light.
+ * Reduced motion: the seal holds still and simply fades to the letter (designed in the component:
+ * no waiting, no movement; only a soft glow change).
+ */
+.capsule-seal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  margin-inline: auto;
+  color: var(--accent);
+  border-radius: 9999px;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.capsule-seal svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.capsule-seal::after {
+  content: '';
+  position: absolute;
+  inset: -0.5rem;
+  border-radius: inherit;
+  border: 2px solid var(--accent);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .capsule-seal[data-world='lamplight'] {
+    animation: seal-glow 1.5s ease-in-out both;
+  }
+  .capsule-seal[data-world='jelly'] {
+    animation: seal-squish 1.4s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  }
+  .capsule-seal[data-world='scrapbook'] {
+    border-radius: 0.5rem;
+    animation: seal-tear 1.3s ease-in both;
+  }
+  .capsule-seal[data-world='chrome'] {
+    animation: seal-pulse 1.4s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .capsule-seal[data-world='chrome']::after {
+    animation: seal-ring 1.4s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+}
+
+@keyframes seal-glow {
+  0% { box-shadow: 0 0 0 0 transparent; }
+  60% { box-shadow: 0 0 2.5rem 0.75rem color-mix(in srgb, var(--accent) 55%, transparent); }
+  100% { box-shadow: 0 0 3.5rem 1.5rem transparent; opacity: 0.6; }
+}
+@keyframes seal-squish {
+  0% { transform: scale(1, 1); }
+  25% { transform: scale(1.18, 0.82); }
+  50% { transform: scale(0.88, 1.14); }
+  75% { transform: scale(1.08, 0.94); }
+  100% { transform: scale(1.3); opacity: 0.4; }
+}
+@keyframes seal-tear {
+  0% { transform: rotate(-2deg); }
+  40% { transform: rotate(3deg) translateY(-2px); }
+  70% { transform: rotate(-5deg) translateY(1px); }
+  100% { transform: rotate(14deg) translate(1rem, 0.5rem); opacity: 0.3; }
+}
+@keyframes seal-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.96); }
+  100% { transform: scale(1.08); opacity: 0.5; }
+}
+@keyframes seal-ring {
+  0% { opacity: 0.9; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+
+/* Locked rows: a quiet visual, never the text. */
+.capsule-lock {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: var(--radius-control, 0.5rem);
+  background: var(--sunken);
+  color: var(--fg-muted);
+}
+.capsule-lock[data-ready='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

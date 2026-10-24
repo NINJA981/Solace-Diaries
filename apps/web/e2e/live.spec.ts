@@ -45,6 +45,12 @@ test('live: sign in, write, real AI enrichment, search, Reflect, delete account'
     await page.getByRole('textbox', { name: 'Email' }).fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
+    // The age gate comes first (an adult answer: 1990).
+    await expect(page).toHaveURL(/\/age$/, { timeout: 30_000 });
+    await page.getByLabel('Month').selectOption('6');
+    await page.getByLabel('Year').selectOption('1990');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
     await expect(page).toHaveURL(/\/onboarding$/, { timeout: 30_000 });
     await page.getByRole('textbox', { name: 'Your name' }).fill('Live Check');
     await page.getByRole('button', { name: 'Continue' }).click(); // name

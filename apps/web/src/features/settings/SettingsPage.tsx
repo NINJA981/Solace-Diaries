@@ -22,6 +22,8 @@ import { buzz, getFeedbackPrefs, play, setFeedbackPrefs } from '@/lib/feedback';
 import { voiceNow } from '@/lib/voice';
 import { useWorld } from '@/lib/world';
 import { SwitchRow } from '@/features/appearance/SwitchRow';
+import { HelpPanel, TeenAccountPanel } from '@/features/teen/TeenSettings';
+import { teenFlags } from '@/features/teen/flags';
 import { ThemeChoice } from '@/features/appearance/ThemeChoice';
 import { WorldPicker } from '@/features/appearance/WorldPicker';
 
@@ -33,6 +35,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'gemini', label: 'Gemini key' },
   { id: 'data', label: 'Your data' },
+  { id: 'help', label: 'Need to talk to someone?' },
   { id: 'account', label: 'Account' },
   { id: 'danger', label: 'Delete account' },
 ];
@@ -102,13 +105,15 @@ function ProfileSection({ profile }: { profile: Profile }) {
       <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-5">
         <Input label="Name" value={name} maxLength={LIMITS.displayNameMax} error={nameError} onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
         <TimezoneSelect value={timezone} onChange={setTimezone} hint="Entries written after midnight count toward the new day in this timezone." />
-        <Select
-          label="Daily reminder"
-          hint="A gentle nudge inside the app if you haven’t written by this hour. No emails or push notifications."
-          options={REMINDER_OPTIONS}
-          value={reminder}
-          onChange={(e) => setReminder(e.target.value)}
-        />
+        {teenFlags(profile).nudges && (
+          <Select
+            label="Daily reminder"
+            hint="A gentle nudge inside the app if you haven’t written by this hour. No emails or push notifications."
+            options={REMINDER_OPTIONS}
+            value={reminder}
+            onChange={(e) => setReminder(e.target.value)}
+          />
+        )}
         <div>
           <Button type="submit" loading={update.isPending} disabled={!dirty}>
             Save changes
@@ -448,6 +453,22 @@ function AccountSection() {
   );
 }
 
+function HelpSection() {
+  return (
+    <Section id="help" title="Need to talk to someone?" description="Free, private help lines. You don’t need to be in crisis to call.">
+      <HelpPanel />
+    </Section>
+  );
+}
+
+function TeenSection({ profile }: { profile: Profile }) {
+  return (
+    <Section id="teen" title="Teen account" description="Solace has extra protections for people under 18.">
+      <TeenAccountPanel profile={profile} />
+    </Section>
+  );
+}
+
 function DangerSection() {
   const { email, signOut } = useSession();
   const navigate = useNavigate();
@@ -512,7 +533,7 @@ export default function SettingsPage() {
       <div className="mt-10 grid gap-10 lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-14">
         <nav aria-label="Settings sections" className="hidden lg:block">
           <ul className="sticky top-8 flex flex-col gap-1 text-sm">
-            {SECTIONS.map((s) => (
+            {(profile.mode === 'teen' ? [...SECTIONS.slice(0, 6), { id: 'teen', label: 'Teen account' }, ...SECTIONS.slice(6)] : SECTIONS).map((s) => (
               <li key={s.id}>
                 <a
                   href={`#${s.id}`}
@@ -533,6 +554,8 @@ export default function SettingsPage() {
           <AppearanceSection profile={profile} />
           <GeminiSection />
           <DataSection />
+          <HelpSection />
+          {profile.mode === 'teen' && <TeenSection profile={profile} />}
           <AccountSection />
           <DangerSection />
         </div>

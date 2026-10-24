@@ -1,20 +1,27 @@
+import { Link } from 'react-router';
 import { RotateCcw, Mail } from 'lucide-react';
 import { weekStart, type DayStat } from '@solace/shared';
 import { Button, SafeMarkdown } from '@/components/ui';
-import { ApiRequestError, errorMessage } from '@/lib/api';
 import { useVoice } from '@/lib/voice';
+import { aiErrorCopy } from '../letters/aiErrors';
 import { InlineError } from '../journal-core/EntryCard';
 import { formatShortDay, plural } from '../journal-core/format';
 import { useRefreshWeekly, useWeekly } from '../journal-core/queries';
 
 function refreshErrorCopy(err: unknown): string {
-  if (err instanceof ApiRequestError) {
-    if (err.code === 'ai_quota_exceeded') return 'You’ve used today’s AI allowance. The letter can be written again tomorrow.';
-    if (err.status === 429) return 'That was quick. Wait a minute, then try again.';
-    if (err.code === 'ai_unavailable' || err.status === 503)
-      return 'Solace can’t reach its AI service right now, so the letter can’t be written. Try again in a few minutes.';
-  }
-  return errorMessage(err);
+  return aiErrorCopy(err, 'the letter').message;
+}
+
+function KeyHint({ err }: { err: unknown }) {
+  if (!aiErrorCopy(err).suggestKey) return null;
+  return (
+    <>
+      {' '}
+      <Link to="/app/settings#gemini" className="font-medium text-accent underline underline-offset-2">
+        Open Settings
+      </Link>
+    </>
+  );
 }
 
 function Shimmer() {
@@ -102,6 +109,7 @@ export function WeeklyLetter({ tz, today, days }: { tz: string; today: string; d
       {refresh.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
           {refreshErrorCopy(refresh.error)}
+          <KeyHint err={refresh.error} />
         </p>
       )}
     </article>

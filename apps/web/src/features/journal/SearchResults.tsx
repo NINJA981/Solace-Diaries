@@ -102,6 +102,9 @@ export function SearchResults({ q, mode, filters, today, onMode }: Props) {
             ? 'Searching…'
             : ''}
       </p>
+      {mode === 'hybrid' && search.isSuccess && search.data.mode === 'keyword' && (
+        <p className="mb-3 text-xs text-fg-muted">Showing exact-word matches; meaning search is unavailable right now.</p>
+      )}
       {body}
     </section>
   );

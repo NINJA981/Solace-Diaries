@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Plus } from 'lucide-react';
+import { Mail, Plus } from 'lucide-react';
 import { localDate } from '@solace/shared';
 import { Button, toast } from '@/components/ui';
 import { feedback } from '@/lib/feedback';
@@ -15,8 +15,12 @@ import { restorable, useDraftSync, useRefreshUnsynced } from '../journal-core/ed
 import { InlineError } from '../journal-core/EntryCard';
 import { formatDay, localHour } from '../journal-core/format';
 import { useDismissPrompt, useEntries, useStats, useTodayPrompt } from '../journal-core/queries';
+import { TodayCompanion } from '../companion/TodayCompanion';
+import { RememberWhen } from '../resurface/RememberWhen';
+import { WeeklyReviewCard } from '../ritual/WeeklyReviewCard';
 import { PromptCard } from './PromptCard';
 import { RecentRail } from './RecentRail';
+import { visibleStreak } from './streak';
 import { useTodayEntry } from './useTodayEntry';
 
 function formatHour(h: number): string {
@@ -107,7 +111,8 @@ export default function TodayPage() {
 
   const restore = useMemo(() => restorable(unsynced, current?.id)[0], [unsynced, current?.id]);
   const name = profile?.displayName?.trim().split(/\s+/)[0];
-  const streak = stats.data?.currentStreak ?? 0;
+  // Teen mode never shows streak counts.
+  const streak = visibleStreak(profile?.mode, stats.data?.currentStreak);
   const wroteToday = (todays.data?.pages[0]?.items.length ?? 0) > 0 || isCreated;
   const reminderHour = profile?.reminderHour ?? null;
   const showNudge =
@@ -117,8 +122,8 @@ export default function TodayPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-8 sm:pt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-14">
       <div className="min-w-0">
-        <header className="mb-6">
-          <div>
+        <header className="mb-6 flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <h1 className="type-heading text-3xl text-fg sm:text-4xl">
               {voice.greeting({ hour, name })}
             </h1>
@@ -138,8 +143,20 @@ export default function TodayPage() {
                 )}
               </p>
             )}
+            <Link
+              to="/app/journal/capsules?new=1"
+              className="-ml-2 mt-1 inline-flex min-h-11 items-center rounded-control px-2 text-sm text-fg-faint underline-offset-2 hover:text-fg hover:underline sm:min-h-8"
+            >
+              <Mail className="mr-1.5 size-4" aria-hidden="true" />
+              {voice.capsuleLinkLabel}
+            </Link>
           </div>
+          <TodayCompanion syncStatus={status} />
         </header>
+
+        <div className="mb-6 empty:hidden">
+          <WeeklyReviewCard />
+        </div>
 
         <div className="space-y-4">
           {restore && (
@@ -173,6 +190,7 @@ export default function TodayPage() {
         </div>
 
         <div className="mt-8">
+          <RememberWhen tz={tz} today={today} />
           {editor.load.state === 'error' ? (
             <InlineError message={errorMessage(editor.load.error)} onRetry={editor.load.retry} />
           ) : ready ? (

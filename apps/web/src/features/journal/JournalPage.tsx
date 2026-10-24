@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router';
-import { BookOpen, Feather } from 'lucide-react';
+import { BookOpen, Feather, Mail } from 'lucide-react';
 import { localDate } from '@solace/shared';
 import { EmptyState, Tabs, buttonClasses } from '@/components/ui';
 import { useTimezone } from '@/lib/session';
@@ -59,6 +59,13 @@ export default function JournalPage() {
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-16 sm:px-8 sm:pt-10">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <h1 className="type-heading text-3xl text-fg sm:text-4xl">Journal</h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link
+          to="/app/journal/capsules"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm font-medium text-fg-muted hover:text-fg sm:min-h-8"
+        >
+          <Mail className="size-4" aria-hidden="true" /> Capsules
+        </Link>
         {!searching && !nothingYet && (
           <Tabs
             label="View"
@@ -71,6 +78,7 @@ export default function JournalPage() {
             ]}
           />
         )}
+        </div>
       </header>
 
       <div className={nothingYet ? 'hidden' : 'space-y-3'}>
