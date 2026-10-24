@@ -268,6 +268,20 @@ export const correlationList = z.object({ items: z.array(correlation), minEntrie
 
 export const AGE_LIMITS = { minimum: 13, adult: 18 } as const;
 
+/** Error `code`s of the teen-mode gates (see ApiError). */
+export const TEEN_ERROR_CODES = {
+  /** 403: the age gate has not been answered yet. */
+  ageRequired: 'age_required',
+  /** 403 on the age gate: under 13, the account was deleted. */
+  ageRestricted: 'age_restricted',
+  /** 403: a teen account without a granted parental consent. */
+  consentRequired: 'consent_required',
+  /** 503: no mail provider is configured, so teen sign-up is switched off. */
+  teenSignupUnavailable: 'teen_signup_unavailable',
+  /** 503: the consent email could not be sent. */
+  emailUnavailable: 'email_unavailable',
+} as const;
+
 /** Only used to compute an age band; the birth date itself is never stored. */
 export const ageCheckInput = z.object({
   birthYear: z.number().int().min(1900).max(2100),

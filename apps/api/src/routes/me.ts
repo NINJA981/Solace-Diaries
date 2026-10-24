@@ -12,12 +12,13 @@ import { authOf } from '../http/types';
 import { parseBody, parseQuery } from '../middleware/validate';
 import { deleteAccount, exportJson, exportMarkdown } from '../services/account';
 import { getProfile, toProfile, updateProfile } from '../services/profiles';
+import { profileForClient } from '../services/teen';
 import { getUsage } from '../services/quota';
 
 export const meRouter: Router = Router();
 
 meRouter.get(routes.getMe.path, async (req, res) => {
-  res.json(toProfile(await getProfile(authOf(req).userId)));
+  res.json(await profileForClient(authOf(req).userId));
 });
 
 /** Today's AI budgets for the Settings meter (and the tier, which decides the privacy copy). */

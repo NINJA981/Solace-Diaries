@@ -104,8 +104,38 @@ export async function ensureProfile(userId: string, email: string): Promise<void
 
 /** Drop a user from the cache (account deleted, or tests truncating tables). */
 export function forgetProfile(userId?: string): void {
-  if (userId) known.delete(userId);
-  else known.clear();
+  if (userId) {
+    known.delete(userId);
+    gateCache.delete(userId);
+  } else {
+    known.clear();
+    gateCache.clear();
+  }
+}
+
+// ── age / consent gate state ───────────────────────────────────────────
+
+export type GateState = Pick<ProfileRow, 'mode' | 'ageBand' | 'consentStatus'>;
+const gateCache = new Map<string, { at: number; state: GateState }>();
+const GATE_TTL_MS = 5_000;
+const GATE_MAX = 10_000;
+
+/** The three fields the age/consent gate needs, cached briefly (changes call forgetGate). */
+export async function gateState(userId: string): Promise<GateState | undefined> {
+  const hit = gateCache.get(userId);
+  if (hit && Date.now() - hit.at < GATE_TTL_MS) return hit.state;
+  const [row] = await db
+    .select({ mode: profiles.mode, ageBand: profiles.ageBand, consentStatus: profiles.consentStatus })
+    .from(profiles)
+    .where(eq(profiles.id, userId));
+  if (!row) return undefined;
+  gateCache.set(userId, { at: Date.now(), state: row });
+  if (gateCache.size > GATE_MAX) gateCache.delete(gateCache.keys().next().value!);
+  return row;
+}
+
+export function forgetGate(userId: string): void {
+  gateCache.delete(userId);
 }
 
 // ── reads & writes ─────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import cors from 'cors';
 import express, { type Express, type RequestHandler } from 'express';
 import helmet from 'helmet';
 import { requireAuth } from './auth/require-auth';
+import { ageGate } from './middleware/age-gate';
 import { config } from './config';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 import { httpLogger } from './middleware/http-logger';
@@ -16,10 +17,15 @@ import { meRouter } from './routes/me';
 import { memoriesRouter } from './routes/memories';
 import { promptsRouter } from './routes/prompts';
 import { searchRouter } from './routes/search';
+import { teenMeRouter, createConsentRouter } from './routes/teen';
 import { threadsRouter } from './routes/threads';
 import { v3Router } from './routes/v3';
 
-export type AppOptions = { rateLimits?: Partial<RateLimitConfig> };
+export type AppOptions = {
+  rateLimits?: Partial<RateLimitConfig>;
+  /** Public consent-link requests per IP per 10 minutes (default 40). */
+  consentIpLimit?: number;
+};
 
 /** Server-sent events must reach the client unbuffered. */
 const compressUnlessStream: compression.CompressionFilter = (req, res) =>
@@ -66,8 +72,12 @@ export function createApp(opts: AppOptions = {}): Express {
   api.use(noStore);
   api.use(healthRouter);
 
-  // Everything below requires a signed-in user.
-  api.use(requireAuth, limit.general, limit.writes);
+  // The parent's consent page is public (the token is the credential).
+  api.use(createConsentRouter(opts.consentIpLimit));
+
+  // Everything below requires a signed-in user who has answered the age gate (and, for
+  // teens, has a parent's approval).
+  api.use(requireAuth, ageGate, limit.general, limit.writes);
   api.get('/search', (req, res, next) =>
     req.query.mode === 'keyword' ? next() : limit.ai(req, res, next),
   );
@@ -77,7 +87,7 @@ export function createApp(opts: AppOptions = {}): Express {
   api.post('/entries/:id/attachments', limit.uploads);
 
   // Routers declare full paths from the shared route table (e.g. '/entries/:id').
-  api.use(meRouter, entriesRouter, attachmentsRouter);
+  api.use(meRouter, teenMeRouter, entriesRouter, attachmentsRouter);
   api.use(searchRouter, threadsRouter, insightsRouter, memoriesRouter, promptsRouter);
   api.use(v3Router);
 

@@ -88,6 +88,17 @@ const schema = z.object({
    */
   AI_FIRST_TOKEN_MS: z.coerce.number().int().min(0).default(20_000),
 
+  /**
+   * Transactional email (parental-consent links). Resend wins if RESEND_API_KEY is set, then
+   * SMTP (local Mailpit; the Supabase stack exposes it on 55325), else a log transport that
+   * only records messages in memory/logs. Production without a real provider switches teen
+   * sign-up off (see teenSignupEnabled).
+   */
+  RESEND_API_KEY: z.string().default(''),
+  MAIL_FROM: z.string().default('Solace Diaries <no-reply@solace.invalid>'),
+  SMTP_HOST: z.string().default(''),
+  SMTP_PORT: z.coerce.number().int().default(55325),
+
   RUN_WORKER: flag(true),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(2),
   /** Trust N reverse-proxy hops for client IPs (Render = 1). */
@@ -116,3 +127,15 @@ function load(): Config {
 export const config = load();
 export const isProd = config.NODE_ENV === 'production';
 export const isTest = config.NODE_ENV === 'test';
+
+export type MailTransportName = 'resend' | 'smtp' | 'log';
+export function mailTransportName(): MailTransportName {
+  if (config.RESEND_API_KEY) return 'resend';
+  if (config.SMTP_HOST) return 'smtp';
+  return 'log';
+}
+
+/** Teen accounts need a way to reach a parent: a real mail transport, or any non-production run. */
+export function teenSignupEnabled(): boolean {
+  return mailTransportName() !== 'log' || config.NODE_ENV !== 'production';
+}

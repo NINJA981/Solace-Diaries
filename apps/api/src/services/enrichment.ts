@@ -20,7 +20,7 @@ import {
 } from '../ai/gemini';
 import { DATA_POLICY, dataBlock, sanitize } from '../ai/untrusted';
 import { db } from '../db/client';
-import { attachments, entries, entryChunks } from '../db/schema';
+import { attachments, entries, entryChunks, profiles } from '../db/schema';
 import { enqueue } from '../jobs/queue';
 import { DeferJobError, JOB, PermanentJobError } from '../jobs/types';
 import { logger } from '../logger';
@@ -175,6 +175,27 @@ export function entryText(row: Pick<EntryRow, 'body' | 'attachmentText'>): strin
 }
 
 /**
+ * Teen accounts (13-17): the entry may only teach Solace about the writer's own goals,
+ * habits and feelings, never about other people. Stated to the model and enforced below.
+ */
+export const TEEN_POLICY = `This writer is a teenager. Only record things about the writer themself: their own goals, habits, patterns and feelings. Never create or update a memory about another person (friends, family, teachers, classmates), never use the memory kind "person", and never list a person as an entity.`;
+
+/** Server-side enforcement of TEEN_POLICY, whatever the model returned. */
+export function restrictForTeen(reading: EntryReading): EntryReading {
+  const people = new Set(
+    reading.entities.filter((e) => e.kind === 'person').map((e) => e.name.toLowerCase()),
+  );
+  return {
+    ...reading,
+    memoryOps: reading.memoryOps.filter((op) => !(op.op === 'create' && op.kind === 'person')),
+    entities: reading.entities.filter((e) => e.kind !== 'person'),
+    relations: reading.relations.filter(
+      (r) => !people.has(r.from.toLowerCase()) && !people.has(r.to.toLowerCase()),
+    ),
+  };
+}
+
+/**
  * The single generation request for an entry. The entry and memories travel as delimited
  * data blocks; memories carry handles (m1…), and only ops naming one of them survive.
  */
@@ -182,12 +203,14 @@ export async function analyzeEntry(
   row: EntryRow,
   context: MemoryContext,
   opts: AiOptions,
+  teen = false,
 ): Promise<EntryReading> {
   const raw = await generateJson(
     enrichmentSchema,
     {
       task: 'enrich',
-      system: ENRICH_SYSTEM,
+      system: teen ? `${ENRICH_SYSTEM}
+${TEEN_POLICY}` : ENRICH_SYSTEM,
       temperature: 0.2,
       user: [
         `Existing memories related to this entry (${context.blocks.length}):`,
@@ -198,12 +221,13 @@ export async function analyzeEntry(
     },
     opts,
   );
-  return {
+  const reading: EntryReading = {
     analysis: { mood: raw.mood, tags: cleanTags(raw.tags), summary: cleanSummary(raw.summary) },
     memoryOps: planMemoryOps(raw.memoryOps, context.handles),
     entities: raw.entities,
     relations: raw.relations,
   };
+  return teen ? restrictForTeen(reading) : reading;
 }
 
 // ───────────────────────── enrichEntry job ─────────────────────────
@@ -330,7 +354,11 @@ export async function enrichEntry(payload: unknown, signal?: AbortSignal): Promi
         id: row.id,
         text: `${row.title}\n${entryText(row)}`,
       });
-      reading = await analyzeEntry(row, context, ai);
+      const [who] = await db
+        .select({ mode: profiles.mode })
+        .from(profiles)
+        .where(eq(profiles.id, row.userId));
+      reading = await analyzeEntry(row, context, ai, who?.mode === 'teen');
       // The passages and any new or corrected memory sentences share one embedding request.
       const vectors = await embedTexts(
         [...chunks.map((c) => c.embedText), ...opTexts(reading.memoryOps)],

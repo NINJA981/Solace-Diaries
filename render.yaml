@@ -30,6 +30,12 @@ services:
         sync: false # e.g. https://solace.vercel.app (comma-separate extra origins)
       - key: GEMINI_API_KEY
         sync: false
+      # Parental-consent email for teen accounts (13-17). Without a key, teen sign-up stays
+      # switched off in production (age gate answers 503 teen_signup_unavailable).
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false # a sender verified in Resend, e.g. Solace Diaries <hello@your-domain>
       # Free-tier key: Google may use what is sent, and each model allows a small number of
       # requests per day per project, shared by ALL users, so every task runs on its own model
       # (its own quota) and the per-user budgets below are small.

@@ -144,6 +144,11 @@ export async function deleteAccount(auth: AuthContext, confirmEmail: string): Pr
     });
   }
 
+  await purgeAccount(userId);
+}
+
+/** Delete everything of one account without asking for an email (also used by the under-13 gate). */
+export async function purgeAccount(userId: string): Promise<void> {
   await deletePrefix(`${userId}/`);
   await db.transaction(async (tx) => {
     await tx

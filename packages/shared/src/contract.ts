@@ -139,6 +139,8 @@ export const profile = z.object({
   /** False until the person has confirmed their age (required before using the app). */
   ageConfirmed: z.boolean(),
   consentStatus,
+  /** When a parent last decided (granted, declined or revoked); null/absent if never. */
+  consentDecidedAt: timestamp.nullable().optional(),
   createdAt: timestamp,
 });
 export type Profile = z.infer<typeof profile>;
