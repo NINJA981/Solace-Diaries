@@ -1,6 +1,8 @@
 /**
  * Transactional email through a tiny pluggable interface (no dependencies):
  *   resend: Resend's HTTP API (RESEND_API_KEY, MAIL_FROM)
+ *   brevo:  Brevo's HTTP API (BREVO_API_KEY, MAIL_FROM); HTTP because Render's free plan
+ *           blocks outbound SMTP ports
  *   smtp:   plain SMTP, meant for local Mailpit (SMTP_HOST, SMTP_PORT)
  *   log:    development/test; messages are kept in the in-memory `outbox` and logged
  * The transport is chosen from the config on every send, so tests can switch it.
@@ -49,6 +51,33 @@ async function sendResend(msg: MailMessage): Promise<void> {
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new MailError(`Resend answered ${res.status}`);
+}
+
+/** "Solace Diaries <hello@x.co>" → { name: 'Solace Diaries', email: 'hello@x.co' } */
+export function parseAddress(address: string): { name?: string; email: string } {
+  const m = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(address);
+  if (!m) return { email: address.trim() };
+  const name = m[1]!.replace(/^"|"$/g, '');
+  return name ? { name, email: m[2]!.trim() } : { email: m[2]!.trim() };
+}
+
+async function sendBrevo(msg: MailMessage): Promise<void> {
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': config.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: parseAddress(config.MAIL_FROM),
+      to: [{ email: msg.to }],
+      subject: msg.subject,
+      textContent: msg.text,
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new MailError(`Brevo answered ${res.status}`);
 }
 
 /** Minimal SMTP dialogue (no TLS, no auth): enough for Mailpit. */
@@ -111,6 +140,8 @@ export async function sendMail(msg: MailMessage): Promise<void> {
   switch (mailTransportName()) {
     case 'resend':
       return sendResend(msg);
+    case 'brevo':
+      return sendBrevo(msg);
     case 'smtp':
       return sendSmtp(msg);
     default:

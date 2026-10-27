@@ -34,8 +34,11 @@ services:
       # switched off in production (age gate answers 503 teen_signup_unavailable).
       - key: RESEND_API_KEY
         sync: false
+      # Or Brevo (free 300/day, single verified sender such as a Gmail address, no domain needed).
+      - key: BREVO_API_KEY
+        sync: false
       - key: MAIL_FROM
-        sync: false # a sender verified in Resend, e.g. Solace Diaries <hello@your-domain>
+        sync: false # a sender verified in Resend/Brevo, e.g. Solace Diaries <hello@your-domain>
       # Free-tier key: Google may use what is sent, and each model allows a small number of
       # requests per day per project, shared by ALL users, so every task runs on its own model
       # (its own quota) and the per-user budgets below are small.

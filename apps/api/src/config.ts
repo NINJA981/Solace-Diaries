@@ -90,11 +90,13 @@ const schema = z.object({
 
   /**
    * Transactional email (parental-consent links). Resend wins if RESEND_API_KEY is set, then
-   * SMTP (local Mailpit; the Supabase stack exposes it on 55325), else a log transport that
+   * Brevo (BREVO_API_KEY; its free plan sends from a single verified address, no domain needed),
+   * then SMTP (local Mailpit; the Supabase stack exposes it on 55325), else a log transport that
    * only records messages in memory/logs. Production without a real provider switches teen
    * sign-up off (see teenSignupEnabled).
    */
   RESEND_API_KEY: z.string().default(''),
+  BREVO_API_KEY: z.string().default(''),
   MAIL_FROM: z.string().default('Solace Diaries <no-reply@solace.invalid>'),
   SMTP_HOST: z.string().default(''),
   SMTP_PORT: z.coerce.number().int().default(55325),
@@ -128,9 +130,10 @@ export const config = load();
 export const isProd = config.NODE_ENV === 'production';
 export const isTest = config.NODE_ENV === 'test';
 
-export type MailTransportName = 'resend' | 'smtp' | 'log';
+export type MailTransportName = 'resend' | 'brevo' | 'smtp' | 'log';
 export function mailTransportName(): MailTransportName {
   if (config.RESEND_API_KEY) return 'resend';
+  if (config.BREVO_API_KEY) return 'brevo';
   if (config.SMTP_HOST) return 'smtp';
   return 'log';
 }

@@ -42,7 +42,7 @@ Under-13 attempts: nothing is retained, not even a log of the age answer. Standa
 | Google Gemini API | Entry text, Reflect questions, summaries input | Free tier today: Google may use inputs to improve products and humans may review them (`AI_TIER=free`). Paid tier does not. The parent page and privacy page state this per tier. Whether the free tier is acceptable for children's data is a key question. (needs legal review) |
 | Supabase | Account, database, private photo storage | Region: set in the Supabase project (placeholder `[region]` on the privacy page). (needs legal review) |
 | Render, Vercel | Run the API and website | Do not store the journal. |
-| Transactional email provider (Resend, once configured) | The parent's email address and the message text, to deliver it | The only place the parent email is processed in clear text, transiently. A data processing agreement is needed. No tracking pixels or link tracking are used in the message. (needs legal review) |
+| Transactional email provider (Resend or Brevo, once configured) | The parent's email address and the message text, to deliver it | The only place the parent email is processed in clear text, transiently. A data processing agreement is needed. No tracking pixels or link tracking are used in the message (plain text only; with Brevo, switch off click tracking under Transactional → Settings). (needs legal review) |
 | Browser speech recognition (voice dictation) | Audio, sent by Chrome to Google's speech service | Not controlled by Solace; disclosed in the UI. (needs legal review) |
 
 ## 5. India: DPDP Act and Rules
@@ -90,7 +90,7 @@ The web screens read these flags from `features/teen/flags.ts`. (needs legal rev
 
 - A teen can enter any email address, including a friend's. Solace cannot tell a parent from someone else. (needs legal review: see section 5)
 - Rate limits: 3 consent emails per teen per day; per-IP limit on the public consent link; tokens are unguessable and links answer the same generic 404 whether a token is wrong, expired or replaced.
-- Consent emails go out through a pluggable mailer (Resend in production). If no provider is configured in production, both the age gate (for a 13-17 answer) and a later consent request answer 503 `teen_signup_unavailable` and nothing is stored or logged. The in-process gate cache (5 seconds) is invalidated when consent changes and a read racing that change is not cached; with several API instances another instance can still serve the old state for up to 5 seconds.
+- Consent emails go out through a pluggable mailer (Resend, or Brevo over HTTP for a free single-sender setup, since Render's free plan blocks outbound SMTP). If no provider is configured in production, both the age gate (for a 13-17 answer) and a later consent request answer 503 `teen_signup_unavailable` and nothing is stored or logged. The in-process gate cache (5 seconds) is invalidated when consent changes and a read racing that change is not cached; with several API instances another instance can still serve the old state for up to 5 seconds.
 - The data export includes a consent summary (status and decision time) but never the stored hashes.
 - Crisis resources (Tele-MANAS 14416, KIRAN 1800-599-0019, CHILDLINE 1098, 988, Samaritans 116 123, findahelpline.com) are listed with a "last checked" date in `apps/web/src/features/teen/crisis-data.ts`. They must be re-verified by a person before launch and periodically. (needs legal review)
 

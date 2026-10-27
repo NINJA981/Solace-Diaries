@@ -18,6 +18,10 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['apps/web/api/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ['apps/web/public/**/*.js'],
     languageOptions: { globals: globals.browser },
   },
