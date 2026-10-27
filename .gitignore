@@ -12,3 +12,6 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/web/dev-dist/
 .vercel/
+
+# Playwright MCP snapshots
+.playwright-mcp/
